@@ -1,0 +1,169 @@
+{
+  "title": "Vue 3 + Vuetify 3 Thesis Template",
+  "description": "A modern, reusable thesis template built with Vue 3 and Vuetify 3, featuring TypeScript and zero-config development with extensive plugin automation.",
+  "subtitle": "Streamline Your Academic Writing with Modern Web Technologies",
+  "backgroundImage": {
+    "src": "/images/markup.png",
+    "alt": "Abstract academic background with geometric patterns",
+    "overlay": {
+      "enabled": true,
+      "color": "rgba(85, 107, 47, 0.1)",
+      "opacity": 0.8
+    }
+  },
+  "features": [
+    {
+      "title": "Zero-Config Development",
+      "description": "File-based auto-generation for pages, components, and layouts with minimal configuration required.",
+      "icon": "mdi-cog-outline"
+    },
+    {
+      "title": "Modern Vue 3 Stack",
+      "description": "Built on Vue 3 Composition API with TypeScript, Pinia state management, and Vuetify 3 components.",
+      "icon": "mdi-vuejs"
+    },
+    {
+      "title": "Authentication Ready",
+      "description": "Supabase integration with reactive authentication state and user management.",
+      "icon": "mdi-account-check"
+    },
+    {
+      "title": "Responsive Design",
+      "description": "Mobile-first approach with Vuetify's Material Design components and responsive layouts.",
+      "icon": "mdi-responsive"
+    }
+  ],
+  "version": "1.0.0",
+  "author": "Thesis Template Team",
+  "lastUpdated": "2025-09-03",
+  "theme": {
+    "primaryColor": "#556B2F",
+    "secondaryColor": "#DCDCDC"
+  },
+  "ui": {
+    "showNavbar": true,
+    "showFooter": true,
+    "_comment": "Select the navbar component to use: 1, 2, 3, or 4",
+    "navbarComponent": "4",
+    "_footerComment": "Select the footer component to use: 1 or 2",
+    "footerComponent": "1",
+    "navbar": {
+      "title": "Thesis Template",
+      "icon": "mdi-school",
+      "logo": {
+        "src": "/src/assets/logo.svg",
+        "alt": "Thesis Template Logo",
+        "width": 32,
+        "height": 32
+      },
+      "color": "primary",
+      "elevation": 2,
+      "density": "comfortable",
+      "navigationItems": [
+        {
+          "_comment": "dont change this",
+          "label": "Features",
+          "action": "scroll",
+          "target": "features"
+        },
+        {
+          "_comment": "dont change this",
+          "label": "About",
+          "action": "scroll",
+          "target": "about"
+        }
+      ],
+      "ctaButton": {
+        "label": "Get Started",
+        "variant": "outlined",
+        "color": "on-primary",
+        "action": "navigate",
+        "_comment": "dont change this /auth cause it is linked to the auth page",
+        "target": "/auth"
+      }
+    },
+    "footer": {
+      "companyName": "Thesis Template",
+      "tagline": "Modern academic writing made simple",
+      "icon": "mdi-school",
+      "color": "grey-darken-3",
+      "copyright": "Thesis Template Team. All rights reserved.",
+      "socialLinks": [
+        {
+          "platform": "github",
+          "icon": "mdi-github",
+          "url": "https://github.com",
+          "label": "GitHub"
+        },
+        {
+          "platform": "twitter",
+          "icon": "mdi-twitter",
+          "url": "https://twitter.com",
+          "label": "Twitter"
+        },
+        {
+          "platform": "linkedin",
+          "icon": "mdi-linkedin",
+          "url": "https://linkedin.com",
+          "label": "LinkedIn"
+        }
+      ],
+      "technologies": [
+        {
+          "name": "Vue 3",
+          "icon": "mdi-vuejs",
+          "color": "green"
+        },
+        {
+          "name": "Vuetify 3",
+          "icon": "mdi-material-design",
+          "color": "blue"
+        }
+      ],
+      "thesisTeam": {
+        "enabled": true,
+        "title": "Thesis Team",
+        "subtitle": "Meet the minds behind your academic success",
+        "members": [
+          {
+            "name": "Dr. Sarah Johnson",
+            "role": "Lead Researcher",
+            "avatar": "/images/team/sarah.jpg"
+          },
+          {
+            "name": "Prof. Michael Chen",
+            "role": "Academic Advisor",
+            "avatar": "/images/team/michael.jpg"
+          },
+          {
+            "name": "Emma Rodriguez",
+            "role": "Writing Specialist",
+            "avatar": "/images/team/emma.jpg"
+          }
+        ]
+      }
+    }
+  },
+  "authPage": {
+    "title": "Welcome to Your Academic Journey",
+    "subtitle": "Access your thesis template workspace",
+    "layout": {
+      "quotePosition": "right"
+    },
+    "quote": {
+      "text": "The best time to plant a tree was 20 years ago. The second best time is now.",
+      "author": "Chinese Proverb",
+      "source": "Ancient Wisdom",
+      "motivationalText": "Start your journey today. Every great achievement begins with a single step forward."
+    },
+    "backgroundImage": {
+      "src": "/images/auth-background.jpg",
+      "alt": "Academic workspace with books and laptop",
+      "overlay": {
+        "enabled": true,
+        "color": "rgba(85, 107, 47, 0.05)",
+        "opacity": 0.9
+      }
+    }
+  }
+}
