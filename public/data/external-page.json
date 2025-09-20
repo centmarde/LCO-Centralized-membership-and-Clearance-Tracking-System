@@ -1,7 +1,9 @@
 {
-  "title": "Centralized Membership and Clearance Record System for LCO",
-  "description": "A comprehensive system for centralized blocking and unblocking of students on Caraga State University campus, providing efficient membership and clearance tracking for campus organizations.",
-  "subtitle": "Streamline Student Membership and Clearance Management",
+
+  "title": "LCO Clearance Blocking System",
+  "description": "A centralized platform for managing, blocking, and unblocking students' clearance status within the university. Ensure compliance and streamline clearance workflows for all students record.",
+  "subtitle": "Efficiently Manage Students Clearance and Compliance",
+
   "backgroundImage": {
     "src": "/images/markup.png",
     "alt": "Abstract academic background with geometric patterns",
@@ -13,43 +15,47 @@
   },
   "features": [
     {
-      "title": "Centralized Student Management",
-      "description": "Unified system for managing student membership status across all League of Campus Organizations at Caraga State University.",
-      "icon": "mdi-account-group"
+
+      "title": "Student Blocking",
+      "description": "Easily block or unblock students based on compliance, violations, or clearance requirements.",
+      "icon": "mdi-block-helper"
     },
     {
-      "title": "Clearance Tracking",
-      "description": "Comprehensive tracking of student clearances with real-time status updates and automated notifications.",
-      "icon": "mdi-check-circle"
+      "title": "Centralized Management",
+      "description": "View and manage all students' clearance status in one place.",
+      "icon": "mdi-domain"
     },
     {
-      "title": "Block/Unblock Control",
-      "description": "Efficient blocking and unblocking system for students with proper authorization and audit trails.",
-      "icon": "mdi-account-lock"
+      "title": "Audit Trail",
+      "description": "Track all blocking and unblocking actions for transparency and accountability.",
+      "icon": "mdi-file-document-outline"
     },
     {
-      "title": "Campus-wide Integration",
-      "description": "Seamless integration across all campus organizations with role-based access control and reporting.",
-      "icon": "mdi-school"
+      "title": "Role-Based Access",
+      "description": "Admins, officers, and organization representatives have tailored access and permissions.",
+      "icon": "mdi-account-key"
     }
   ],
   "version": "1.0.0",
-  "author": "LCO System Development Team",
-  "lastUpdated": "2025-09-19",
+  "author": "LCO Clearance System Team",
+  "lastUpdated": "2025-09-03",
+
   "theme": {
-    "primaryColor": "#556B2F",
-    "secondaryColor": "#DCDCDC"
+    "primaryColor": "#96A78D",
+    "secondaryColor": "#F0F0F0"
   },
   "ui": {
     "showNavbar": true,
     "showFooter": true,
     "_comment": "Select the navbar component to use: 1, 2, 3, or 4",
-    "navbarComponent": "4",
+    "navbarComponent": "3",
     "_footerComment": "Select the footer component to use: 1 or 2",
     "footerComponent": "1",
     "navbar": {
-      "title": "LCO Clearance System",
-      "icon": "mdi-account-check",
+
+      "title": "LCO Clearance Blocking",
+      "icon": "mdi-shield-lock-outline",
+
       "logo": {
         "src": "/src/assets/logo.svg",
         "alt": "LCO Clearance System Logo",
@@ -74,9 +80,9 @@
         }
       ],
       "ctaButton": {
-        "label": "Get Started",
+        "label": "Log In",
         "variant": "outlined",
-        "color": "on-primary",
+        "color": "primary",
         "action": "navigate",
         "_comment": "dont change this /auth cause it is linked to the auth page",
         "target": "/auth"
@@ -84,10 +90,12 @@
     },
     "footer": {
       "companyName": "LCO Clearance System",
-      "tagline": "Centralized membership and clearance management for campus organizations",
-      "icon": "mdi-account-check",
+
+      "tagline": "Empowering compliance for every organization",
+      "icon": "mdi-shield-lock-outline",
       "color": "grey-darken-3",
-      "copyright": "Caraga State University - LCO System. All rights reserved.",
+      "copyright": "LCO Clearance System Team. All rights reserved.",
+
       "socialLinks": [
         {
           "platform": "github",
@@ -96,16 +104,10 @@
           "label": "GitHub"
         },
         {
-          "platform": "twitter",
-          "icon": "mdi-twitter",
-          "url": "https://twitter.com",
-          "label": "Twitter"
-        },
-        {
-          "platform": "linkedin",
-          "icon": "mdi-linkedin",
-          "url": "https://linkedin.com",
-          "label": "LinkedIn"
+          "platform": "facebook",
+          "icon": "mdi-facebook",
+          "url": "https://facebook.com",
+          "label": "Facebook"
         }
       ],
       "technologies": [
@@ -120,45 +122,51 @@
           "color": "blue"
         }
       ],
-      "developmentTeam": {
+
+      "systemTeam": {
         "enabled": true,
-        "title": "Development Team",
-        "subtitle": "Meet the team behind the LCO Clearance System",
+        "title": "LCO System Team",
+        "subtitle": "Meet the team behind the clearance system",
         "members": [
           {
-            "name": "System Administrator",
+            "name": "Mark D.",
             "role": "Lead Developer",
-            "avatar": "/images/team/admin.jpg"
+            "avatar": "/images/team/mark.jpg"
           },
           {
-            "name": "Database Manager",
-            "role": "Data Specialist",
-            "avatar": "/images/team/db-admin.jpg"
+            "name": "Jane S.",
+            "role": "Compliance Officer",
+            "avatar": "/images/team/jane.jpg"
           },
           {
-            "name": "Campus Coordinator",
-            "role": "System Coordinator",
-            "avatar": "/images/team/coordinator.jpg"
+            "name": "Alex R.",
+            "role": "UI/UX Designer",
+            "avatar": "/images/team/alex.jpg"
+
           }
         ]
       }
     }
   },
   "authPage": {
-    "title": "Welcome to LCO Clearance System",
-    "subtitle": "Access the centralized membership and clearance management system",
+
+    "title": "LCO Clearance Portal",
+    "subtitle": "Manage organization clearance, block or unblock organizations, and ensure compliance.",
+
     "layout": {
       "quotePosition": "right"
     },
     "quote": {
-      "text": "Organization and efficiency are the keys to success in any endeavor.",
-      "author": "Campus Leadership",
-      "source": "Caraga State University",
-      "motivationalText": "Manage your organization memberships and clearances efficiently. Every organized step leads to greater campus success."
+
+      "text": "Compliance is the foundation of trust in every organization.",
+      "author": "LCO Admin",
+      "source": "University Policy",
+      "motivationalText": "Keep your organization in good standing. Block or unblock with transparency and accountability."
     },
     "backgroundImage": {
       "src": "/images/auth-background.jpg",
-      "alt": "Campus organizations management system interface",
+      "alt": "University admin workspace with compliance documents",
+
       "overlay": {
         "enabled": true,
         "color": "rgba(85, 107, 47, 0.05)",
