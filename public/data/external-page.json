@@ -1,7 +1,9 @@
 {
+
   "title": "LCO Clearance Blocking System",
   "description": "A centralized platform for managing, blocking, and unblocking students' clearance status within the university. Ensure compliance and streamline clearance workflows for all students record.",
   "subtitle": "Efficiently Manage Students Clearance and Compliance",
+
   "backgroundImage": {
     "src": "/images/markup.png",
     "alt": "Abstract academic background with geometric patterns",
@@ -13,6 +15,7 @@
   },
   "features": [
     {
+
       "title": "Student Blocking",
       "description": "Easily block or unblock students based on compliance, violations, or clearance requirements.",
       "icon": "mdi-block-helper"
@@ -36,6 +39,7 @@
   "version": "1.0.0",
   "author": "LCO Clearance System Team",
   "lastUpdated": "2025-09-03",
+
   "theme": {
     "primaryColor": "#96A78D",
     "secondaryColor": "#F0F0F0"
@@ -48,11 +52,13 @@
     "_footerComment": "Select the footer component to use: 1 or 2",
     "footerComponent": "1",
     "navbar": {
+
       "title": "LCO Clearance Blocking",
       "icon": "mdi-shield-lock-outline",
+
       "logo": {
         "src": "/src/assets/logo.svg",
-        "alt": "Thesis Template Logo",
+        "alt": "LCO Clearance System Logo",
         "width": 32,
         "height": 32
       },
@@ -84,10 +90,12 @@
     },
     "footer": {
       "companyName": "LCO Clearance System",
+
       "tagline": "Empowering compliance for every organization",
       "icon": "mdi-shield-lock-outline",
       "color": "grey-darken-3",
       "copyright": "LCO Clearance System Team. All rights reserved.",
+
       "socialLinks": [
         {
           "platform": "github",
@@ -114,6 +122,7 @@
           "color": "blue"
         }
       ],
+
       "systemTeam": {
         "enabled": true,
         "title": "LCO System Team",
@@ -133,18 +142,22 @@
             "name": "Alex R.",
             "role": "UI/UX Designer",
             "avatar": "/images/team/alex.jpg"
+
           }
         ]
       }
     }
   },
   "authPage": {
+
     "title": "LCO Clearance Portal",
     "subtitle": "Manage organization clearance, block or unblock organizations, and ensure compliance.",
+
     "layout": {
       "quotePosition": "right"
     },
     "quote": {
+
       "text": "Compliance is the foundation of trust in every organization.",
       "author": "LCO Admin",
       "source": "University Policy",
@@ -153,6 +166,7 @@
     "backgroundImage": {
       "src": "/images/auth-background.jpg",
       "alt": "University admin workspace with compliance documents",
+
       "overlay": {
         "enabled": true,
         "color": "rgba(85, 107, 47, 0.05)",
