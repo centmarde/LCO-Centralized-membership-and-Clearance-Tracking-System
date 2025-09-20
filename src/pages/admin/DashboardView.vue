@@ -3,7 +3,7 @@
     <template #content>
       <v-container fluid class="py-6 px-4" >
         <!-- Top Stats -->
-        <v-row>
+        <v-row class="mt-5">
           <v-col cols="12" md="3" v-for="stat in stats" :key="stat.title">
             <v-card rounded="lg" elevation="7" class="pa-4 text-center" >
               <h3 class="text-h6 font-weight-medium mb-2">{{ stat.title }}</h3>
