@@ -96,16 +96,7 @@
                         Explore Features
                       </v-btn>
 
-                      <v-btn
-                        class="text-none"
-                        color="primary"
-                        size="x-large"
-                        variant="outlined"
-                        @click="openGithub"
-                      >
-                        <v-icon class="me-2" icon="mdi-github" />
-                        View Source
-                      </v-btn>
+                    
                     </div>
                   </div>
                 </v-col>
