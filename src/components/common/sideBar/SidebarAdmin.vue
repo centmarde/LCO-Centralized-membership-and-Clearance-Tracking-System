@@ -62,15 +62,16 @@ const handleLogout = async () => {
 
 <template>
   <v-navigation-drawer
-    v-if="showSidebar"
-    v-model="isExpanded"
-    :permanent="!smAndDown"
-    :temporary="smAndDown"
-    app
-    fixed
-    class="elevation-2 sidebar-full-height"
-    width="280"
-  >
+      v-if="showSidebar"
+      v-model="isExpanded"
+      :permanent="!smAndDown"
+      :temporary="smAndDown"
+      app
+      fixed
+      class="elevation-2 sidebar-full-height"
+      width="280"
+      color="background"
+    >
     <!-- Sidebar Header -->
     <v-list-item class="pa-4">
       <v-list-item-content>
@@ -132,8 +133,9 @@ const handleLogout = async () => {
 </template>
 
 <style scoped>
+
 .v-navigation-drawer {
-  background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+  /* Remove static background so Vuetify theme color applies */
   z-index: 1000; /* Ensure sidebar is above other content */
 }
 
