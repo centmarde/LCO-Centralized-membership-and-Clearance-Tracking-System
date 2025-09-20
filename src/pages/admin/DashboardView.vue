@@ -1,47 +1,101 @@
 <template>
   <InnerLayoutWrapper>
     <template #content>
-      <v-container fluid class="fill-height">
-        <v-row justify="center" align="center" class="fill-height">
-          <v-col cols="12" md="8" lg="6">
-            <v-card elevation="4" class="pa-6">
-              <v-card-title class="text-h4 text-center mb-4">
-                Welcome Home!
+      <v-container fluid class="py-6 px-4" >
+        <!-- Top Stats -->
+        <v-row>
+          <v-col cols="12" md="3" v-for="stat in stats" :key="stat.title">
+            <v-card rounded="lg" elevation="7" class="pa-4 text-center" >
+              <h3 class="text-h6 font-weight-medium mb-2">{{ stat.title }}</h3>
+              <p class="text-h4 font-weight-bold">{{ stat.value }}</p>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <!-- Search + Filter -->
+        <v-row class="my-6" align="center">
+          <v-col cols="12" md="8">
+            <v-text-field
+              v-model="searchQuery"
+              label="Search by name, ID, or organization"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              rounded="lg"
+              clearable
+            />
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-select
+              v-model="filterStatus"
+              :items="['All', 'Active', 'Blocked']"
+              label="Filter by status"
+              variant="outlined"
+              rounded="lg"
+              clearable
+            />
+          </v-col>
+        </v-row>
+
+        <!-- Student Table + Activity Panel -->
+        <v-row>
+          <!-- Student Table -->
+          <v-col cols="12" md="8">
+            <v-card rounded="lg" elevation="7" >
+              <v-card-title class="text-h6 font-weight-bold">
+                All Students
               </v-card-title>
+              <v-data-table
+                :headers="headers"
+                :items="filteredStudents"
+                class="elevation-1"
+                rounded="lg"
+              >
+                <template #item.status="{ item }">
+                  <v-chip
+                    :color="item.status === 'Active' ? 'green' : 'red'"
+                    size="small"
+                    class="ma-1"
+                  >
+                    <v-avatar start size="6" :color="item.status === 'Active' ? 'green' : 'red'"></v-avatar>
+                    {{ item.status }}
+                  </v-chip>
+                </template>
 
-              <v-card-text class="text-center">
-                <v-avatar size="80" class="mb-4" color="primary">
-                  <v-icon size="40" color="white">mdi-account-circle</v-icon>
-                </v-avatar>
+                <template #item.actions="{ item }">
+                  <v-btn
+                    :color="item.status === 'Active' ? 'error' : 'success'"
+                    variant="tonal"
+                    size="small"
+                    @click="toggleStatus(item)"
+                  >
+                    {{ item.status === 'Active' ? 'Block' : 'Unblock' }}
+                  </v-btn>
+                </template>
+              </v-data-table>
+            </v-card>
+          </v-col>
 
-                <p class="text-h6 mb-2">Hello, {{ userName }}!</p>
-                <p class="text-body-1 text-medium-emphasis mb-4">
-                  You are successfully logged in.
-                </p>
-
-                <v-chip
-                  color="success"
-                  variant="tonal"
-                  class="mb-4"
-                  prepend-icon="mdi-check-circle"
+          <!-- Recent Activity -->
+          <v-col cols="12" md="4">
+            <v-card rounded="lg" elevation="7" >
+              <v-card-title class="text-h6 font-weight-bold">
+                Recent Activity
+              </v-card-title>
+              <v-list>
+                <v-list-item
+                  v-for="(log, index) in recentActivity"
+                  :key="index"
                 >
-                  Authenticated
-                </v-chip>
-              </v-card-text>
-
-              <v-card-actions class="justify-center pt-4">
-                <v-btn
-                  color="error"
-                  variant="elevated"
-                  size="large"
-                  prepend-icon="mdi-logout"
-                  :loading="loading"
-                  @click="handleLogout"
-                  class="px-8"
-                >
-                  Logout
-                </v-btn>
-              </v-card-actions>
+                  <v-list-item-content>
+                    <v-list-item-title>
+                      <strong>{{ log.action }}</strong> - {{ log.student }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle>
+                      {{ formatDate(log.date) }}
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
             </v-card>
           </v-col>
         </v-row>
@@ -51,28 +105,117 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthUserStore } from '@/stores/authUser'
-import { useToast } from 'vue-toastification'
-import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
+import { ref, computed, onMounted } from "vue"
+import InnerLayoutWrapper from "@/layouts/InnerLayoutWrapper.vue"
+import { fetchStudents, fetchOrganizations, fetchStats } from "@/stores/dashboardService"
+import { supabase } from "@/lib/supabase"
 
-const authStore = useAuthUserStore()
-const toast = useToast()
+// Stats
+const stats = ref([
+  { title: "Total Students", value: 0 },
+  { title: "Active Students", value: 0 },
+  { title: "Blocked Students", value: 0 },
+  { title: "Organizations", value: 0 },
+])
 
-// Reactive references from the auth store
-const { userName, loading } = storeToRefs(authStore)
+// Search and Filter
+const searchQuery = ref("")
+const filterStatus = ref("All")
 
-const handleLogout = async () => {
+// Student Data
+const students = ref<any[]>([])
+
+// Table Headers
+const headers = [
+  { text: "Name", value: "full_name" },
+  { text: "ID", value: "student_number" },
+  { text: "Email", value: "email" },
+  { text: "Organization", value: "organization" }, 
+  { text: "Status", value: "status" },
+  { text: "Actions", value: "actions", sortable: false },
+]
+
+// Recent Activity
+const recentActivity = ref<{ student: string; action: string; date: Date }[]>([])
+const organizations = ref<any[]>([])
+
+// Load Data from Supabase
+onMounted(async () => {
   try {
-    const result = await authStore.signOut()
+    students.value = await fetchStudents()
 
-    if (result.error) {
-      toast.error('Logout failed: ' + result.error.message)
-    } else {
-      toast.success('You have been logged out successfully')
-    }
-  } catch (error) {
-    console.error('Logout error:', error)
-    toast.error('An unexpected error occurred during logout')
+    const statData = await fetchStats()
+    organizations.value = await fetchOrganizations() // 👈 now used!
+
+    stats.value = [
+      { title: "Total Students", value: statData.total },
+      { title: "Active Students", value: statData.active },
+      { title: "Blocked Students", value: statData.blocked },
+      { title: "Organizations", value: organizations.value.length }, // 👈 shows count
+    ]
+  } catch (err) {
+    console.error("Error loading dashboard:", err)
   }
+})
+
+// Filtered Students
+const filteredStudents = computed(() => {
+  return students.value.filter((s) => {
+    const query = searchQuery.value.toLowerCase()
+    const matchesSearch =
+      s.full_name?.toLowerCase().includes(query) ||
+      s.student_number?.toLowerCase().includes(query) ||
+      s.email?.toLowerCase().includes(query) ||
+      s.organization?.toLowerCase().includes(query) // 👈 added
+    const matchesStatus =
+      filterStatus.value === "All" || s.status === filterStatus.value
+    return matchesSearch && matchesStatus
+  })
+})
+
+
+// Toggle Status (Block/Unblock)
+const toggleStatus = async (student: any) => {
+  const newStatus = student.status === "Active" ? "Blocked" : "Active"
+
+  // Update in Supabase
+  const { error } = await supabase
+    .from("students")
+    .update({ status: newStatus })
+    .eq("id", student.id)
+
+  if (error) {
+    console.error("Failed to update status:", error)
+    return
+  }
+
+  // Update local state
+  student.status = newStatus
+  recentActivity.value.unshift({
+    student: student.full_name,
+    action: newStatus === "Active" ? "Unblocked" : "Blocked",
+    date: new Date(),
+  })
+
+  // Update stats immediately
+  // Recalculate from current students list
+  const total = students.value.length
+  const active = students.value.filter((s) => s.status === "Active").length
+  const blocked = students.value.filter((s) => s.status === "Blocked").length
+  stats.value = [
+    { title: "Total Students", value: total },
+    { title: "Active Students", value: active },
+    { title: "Blocked Students", value: blocked },
+    { title: "Organizations", value: organizations.value.length },
+  ]
+}
+
+// Format Date
+const formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date)
 }
 </script>
+
