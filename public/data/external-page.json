@@ -76,7 +76,7 @@
       "ctaButton": {
         "label": "Log In",
         "variant": "outlined",
-        "color": "on-primary",
+        "color": "primary",
         "action": "navigate",
         "_comment": "dont change this /auth cause it is linked to the auth page",
         "target": "/auth"
