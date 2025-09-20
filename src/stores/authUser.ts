@@ -35,22 +35,23 @@ export const useAuthUserStore = defineStore("authUser", () => {
     email: string,
     password: string,
     username: string,
-    roleId: number
+    roleId: number,
+    full_name?: string,
+    student_number?: string,
+    organization_id?: number
   ) {
     loading.value = true;
     try {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-        {
-          email,
-          password,
-          options: {
-            data: {
-              full_name: username,
-              role: roleId,
-            }
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: username,
+            role: roleId,
           }
         }
-      );
+      });
 
       if (signUpError) {
         return { error: signUpError };
@@ -58,6 +59,26 @@ export const useAuthUserStore = defineStore("authUser", () => {
 
       if (!signUpData.user) {
         return { error: new Error("Signup failed") };
+      }
+
+      // Only insert into students if roleId is 2 (student)
+      if (roleId === 2) {
+        const { error: insertError } = await supabase
+          .from("students")
+          .insert([
+            {
+              user_id: signUpData.user.id,
+              role_id: roleId,
+              full_name: full_name || username,
+              student_number: student_number || null,
+              email,
+              status: "Active",
+              organization_id: organization_id || null
+            }
+          ]);
+        if (insertError) {
+          return { error: insertError };
+        }
       }
 
       return { data: { id: signUpData.user.id, email } };

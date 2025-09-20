@@ -226,7 +226,6 @@
               </span>
             </v-btn>
           </div>
-
           <!-- Theme Toggle Menu -->
           <v-menu location="bottom">
             <template #activator="{ props: menuProps }">
@@ -260,6 +259,7 @@
               </v-list>
             </v-card>
           </v-menu>
+
 
           <!-- CTA Button -->
           <v-btn

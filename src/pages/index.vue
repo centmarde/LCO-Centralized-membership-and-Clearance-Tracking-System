@@ -105,7 +105,7 @@
           </section>
 
           <!-- Features Section -->
-          <section id="features" class="features-section py-16">
+          <section id="features" class="py-16">
             <v-container>
               <div class="text-center mb-12">
                 <h2 class="text-h3 font-weight-bold mb-4">Key Features</h2>
@@ -119,7 +119,7 @@
                   lg="3"
                   md="6"
                 >
-                  <v-card class="h-100" elevation="2" hover>
+                  <v-card class="h-100" elevation="5" hover rounded="xl">
                     <v-card-text class="text-center pa-6">
                       <v-avatar class="mb-4" color="primary" size="64">
                         <v-icon color="on-primary" :icon="feature.icon" size="32" />
@@ -140,7 +140,7 @@
           </section>
 
           <!-- About Section -->
-          <section id="about" class="about-section py-16 bg-grey-lighten-4">
+          <section id="about" class=" py-16 ">
             <v-container>
               <v-row align="center" justify="center">
                 <v-col cols="12" lg="8" md="10">
@@ -178,13 +178,6 @@
   min-height: calc(100vh - 64px);
 }
 
-.features-section {
-  background: white;
-}
-
-.about-section {
-  background: #fafafa;
-}
 
 .gap-4 {
   gap: 1rem;
