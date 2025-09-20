@@ -82,10 +82,6 @@
                       {{ data.subtitle }}
                     </h2>
 
-                    <p class="text-h6 text-md-h5 text-grey-darken-2 mb-8">
-                      {{ data.description }}
-                    </p>
-
                     <div
                       class="d-flex flex-column flex-sm-row gap-4 justify-center"
                     >
@@ -100,16 +96,7 @@
                         Explore Features
                       </v-btn>
 
-                      <v-btn
-                        class="text-none"
-                        color="primary"
-                        size="x-large"
-                        variant="outlined"
-                        @click="openGithub"
-                      >
-                        <v-icon class="me-2" icon="mdi-github" />
-                        View Source
-                      </v-btn>
+                    
                     </div>
                   </div>
                 </v-col>
@@ -118,13 +105,10 @@
           </section>
 
           <!-- Features Section -->
-          <section id="features" class="features-section py-16">
+          <section id="features" class="py-16">
             <v-container>
               <div class="text-center mb-12">
                 <h2 class="text-h3 font-weight-bold mb-4">Key Features</h2>
-                <p class="text-h6 text-grey-darken-1">
-                  Everything you need for modern academic writing
-                </p>
               </div>
 
               <v-row>
@@ -135,7 +119,7 @@
                   lg="3"
                   md="6"
                 >
-                  <v-card class="h-100" elevation="2" hover>
+                  <v-card class="h-100" elevation="5" hover rounded="xl">
                     <v-card-text class="text-center pa-6">
                       <v-avatar class="mb-4" color="primary" size="64">
                         <v-icon color="on-primary" :icon="feature.icon" size="32" />
@@ -156,41 +140,24 @@
           </section>
 
           <!-- About Section -->
-          <section id="about" class="about-section py-16 bg-grey-lighten-4">
+          <section id="about" class=" py-16 ">
             <v-container>
               <v-row align="center" justify="center">
                 <v-col cols="12" lg="8" md="10">
                   <div class="text-center">
                     <h2 class="text-h3 font-weight-bold mb-6">
-                      About This Template
+                      About
                     </h2>
 
                     <div class="pa-8" elevation="4">
                       <v-row align="center">
-                        <v-col cols="12" md="8">
-                          <h3 class="text-h4 font-weight-bold mb-4">
-                            Version {{ data.version }}
-                          </h3>
+                        <v-col cols="12">
                           <p class="text-h6 text-grey-darken-1 mb-4">
-                            Created by {{ data.author }}
+                            {{ data.description}}
                           </p>
                           <p class="text-body-1 text-grey-darken-2">
                             Last updated: {{ formatDate(data.lastUpdated) }}
                           </p>
-                        </v-col>
-
-                        <v-col cols="12" md="4">
-                          <v-btn
-                            block
-                            class="text-none"
-                            color="primary"
-                            size="large"
-                            variant="elevated"
-                            @click="openDocumentation"
-                          >
-                            <v-icon class="me-2" icon="mdi-book-open" />
-                            Documentation
-                          </v-btn>
                         </v-col>
                       </v-row>
                     </div>
@@ -211,13 +178,6 @@
   min-height: calc(100vh - 64px);
 }
 
-.features-section {
-  background: white;
-}
-
-.about-section {
-  background: #fafafa;
-}
 
 .gap-4 {
   gap: 1rem;

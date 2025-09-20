@@ -29,25 +29,29 @@ export const useAuthUserStore = defineStore("authUser", () => {
   const isAuthenticated = computed(() => userData.value !== null);
   const userEmail = computed(() => userData.value?.email || null);
   const userName = computed(() => userData.value?.user_metadata?.full_name || userData.value?.email || null);
+  const userRole = computed(() => userData.value?.user_metadata?.role || null);
 
   async function registerUser(
     email: string,
     password: string,
-    username: string
+    username: string,
+    roleId: number,
+    full_name?: string,
+    student_number?: string,
+    organization_id?: number
   ) {
     loading.value = true;
     try {
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-        {
-          email,
-          password,
-          options: {
-            data: {
-              full_name: username,
-            }
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: username,
+            role: roleId,
           }
         }
-      );
+      });
 
       if (signUpError) {
         return { error: signUpError };
@@ -55,6 +59,26 @@ export const useAuthUserStore = defineStore("authUser", () => {
 
       if (!signUpData.user) {
         return { error: new Error("Signup failed") };
+      }
+
+      // Only insert into students if roleId is 2 (student)
+      if (roleId === 2) {
+        const { error: insertError } = await supabase
+          .from("students")
+          .insert([
+            {
+              user_id: signUpData.user.id,
+              role_id: roleId,
+              full_name: full_name || username,
+              student_number: student_number || null,
+              email,
+              status: "Active",
+              organization_id: organization_id || null
+            }
+          ]);
+        if (insertError) {
+          return { error: insertError };
+        }
       }
 
       return { data: { id: signUpData.user.id, email } };
@@ -93,6 +117,9 @@ export const useAuthUserStore = defineStore("authUser", () => {
         app_metadata: user.app_metadata,
       };
 
+      // Log successful login with current user role ID
+      console.log('Successful login - Current user role ID:', user.user_metadata?.role);
+
       return { user };
     } finally {
       loading.value = false;
@@ -125,28 +152,100 @@ export const useAuthUserStore = defineStore("authUser", () => {
     }
   }
 
-  // Initialize auth state on store creation
+  // Initialize auth state on store creation using getCurrentUser
   async function initializeAuth() {
+    try {
+      const result = await getCurrentUser();
+
+      if (result.error || !result.user) {
+        userData.value = null;
+        console.log("No authenticated user found on initialization");
+        return;
+      }
+
+      // Set user data from getCurrentUser result
+      userData.value = result.user;
+
+      // Log user role ID from metadata on mount
+      const roleId = result.user.user_metadata?.role;
+      console.log('User initialized on mount - Role ID:', roleId);
+      console.log('User metadata:', result.user.user_metadata);
+
+    } catch (error) {
+      console.error("Error initializing auth:", error);
+      userData.value = null;
+    }
+  }
+
+  // Get user data by ID using Supabase API
+  async function getUser(userId?: string) {
+    loading.value = true;
+    try {
+      // Use the current user's ID if no userId is provided
+      const targetUserId = userId || userData.value?.id;
+
+      if (!targetUserId) {
+        return { error: new Error("No user ID provided") };
+      }
+
+      const { data: { user }, error } = await supabase.auth.admin.getUserById(targetUserId);
+
+      if (error) {
+        return { error };
+      }
+
+      if (!user) {
+        return { error: new Error("User not found") };
+      }
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          created_at: user.created_at,
+          user_metadata: user.user_metadata,
+          app_metadata: user.app_metadata,
+        }
+      };
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      return { error };
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // Get current authenticated user
+  async function getCurrentUser() {
     loading.value = true;
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
 
-      if (error || !user) {
-        userData.value = null;
-        return;
+      if (error) {
+        return { error };
       }
 
-      // Set user data from Supabase auth user only
-      userData.value = {
+      if (!user) {
+        return { error: new Error("No authenticated user") };
+      }
+
+      const userData = {
         id: user.id,
         email: user.email,
         created_at: user.created_at,
         user_metadata: user.user_metadata,
         app_metadata: user.app_metadata,
       };
+
+      // Log user role ID from metadata
+      const roleId = user.user_metadata?.role;
+      console.log('getCurrentUser - User Role ID from metadata:', roleId);
+      console.log('getCurrentUser - Full user metadata:', user.user_metadata);
+
+      return { user: userData };
     } catch (error) {
-      console.error("Error initializing auth:", error);
-      userData.value = null;
+      console.error("Error fetching current user:", error);
+      return { error };
     } finally {
       loading.value = false;
     }
@@ -166,12 +265,15 @@ export const useAuthUserStore = defineStore("authUser", () => {
     isAuthenticated,
     userEmail,
     userName,
+    userRole,
 
     // Actions
     registerUser,
     signIn,
     signOut,
     initializeAuth,
+    getUser,
+    getCurrentUser,
   };
 });
 
