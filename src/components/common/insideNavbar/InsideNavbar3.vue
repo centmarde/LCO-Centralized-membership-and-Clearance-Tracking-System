@@ -40,18 +40,46 @@
   // Vuetify v3: 'surface' is the default card color in both themes
   const navbarColor = computed(() => 'surface')
   const navbarStyle = computed(() => {
-    return {
-      top: isScrolled.value ? (xs.value ? '4px' : '10px') : (xs.value ? '8px' : '20px'),
-      left: '59%',
-      transform: `translateX(-50%) ${isScrolled.value ? 'scale(0.98)' : 'scale(1)'}`,
-      width: isScrolled.value ? (xs.value ? '96%' : '90%') : (xs.value ? '98%' : '95%'),
-      maxWidth: '1200px',
+    const sidebarWidth = 280;
+    const containerPadding = 24;
+    const containerMaxWidth = 1280;
+    const base = {
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       backdropFilter: 'blur(12px) saturate(180%)',
       WebkitBackdropFilter: 'blur(12px) saturate(180%)',
       border: '2px solid rgba(120,120,160,0.10)',
       boxShadow: '0 2px 16px 0 rgba(120, 120, 160, 0.10)',
-  marginBottom: '48px', // Increase space below navbar
+      marginBottom: '48px',
+      boxSizing: 'border-box' as const,
+      marginLeft: 'auto',
+      marginRight: 'auto',
+      paddingLeft: '10px',
+      paddingRight: '10px',
+    };
+    if (lgAndUp.value) {
+      const desktopLeft = sidebarWidth + 16;
+      return {
+        ...base,
+        top: isScrolled.value ? '10px' : '20px',
+        left: `${desktopLeft}px`,
+        right: 'auto',
+        width: `calc(100vw - ${desktopLeft + containerPadding * 2}px)`,
+        maxWidth: `${containerMaxWidth}px`,
+        transform: isScrolled.value ? 'scale(0.98)' : 'scale(1)',
+      }
+    } else {
+      // On mobile/tablet, add margin to both sides
+      return {
+        ...base,
+        top: isScrolled.value ? (xs.value ? '4px' : '10px') : (xs.value ? '8px' : '20px'),
+        left: '50%',
+        right: 'auto',
+        transform: `translateX(-50%) ${isScrolled.value ? 'scale(0.98)' : 'scale(1)'}`,
+        width: xs.value ? '100%' : '98%',
+        maxWidth: `${containerMaxWidth}px`,
+        paddingLeft: '16px',
+        paddingRight: '16px',
+      }
     }
   })
 
@@ -113,7 +141,7 @@
     :height="xs ? 56 : 64"
     rounded="pill"
     position="fixed"
-    class="mx-auto px-2"
+  class="mx-auto"
     :color="navbarColor"
     :style="navbarStyle"
   >
