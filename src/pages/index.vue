@@ -118,9 +118,6 @@
             <v-container>
               <div class="text-center mb-12">
                 <h2 class="text-h3 font-weight-bold mb-4">Key Features</h2>
-                <p class="text-h6 text-grey-darken-1">
-                  Everything you need for modern academic writing
-                </p>
               </div>
 
               <v-row>
