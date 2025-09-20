@@ -37,8 +37,8 @@
   "author": "LCO Clearance System Team",
   "lastUpdated": "2025-09-03",
   "theme": {
-    "primaryColor": "#556B2F",
-    "secondaryColor": "#DCDCDC"
+    "primaryColor": "#96A78D",
+    "secondaryColor": "#F0F0F0"
   },
   "ui": {
     "showNavbar": true,
