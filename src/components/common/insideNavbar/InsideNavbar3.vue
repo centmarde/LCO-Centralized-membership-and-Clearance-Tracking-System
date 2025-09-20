@@ -171,39 +171,7 @@
       <!-- Desktop Actions -->
       <template #append>
         <div class="d-flex align-center" v-if="lgAndUp">
-          <!-- Theme Toggle Menu -->
-          <v-menu location="bottom">
-            <template #activator="{ props: menuProps }">
-              <v-btn
-                v-bind="menuProps"
-                :loading="isLoadingTheme"
-                variant="outlined"
-                rounded="pill"
-                size="large"
-                :prepend-icon="themeIcon"
-              >
-                <span>Theme</span>
-              </v-btn>
-            </template>
-
-            <v-card width="200" class="mt-2">
-              <v-list density="compact">
-                <v-list-item
-                  prepend-icon="mdi-white-balance-sunny"
-                  title="Light Mode"
-                  :active="currentTheme === 'light'"
-                  @click="currentTheme === 'dark' && toggleTheme()"
-                />
-                <v-list-item
-                  prepend-icon="mdi-weather-night"
-                  title="Dark Mode"
-                  :active="currentTheme === 'dark'"
-                  @click="currentTheme === 'light' && toggleTheme()"
-                />
-              </v-list>
-            </v-card>
-          </v-menu>
-
+ 
           <!-- Logout Button -->
           <v-btn
             :loading="authStore.loading"
