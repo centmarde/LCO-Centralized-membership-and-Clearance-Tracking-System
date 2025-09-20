@@ -119,7 +119,7 @@
                   lg="3"
                   md="6"
                 >
-                  <v-card class="h-100" elevation="2" hover>
+                  <v-card class="h-100" elevation="5" hover rounded="xl">
                     <v-card-text class="text-center pa-6">
                       <v-avatar class="mb-4" color="primary" size="64">
                         <v-icon color="on-primary" :icon="feature.icon" size="32" />
