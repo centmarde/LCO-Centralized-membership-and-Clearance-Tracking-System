@@ -25,7 +25,7 @@ const routes = setupLayouts([
     component: Auth,
   },
   {
-    path: '/dashboard',
+    path: '/admin/dashboard',
     component: Dashboard,
     meta: { requiresAuth: true }
   },

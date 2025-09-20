@@ -125,7 +125,7 @@ export const useUserRolesStore = defineStore('userRoles', () => {
     }
   }
 
-  const createRole = async (roleData: CreateRoleData) => {
+  const createRole = async (roleData: CreateRoleData, silent = false) => {
     loading.value = true
     error.value = null
 
@@ -139,18 +139,22 @@ export const useUserRolesStore = defineStore('userRoles', () => {
       if (createError) throw createError
 
       roles.value.unshift(data)
-      toast.success('Role created successfully')
+      if (!silent) {
+        toast.success('Role created successfully')
+      }
       return data
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create role'
-      toast.error('Failed to create role')
+      if (!silent) {
+        toast.error('Failed to create role')
+      }
       return null
     } finally {
       loading.value = false
     }
   }
 
-  const updateRole = async (id: number, updateData: UpdateRoleData) => {
+  const updateRole = async (id: number, updateData: UpdateRoleData, silent = false) => {
     loading.value = true
     error.value = null
 
@@ -174,11 +178,15 @@ export const useUserRolesStore = defineStore('userRoles', () => {
         currentRole.value = data
       }
 
-      toast.success('Role updated successfully')
+      if (!silent) {
+        toast.success('Role updated successfully')
+      }
       return data
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update role'
-      toast.error('Failed to update role')
+      if (!silent) {
+        toast.error('Failed to update role')
+      }
       return null
     } finally {
       loading.value = false

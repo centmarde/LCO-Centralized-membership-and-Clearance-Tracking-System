@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import type { Role, CreateRoleData } from '@/stores/roles'
 import { getNavigationWithSelection, getAllPermissions } from '@/utils/navigation'
+import { useRoleEditFetchDialog } from '../composables/roleEditFetchDialog'
 
 interface Props {
   // Dialog state
@@ -18,13 +19,23 @@ interface Props {
 
 interface Emits {
   (e: 'close-dialog'): void
-  (e: 'handle-submit'): void
+  (e: 'handle-submit', selectedPermissions: string[]): void
   (e: 'handle-delete'): void
   (e: 'update:formData', value: CreateRoleData): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// Use the role edit fetch composable
+const {
+  currentRolePermissions,
+  loading: permissionsLoading,
+  fetchRolePermissions,
+  saveRolePermissions,
+  hasPermission,
+  clearPermissions
+} = useRoleEditFetchDialog()
 
 // Local reactive form data
 const localFormData = computed({
@@ -36,8 +47,37 @@ const localFormData = computed({
 const adminGroupExpanded = ref(true)
 const organizationGroupExpanded = ref(true)
 
-// Selected permissions for the role
+// Selected permissions for the role - initialized from current role permissions when editing
 const selectedPermissions = ref<string[]>([])
+
+// Watch for changes in selectedRole to fetch permissions when editing
+watch(
+  () => props.selectedRole,
+  async (newRole) => {
+    if (newRole && props.isEditing) {
+      // Fetch current permissions for the role
+      await fetchRolePermissions(newRole.id)
+      // Set selected permissions to current role permissions
+      selectedPermissions.value = [...currentRolePermissions.value]
+    } else {
+      // Clear permissions when creating new role or closing dialog
+      selectedPermissions.value = []
+      clearPermissions()
+    }
+  },
+  { immediate: true }
+)
+
+// Watch for dialog open/close to reset permissions
+watch(
+  () => props.isDialogOpen,
+  (isOpen) => {
+    if (!isOpen) {
+      selectedPermissions.value = []
+      clearPermissions()
+    }
+  }
+)
 
 // Get navigation groups with selection state
 const navigationGroups = computed(() =>
@@ -69,8 +109,10 @@ const closeDialog = () => {
   emit('close-dialog')
 }
 
-const handleSubmit = () => {
-  emit('handle-submit')
+const handleSubmit = async () => {
+  // For editing, let the parent handle both role update and permission saving
+  // For creating, just emit the permissions to be saved after role creation
+  emit('handle-submit', selectedPermissions.value)
 }
 
 const handleDelete = () => {
@@ -113,8 +155,15 @@ const handleDelete = () => {
             <h3 class="text-h6 mb-4">Page Access Control</h3>
             <div class="page-control-container">
 
+              <!-- Loading state for permissions -->
+              <div v-if="permissionsLoading" class="text-center py-6">
+                <v-progress-circular indeterminate color="primary" size="32" />
+                <p class="text-body-2 mt-2">Loading role permissions...</p>
+              </div>
+
               <!-- Dynamic Navigation Groups -->
               <div
+                v-else
                 v-for="group in navigationGroups"
                 :key="group.title"
                 class="navigation-group-section mb-4"
@@ -155,8 +204,8 @@ const handleDelete = () => {
                       <v-list-item-title class="text-body-2">
                         {{ child.title }}
                       </v-list-item-title>
-                      <v-list-item-subtitle class="text-caption" v-if="child.permission">
-                        {{ child.permission }}
+                      <v-list-item-subtitle class="text-caption" v-if="child.route">
+                        {{ child.route }}
                       </v-list-item-subtitle>
                     </v-list-item>
                   </div>
@@ -180,7 +229,7 @@ const handleDelete = () => {
         <v-btn
           color="primary"
           @click="handleSubmit"
-          :loading="loading"
+          :loading="loading || permissionsLoading"
           :disabled="!isFormValid"
         >
           {{ isEditing ? 'Update' : 'Create' }}

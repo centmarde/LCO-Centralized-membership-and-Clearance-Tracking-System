@@ -1,7 +1,36 @@
 import { supabase } from '@/lib/supabase'
 
+// Student types
+export type StudentStatus = {
+  status: 'Active' | 'Blocked' | 'Inactive'
+}
+
+export type StudentBase = {
+  id: string
+  full_name: string
+  student_number: string
+  email: string
+  status: StudentStatus['status']
+  organization_id: string
+}
+
+export type StudentWithOrganization = StudentBase & {
+  organization: string
+  organizations?: { title: string } | { title: string }[]
+}
+
+export type StudentStats = {
+  total: number
+  active: number
+  blocked: number
+}
+
+export type UpdateStatusResponse = {
+  success: boolean
+}
+
 // Fetch students with organization title
-export async function fetchStudents() {
+export async function fetchStudents(): Promise<StudentWithOrganization[]> {
   const { data, error } = await supabase
     .from('students')
     .select(`
@@ -19,7 +48,7 @@ export async function fetchStudents() {
     throw error
   }
 
-  return data.map((student) => {
+  return data.map((student): StudentWithOrganization => {
     let orgTitle = 'N/A'
     if (student.organizations) {
       if (Array.isArray(student.organizations)) {
@@ -43,7 +72,7 @@ export async function fetchStudents() {
 }
 
 // Student stats
-export async function fetchStudentStats() {
+export async function fetchStudentStats(): Promise<StudentStats> {
   const { data: students, error: studentError } = await supabase
     .from('students')
     .select('status')
@@ -62,7 +91,10 @@ export async function fetchStudentStats() {
 }
 
 // Update student status
-export async function updateStudentStatus(studentId: string, newStatus: string) {
+export async function updateStudentStatus(
+  studentId: string,
+  newStatus: StudentStatus['status']
+): Promise<UpdateStatusResponse> {
   const { error } = await supabase
     .from('students')
     .update({ status: newStatus })

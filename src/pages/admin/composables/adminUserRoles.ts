@@ -1,8 +1,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUserRolesStore, type Role, type CreateRoleData, type UpdateRoleData } from '@/stores/roles'
+import { useUserPagesStore } from '@/stores/pages'
+import { navigationConfig } from '@/utils/navigation'
+import { useToast } from 'vue-toastification'
 
 export function useAdminUserRoles() {
   const userRolesStore = useUserRolesStore()
+  const userPagesStore = useUserPagesStore()
+  const toast = useToast()
 
   // Local state for UI
   const isDialogOpen = ref(false)
@@ -58,18 +63,75 @@ export function useAdminUserRoles() {
     userRolesStore.clearError()
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (selectedPermissions: string[] = []) => {
     if (!isFormValid.value) return
 
     let success = false
+    let targetRoleId: number | null = null
+    const hasPermissions = selectedPermissions.length > 0
 
     if (isEditing.value && selectedRole.value) {
+      // Update existing role (silent if permissions are being saved)
       const updateData: UpdateRoleData = { title: formData.value.title }
-      const result = await userRolesStore.updateRole(selectedRole.value.id, updateData)
+      const result = await userRolesStore.updateRole(selectedRole.value.id, updateData, hasPermissions)
       success = !!result
+      targetRoleId = selectedRole.value.id
     } else {
-      const result = await userRolesStore.createRole(formData.value)
-      success = !!result
+      // Create new role (silent if permissions are being saved)
+      const createdRole = await userRolesStore.createRole(formData.value, hasPermissions)
+      success = !!createdRole
+      targetRoleId = createdRole?.id || null
+    }
+
+    // If role operation was successful and we have a role ID, save permissions
+    if (success && targetRoleId) {
+      try {
+        // Convert permissions to routes using navigation config
+        const permissionToRouteMap: Record<string, string> = {}
+
+        // Build mapping from navigation config
+        navigationConfig.forEach(group => {
+          group.children.forEach(item => {
+            if (item.permission && item.route) {
+              permissionToRouteMap[item.permission] = item.route
+            }
+          })
+        })
+
+        const routes = selectedPermissions
+          .map(permission => permissionToRouteMap[permission])
+          .filter(Boolean) as string[]
+
+        // For editing, first delete existing role pages (silent mode)
+        if (isEditing.value) {
+          await userPagesStore.deleteRolePagesByRoleId(targetRoleId, true)
+        }
+
+        // Create new role pages for each route (silent mode)
+        if (routes.length > 0) {
+          const createPromises = routes.map(route =>
+            userPagesStore.createRolePage({
+              role_id: targetRoleId!,
+              pages: route
+            }, true)
+          )
+
+          await Promise.all(createPromises)
+        }
+
+        // Show success message for the complete operation
+        if (isEditing.value) {
+          toast.success('Role and permissions updated successfully')
+        } else {
+          toast.success('Role and permissions created successfully')
+        }
+      } catch (error) {
+        console.error('Failed to save role permissions:', error)
+        toast.error('Role was saved but failed to update permissions')
+      }
+    } else if (success) {
+      // Role operation successful but no permissions to save
+      // The store already showed a toast for the role operation
     }
 
     if (success) {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
 </script>
 <template>
   <InnerLayoutWrapper>

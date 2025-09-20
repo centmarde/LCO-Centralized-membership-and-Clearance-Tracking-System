@@ -35,7 +35,7 @@ export const navigationConfig: NavigationGroup[] = [
       {
         title: 'Dashboard',
         icon: 'mdi-view-dashboard-outline',
-        route: '/dashboard',
+        route: '/admin/dashboard',
         permission: 'admin.dashboard.view'
       },
       {

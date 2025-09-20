@@ -128,7 +128,7 @@ export const useUserPagesStore = defineStore('userPages', () => {
     }
   }
 
-  const createRolePage = async (rolePageData: CreateRolePageData) => {
+  const createRolePage = async (rolePageData: CreateRolePageData, silent = false) => {
     loading.value = true
     error.value = null
 
@@ -142,11 +142,15 @@ export const useUserPagesStore = defineStore('userPages', () => {
       if (createError) throw createError
 
       rolePages.value.unshift(data)
-      toast.success('Role page created successfully')
+      if (!silent) {
+        toast.success('Role page created successfully')
+      }
       return data
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create role page'
-      toast.error('Failed to create role page')
+      if (!silent) {
+        toast.error('Failed to create role page')
+      }
       return null
     } finally {
       loading.value = false
@@ -219,7 +223,7 @@ export const useUserPagesStore = defineStore('userPages', () => {
     }
   }
 
-  const deleteRolePagesByRoleId = async (roleId: number) => {
+  const deleteRolePagesByRoleId = async (roleId: number, silent = false) => {
     loading.value = true
     error.value = null
 
@@ -235,11 +239,15 @@ export const useUserPagesStore = defineStore('userPages', () => {
       rolePages.value = rolePages.value.filter(rolePage => rolePage.role_id !== roleId)
       rolePagesWithRoles.value = rolePagesWithRoles.value.filter(rolePage => rolePage.role_id !== roleId)
 
-      toast.success('Role pages deleted successfully')
+      if (!silent) {
+        toast.success('Role pages deleted successfully')
+      }
       return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete role pages'
-      toast.error('Failed to delete role pages')
+      if (!silent) {
+        toast.error('Failed to delete role pages')
+      }
       return false
     } finally {
       loading.value = false

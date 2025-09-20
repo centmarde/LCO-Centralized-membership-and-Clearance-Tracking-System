@@ -152,9 +152,8 @@ const formatDate = (dateString: string) => {
               {{ formatDate(role.created_at) }}
             </div>
 
-            <div class="d-flex align-center text-body-2 text-grey-darken-1 mt-1">
-              <v-icon size="16" class="mr-1">mdi-identifier</v-icon>
-              ID: {{ role.id }}
+            <div class="d-flex align-center text-body-2 text-grey-darken-1 my-3">
+
             </div>
           </v-card-text>
         </v-card>
