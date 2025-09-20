@@ -42,24 +42,24 @@
           </div>
         </v-col>
       </v-row>
-      <!-- Thesis Team Section -->
-      <template v-if="footerConfig.thesisTeam?.enabled">
+      <!-- System Team Section -->
+      <template v-if="footerConfig.systemTeam?.enabled">
         <v-divider class="my-4 " />
 
         <v-row>
           <v-col cols="12">
             <div class="text-center mb-4">
               <div class="text-h6 font-weight-bold">
-                {{ footerConfig.thesisTeam.title }}
+                {{ footerConfig.systemTeam.title }}
               </div>
               <div class="text-caption text-grey-lighten-1">
-                {{ footerConfig.thesisTeam.subtitle }}
+                {{ footerConfig.systemTeam.subtitle }}
               </div>
             </div>
 
             <v-row justify="center">
               <v-col
-                v-for="member in footerConfig.thesisTeam.members"
+                v-for="member in footerConfig.systemTeam.members"
                 :key="member.name"
                 cols="12"
                 sm="6"
