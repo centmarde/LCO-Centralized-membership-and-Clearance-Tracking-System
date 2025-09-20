@@ -130,32 +130,23 @@
   <div v-if="config?.showNavbar && navbarConfig">
     <!-- Floating Navbar using v-app-bar with Vuetify positioning -->
     <v-app-bar
-      :elevation="isScrolled ? 12 : 8"
-      :height="xs ? 56 : 64"
-      rounded="pill"
-      position="fixed"
-      class="mx-auto px-2"
-      :style="{
-        top: isScrolled ? (xs ? '4px' : '10px') : (xs ? '8px' : '20px'),
-        left: '50%',
-        transform: `translateX(-50%) ${isScrolled ? 'scale(0.98)' : 'scale(1)'}`,
-        width: isScrolled ? (xs ? '96%' : '90%') : (xs ? '98%' : '95%'),
-        maxWidth: '1200px',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-      }"
-
-    >
-      <!-- Logo Section with Badge -->
+  :elevation="0"
+  :height="xs ? 56 : 64"
+  rounded="pill"
+  position="fixed"
+  class="mx-auto px-2 glass-nav"
+  :style="{
+    top: isScrolled ? (xs ? '4px' : '10px') : (xs ? '8px' : '20px'),
+    left: '50%',
+    transform: `translateX(-50%) ${isScrolled ? 'scale(0.98)' : 'scale(1)'}`,
+    width: isScrolled ? (xs ? '96%' : '90%') : (xs ? '98%' : '95%'),
+    maxWidth: '1200px',
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+  }"
+>
+      <!-- Logo Section-->
       <template #prepend>
         <div class="d-flex align-center">
-          <v-badge
-            content="V3"
-            color="success"
-            dot
-            offset-x="8"
-            offset-y="8"
-            class="me-2"
-          >
             <!-- Logo Image with Icon Fallback -->
             <template v-if="navbarConfig.logo?.src">
               <v-img
@@ -193,7 +184,6 @@
                 />
               </v-avatar>
             </template>
-          </v-badge>
 
           <!-- Hide title on mobile to minimize navbar -->
           <div class="d-flex flex-column ms-2 d-none d-md-flex">
@@ -236,7 +226,6 @@
               </span>
             </v-btn>
           </div>
-
           <!-- Theme Toggle Menu -->
           <v-menu location="bottom">
             <template #activator="{ props: menuProps }">
@@ -270,6 +259,7 @@
               </v-list>
             </v-card>
           </v-menu>
+
 
           <!-- CTA Button -->
           <v-btn
@@ -464,5 +454,10 @@
 </template>
 
 <style scoped>
-/* All styling handled by Vuetify components and utilities only */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.15); /* semi-transparent white */
+  backdrop-filter: blur(12px) saturate(180%); /* frosted glass effect */
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
 </style>

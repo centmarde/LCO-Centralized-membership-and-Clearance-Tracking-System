@@ -1,7 +1,9 @@
 {
-  "title": "Vue 3 + Vuetify 3 Thesis Template",
-  "description": "A modern, reusable thesis template built with Vue 3 and Vuetify 3, featuring TypeScript and zero-config development with extensive plugin automation.",
-  "subtitle": "Streamline Your Academic Writing with Modern Web Technologies",
+
+  "title": "LCO Clearance Blocking System",
+  "description": "A centralized platform for managing, blocking, and unblocking students' clearance status within the university. Ensure compliance and streamline clearance workflows for all students record.",
+  "subtitle": "Efficiently Manage Students Clearance and Compliance",
+
   "backgroundImage": {
     "src": "/images/markup.png",
     "alt": "Abstract academic background with geometric patterns",
@@ -13,46 +15,50 @@
   },
   "features": [
     {
-      "title": "Zero-Config Development",
-      "description": "File-based auto-generation for pages, components, and layouts with minimal configuration required.",
-      "icon": "mdi-cog-outline"
+
+      "title": "Student Blocking",
+      "description": "Easily block or unblock students based on compliance, violations, or clearance requirements.",
+      "icon": "mdi-block-helper"
     },
     {
-      "title": "Modern Vue 3 Stack",
-      "description": "Built on Vue 3 Composition API with TypeScript, Pinia state management, and Vuetify 3 components.",
-      "icon": "mdi-vuejs"
+      "title": "Centralized Management",
+      "description": "View and manage all students' clearance status in one place.",
+      "icon": "mdi-domain"
     },
     {
-      "title": "Authentication Ready",
-      "description": "Supabase integration with reactive authentication state and user management.",
-      "icon": "mdi-account-check"
+      "title": "Audit Trail",
+      "description": "Track all blocking and unblocking actions for transparency and accountability.",
+      "icon": "mdi-file-document-outline"
     },
     {
-      "title": "Responsive Design",
-      "description": "Mobile-first approach with Vuetify's Material Design components and responsive layouts.",
-      "icon": "mdi-responsive"
+      "title": "Role-Based Access",
+      "description": "Admins, officers, and organization representatives have tailored access and permissions.",
+      "icon": "mdi-account-key"
     }
   ],
   "version": "1.0.0",
-  "author": "Thesis Template Team",
+  "author": "LCO Clearance System Team",
   "lastUpdated": "2025-09-03",
+
   "theme": {
-    "primaryColor": "#556B2F",
-    "secondaryColor": "#DCDCDC"
+    "primaryColor": "#96A78D",
+    "secondaryColor": "#F0F0F0"
   },
   "ui": {
     "showNavbar": true,
     "showFooter": true,
     "_comment": "Select the navbar component to use: 1, 2, 3, or 4",
-    "navbarComponent": "4",
+    "navbarComponent": "3",
     "_footerComment": "Select the footer component to use: 1 or 2",
     "footerComponent": "1",
     "navbar": {
-      "title": "Thesis Template",
-      "icon": "mdi-school",
+
+      "title": "LCO Clearance Blocking",
+      "icon": "mdi-shield-lock-outline",
+
       "logo": {
         "src": "/src/assets/logo.svg",
-        "alt": "Thesis Template Logo",
+        "alt": "LCO Clearance System Logo",
         "width": 32,
         "height": 32
       },
@@ -74,20 +80,22 @@
         }
       ],
       "ctaButton": {
-        "label": "Get Started",
+        "label": "Log In",
         "variant": "outlined",
-        "color": "on-primary",
+        "color": "primary",
         "action": "navigate",
         "_comment": "dont change this /auth cause it is linked to the auth page",
         "target": "/auth"
       }
     },
     "footer": {
-      "companyName": "Thesis Template",
-      "tagline": "Modern academic writing made simple",
-      "icon": "mdi-school",
+      "companyName": "LCO Clearance System",
+
+      "tagline": "Empowering compliance for every organization",
+      "icon": "mdi-shield-lock-outline",
       "color": "grey-darken-3",
-      "copyright": "Thesis Template Team. All rights reserved.",
+      "copyright": "LCO Clearance System Team. All rights reserved.",
+
       "socialLinks": [
         {
           "platform": "github",
@@ -96,16 +104,10 @@
           "label": "GitHub"
         },
         {
-          "platform": "twitter",
-          "icon": "mdi-twitter",
-          "url": "https://twitter.com",
-          "label": "Twitter"
-        },
-        {
-          "platform": "linkedin",
-          "icon": "mdi-linkedin",
-          "url": "https://linkedin.com",
-          "label": "LinkedIn"
+          "platform": "facebook",
+          "icon": "mdi-facebook",
+          "url": "https://facebook.com",
+          "label": "Facebook"
         }
       ],
       "technologies": [
@@ -120,45 +122,51 @@
           "color": "blue"
         }
       ],
-      "thesisTeam": {
+
+      "systemTeam": {
         "enabled": true,
-        "title": "Thesis Team",
-        "subtitle": "Meet the minds behind your academic success",
+        "title": "LCO System Team",
+        "subtitle": "Meet the team behind the clearance system",
         "members": [
           {
-            "name": "Dr. Sarah Johnson",
-            "role": "Lead Researcher",
-            "avatar": "/images/team/sarah.jpg"
+            "name": "Mark D.",
+            "role": "Lead Developer",
+            "avatar": "/images/team/mark.jpg"
           },
           {
-            "name": "Prof. Michael Chen",
-            "role": "Academic Advisor",
-            "avatar": "/images/team/michael.jpg"
+            "name": "Jane S.",
+            "role": "Compliance Officer",
+            "avatar": "/images/team/jane.jpg"
           },
           {
-            "name": "Emma Rodriguez",
-            "role": "Writing Specialist",
-            "avatar": "/images/team/emma.jpg"
+            "name": "Alex R.",
+            "role": "UI/UX Designer",
+            "avatar": "/images/team/alex.jpg"
+
           }
         ]
       }
     }
   },
   "authPage": {
-    "title": "Welcome to Your Academic Journey",
-    "subtitle": "Access your thesis template workspace",
+
+    "title": "LCO Clearance Portal",
+    "subtitle": "Manage organization clearance, block or unblock organizations, and ensure compliance.",
+
     "layout": {
       "quotePosition": "right"
     },
     "quote": {
-      "text": "The best time to plant a tree was 20 years ago. The second best time is now.",
-      "author": "Chinese Proverb",
-      "source": "Ancient Wisdom",
-      "motivationalText": "Start your journey today. Every great achievement begins with a single step forward."
+
+      "text": "Compliance is the foundation of trust in every organization.",
+      "author": "LCO Admin",
+      "source": "University Policy",
+      "motivationalText": "Keep your organization in good standing. Block or unblock with transparency and accountability."
     },
     "backgroundImage": {
       "src": "/images/auth-background.jpg",
-      "alt": "Academic workspace with books and laptop",
+      "alt": "University admin workspace with compliance documents",
+
       "overlay": {
         "enabled": true,
         "color": "rgba(85, 107, 47, 0.05)",

@@ -42,7 +42,7 @@
           <v-col cols="12">
             <v-btn
               type="submit"
-              color="primary"
+              color="on-primary"
               variant="elevated"
               size="large"
               block
@@ -57,7 +57,7 @@
 
         <v-row no-gutters>
           <v-col cols="12" class="text-center">
-            <span class="text-body-2 text-medium-emphasis">
+            <span class="text-body-2" style="color: rgba(0, 0, 0, 0.87);">
               Don't have an account?
             </span>
             <v-btn

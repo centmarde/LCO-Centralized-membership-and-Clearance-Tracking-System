@@ -1,0 +1,1 @@
+ibutang ang docs related direa like mga readme.md

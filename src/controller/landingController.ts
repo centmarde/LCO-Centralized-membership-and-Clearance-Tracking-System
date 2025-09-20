@@ -53,23 +53,13 @@ export interface Technology {
   color: string
 }
 
-export interface TeamMemberSocialLink {
-  platform: string
-  icon: string
-  url: string
-}
-
 export interface TeamMember {
   name: string
   role: string
   avatar: string
-  bio: string
-  expertise: string[]
-  email: string
-  socialLinks: TeamMemberSocialLink[]
 }
 
-export interface ThesisTeamConfig {
+export interface SystemTeamConfig {
   enabled: boolean
   title: string
   subtitle: string
@@ -84,7 +74,7 @@ export interface FooterConfig {
   copyright: string
   socialLinks: SocialLink[]
   technologies: Technology[]
-  thesisTeam: ThesisTeamConfig
+  systemTeam: SystemTeamConfig
 }
 
 export interface UIConfig {

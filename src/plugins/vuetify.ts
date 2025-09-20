@@ -11,11 +11,23 @@ import { createVuetify } from 'vuetify'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
-// Create vuetify instance with minimal initial configuration
-// Theme will be loaded dynamically from external-page.json
+// Get stored theme preference for initial setup
+const getStoredTheme = (): 'light' | 'dark' => {
+  try {
+    const stored = localStorage.getItem('lco-theme-preference')
+    if (stored && (stored === 'light' || stored === 'dark')) {
+      return stored
+    }
+  } catch (error) {
+    console.warn('Failed to load theme from localStorage during Vuetify initialization:', error)
+  }
+  return 'light' // default fallback
+}
+
+// Create vuetify instance with initial theme from localStorage
 const vuetify = createVuetify({
   theme: {
-    defaultTheme: 'light',
+    defaultTheme: getStoredTheme(),
     themes: {
       light: {
         dark: false,

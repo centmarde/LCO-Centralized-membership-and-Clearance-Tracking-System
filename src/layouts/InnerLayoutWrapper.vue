@@ -1,28 +1,37 @@
 <template>
   <v-app>
-    <!-- Dynamic Navbar Selection -->
+    <!-- Left Sidebar - Takes full left side -->
+    <Sidebar1 />
+
+    <!-- Dynamic Navbar Selection - Positioned to the right of sidebar -->
     <InsideNavbar1
       v-if="data?.ui?.navbarComponent === '1'"
       :config="data?.ui"
+      class="navbar-with-sidebar"
     />
 
     <InsideNavbar2
       v-else-if="data?.ui?.navbarComponent === '2'"
       :config="data?.ui"
+      class="navbar-with-sidebar"
     />
 
     <InsideNavbar3
       v-else-if="data?.ui?.navbarComponent === '3'"
       :config="data?.ui"
+      class="navbar-with-sidebar"
     />
 
     <InsideNavbar4
       v-else-if="data?.ui?.navbarComponent === '4'"
       :config="data?.ui"
+      class="navbar-with-sidebar"
     />
 
-    <v-main>
-      <slot name="content"></slot>
+    <v-main class="main-with-sidebar">
+      <slot name="content">
+        <router-view />
+      </slot>
     </v-main>
 
     <!-- Dynamic Footer Selection -->
@@ -35,18 +44,43 @@
 </template>
 
 <script lang="ts" setup>
-  import { onMounted } from 'vue'
+import { onMounted } from 'vue'
+import { useLandingController } from '@/controller/landingController'
+import Sidebar1 from '@/components/common/sideBar/Sidebar.vue'
 
+const { data, fetchLandingData } = useLandingController()
 
-  import { useLandingController } from '@/controller/landingController'
-
-  const { data, fetchLandingData } = useLandingController()
-
-  onMounted(async () => {
-    await fetchLandingData()
-  })
+onMounted(async () => {
+  await fetchLandingData()
+})
 </script>
 
 <style scoped>
-  /* Layout-specific styles can be added here */
+/* Navbar positioning - push to the right of sidebar */
+.navbar-with-sidebar {
+  margin-left: 280px; /* Match sidebar width */
+  width: calc(100% - 280px); /* Adjust width to account for sidebar */
+}
+
+/* Main content positioning */
+.main-with-sidebar {
+  padding-left: 280px; /* Match sidebar width */
+}
+
+/* Responsive behavior for small screens */
+@media (max-width: 960px) {
+  .navbar-with-sidebar {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .main-with-sidebar {
+    padding-left: 0;
+  }
+}
+
+/* Ensure proper spacing and layout */
+.v-app {
+  position: relative;
+}
 </style>
