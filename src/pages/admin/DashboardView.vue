@@ -107,7 +107,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue"
 import InnerLayoutWrapper from "@/layouts/InnerLayoutWrapper.vue"
-import { fetchStudents, fetchOrganizations, fetchStats } from "@/stores/dashboardService"
+import { fetchStudents, fetchStudentStats } from "@/stores/studentsData"
+import { fetchOrganizations, fetchOrganizationStats } from "@/stores/organizationData"
 import { supabase } from "@/lib/supabase"
 
 // Stats
@@ -143,15 +144,14 @@ const organizations = ref<any[]>([])
 onMounted(async () => {
   try {
     students.value = await fetchStudents()
-
-    const statData = await fetchStats()
-    organizations.value = await fetchOrganizations() // 👈 now used!
-
+    organizations.value = await fetchOrganizations()
+    const statData = await fetchStudentStats()
+    const orgCount = await fetchOrganizationStats()
     stats.value = [
       { title: "Total Students", value: statData.total },
       { title: "Active Students", value: statData.active },
       { title: "Blocked Students", value: statData.blocked },
-      { title: "Organizations", value: organizations.value.length }, // 👈 shows count
+      { title: "Organizations", value: orgCount },
     ]
   } catch (err) {
     console.error("Error loading dashboard:", err)
