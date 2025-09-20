@@ -1,7 +1,7 @@
 {
   "title": "LCO Clearance Blocking System",
-  "description": "A centralized platform for managing, blocking, and unblocking organizations' clearance status within the university. Ensure compliance and streamline clearance workflows for all student organizations.",
-  "subtitle": "Efficiently Manage Organization Clearance and Compliance",
+  "description": "A centralized platform for managing, blocking, and unblocking students' clearance status within the university. Ensure compliance and streamline clearance workflows for all students record.",
+  "subtitle": "Efficiently Manage Students Clearance and Compliance",
   "backgroundImage": {
     "src": "/images/markup.png",
     "alt": "Abstract academic background with geometric patterns",
@@ -13,13 +13,13 @@
   },
   "features": [
     {
-      "title": "Organization Blocking",
-      "description": "Easily block or unblock organizations based on compliance, violations, or clearance requirements.",
+      "title": "Student Blocking",
+      "description": "Easily block or unblock students based on compliance, violations, or clearance requirements.",
       "icon": "mdi-block-helper"
     },
     {
       "title": "Centralized Management",
-      "description": "View and manage all organizations' clearance status in one place, with real-time updates.",
+      "description": "View and manage all students' clearance status in one place.",
       "icon": "mdi-domain"
     },
     {
