@@ -42,7 +42,7 @@
           <v-col cols="12">
             <v-btn
               type="submit"
-              color="primary"
+              color="on-primary"
               variant="elevated"
               size="large"
               block
