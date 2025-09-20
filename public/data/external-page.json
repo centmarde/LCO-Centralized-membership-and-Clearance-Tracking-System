@@ -1,7 +1,7 @@
 {
-  "title": "Vue 3 + Vuetify 3 Thesis Template",
-  "description": "A modern, reusable thesis template built with Vue 3 and Vuetify 3, featuring TypeScript and zero-config development with extensive plugin automation.",
-  "subtitle": "Streamline Your Academic Writing with Modern Web Technologies",
+  "title": "Centralized Membership and Clearance Record System for LCO",
+  "description": "A comprehensive system for centralized blocking and unblocking of students on Caraga State University campus, providing efficient membership and clearance tracking for campus organizations.",
+  "subtitle": "Streamline Student Membership and Clearance Management",
   "backgroundImage": {
     "src": "/images/markup.png",
     "alt": "Abstract academic background with geometric patterns",
@@ -13,29 +13,29 @@
   },
   "features": [
     {
-      "title": "Zero-Config Development",
-      "description": "File-based auto-generation for pages, components, and layouts with minimal configuration required.",
-      "icon": "mdi-cog-outline"
+      "title": "Centralized Student Management",
+      "description": "Unified system for managing student membership status across all League of Campus Organizations at Caraga State University.",
+      "icon": "mdi-account-group"
     },
     {
-      "title": "Modern Vue 3 Stack",
-      "description": "Built on Vue 3 Composition API with TypeScript, Pinia state management, and Vuetify 3 components.",
-      "icon": "mdi-vuejs"
+      "title": "Clearance Tracking",
+      "description": "Comprehensive tracking of student clearances with real-time status updates and automated notifications.",
+      "icon": "mdi-check-circle"
     },
     {
-      "title": "Authentication Ready",
-      "description": "Supabase integration with reactive authentication state and user management.",
-      "icon": "mdi-account-check"
+      "title": "Block/Unblock Control",
+      "description": "Efficient blocking and unblocking system for students with proper authorization and audit trails.",
+      "icon": "mdi-account-lock"
     },
     {
-      "title": "Responsive Design",
-      "description": "Mobile-first approach with Vuetify's Material Design components and responsive layouts.",
-      "icon": "mdi-responsive"
+      "title": "Campus-wide Integration",
+      "description": "Seamless integration across all campus organizations with role-based access control and reporting.",
+      "icon": "mdi-school"
     }
   ],
   "version": "1.0.0",
-  "author": "Thesis Template Team",
-  "lastUpdated": "2025-09-03",
+  "author": "LCO System Development Team",
+  "lastUpdated": "2025-09-19",
   "theme": {
     "primaryColor": "#556B2F",
     "secondaryColor": "#DCDCDC"
@@ -48,11 +48,11 @@
     "_footerComment": "Select the footer component to use: 1 or 2",
     "footerComponent": "1",
     "navbar": {
-      "title": "Thesis Template",
-      "icon": "mdi-school",
+      "title": "LCO Clearance System",
+      "icon": "mdi-account-check",
       "logo": {
         "src": "/src/assets/logo.svg",
-        "alt": "Thesis Template Logo",
+        "alt": "LCO Clearance System Logo",
         "width": 32,
         "height": 32
       },
@@ -83,11 +83,11 @@
       }
     },
     "footer": {
-      "companyName": "Thesis Template",
-      "tagline": "Modern academic writing made simple",
-      "icon": "mdi-school",
+      "companyName": "LCO Clearance System",
+      "tagline": "Centralized membership and clearance management for campus organizations",
+      "icon": "mdi-account-check",
       "color": "grey-darken-3",
-      "copyright": "Thesis Template Team. All rights reserved.",
+      "copyright": "Caraga State University - LCO System. All rights reserved.",
       "socialLinks": [
         {
           "platform": "github",
@@ -120,45 +120,45 @@
           "color": "blue"
         }
       ],
-      "thesisTeam": {
+      "developmentTeam": {
         "enabled": true,
-        "title": "Thesis Team",
-        "subtitle": "Meet the minds behind your academic success",
+        "title": "Development Team",
+        "subtitle": "Meet the team behind the LCO Clearance System",
         "members": [
           {
-            "name": "Dr. Sarah Johnson",
-            "role": "Lead Researcher",
-            "avatar": "/images/team/sarah.jpg"
+            "name": "System Administrator",
+            "role": "Lead Developer",
+            "avatar": "/images/team/admin.jpg"
           },
           {
-            "name": "Prof. Michael Chen",
-            "role": "Academic Advisor",
-            "avatar": "/images/team/michael.jpg"
+            "name": "Database Manager",
+            "role": "Data Specialist",
+            "avatar": "/images/team/db-admin.jpg"
           },
           {
-            "name": "Emma Rodriguez",
-            "role": "Writing Specialist",
-            "avatar": "/images/team/emma.jpg"
+            "name": "Campus Coordinator",
+            "role": "System Coordinator",
+            "avatar": "/images/team/coordinator.jpg"
           }
         ]
       }
     }
   },
   "authPage": {
-    "title": "Welcome to Your Academic Journey",
-    "subtitle": "Access your thesis template workspace",
+    "title": "Welcome to LCO Clearance System",
+    "subtitle": "Access the centralized membership and clearance management system",
     "layout": {
       "quotePosition": "right"
     },
     "quote": {
-      "text": "The best time to plant a tree was 20 years ago. The second best time is now.",
-      "author": "Chinese Proverb",
-      "source": "Ancient Wisdom",
-      "motivationalText": "Start your journey today. Every great achievement begins with a single step forward."
+      "text": "Organization and efficiency are the keys to success in any endeavor.",
+      "author": "Campus Leadership",
+      "source": "Caraga State University",
+      "motivationalText": "Manage your organization memberships and clearances efficiently. Every organized step leads to greater campus success."
     },
     "backgroundImage": {
       "src": "/images/auth-background.jpg",
-      "alt": "Academic workspace with books and laptop",
+      "alt": "Campus organizations management system interface",
       "overlay": {
         "enabled": true,
         "color": "rgba(85, 107, 47, 0.05)",
