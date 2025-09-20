@@ -28,9 +28,9 @@ const menuItems = ref([
     route: '/dashboard'
   },
   {
-    title: 'Users',
+    title: 'User Management',
     icon: 'mdi-account-multiple',
-    route: '/admin/users'
+    route: '/admin/user-management'
   },
   {
     title: 'User Roles',
@@ -39,7 +39,7 @@ const menuItems = ref([
   },
   {
     title: 'Events',
-    icon: 'mdi-file-document-multiple',
+    icon: 'mdi-calendar-multiple',
     route: '/admin/events'
   }
 ])

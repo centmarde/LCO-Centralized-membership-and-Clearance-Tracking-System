@@ -8,6 +8,8 @@ import NotFound from '@/pages/NotFound.vue';
 import ForbiddenView from '@/pages/ForbiddenView.vue';
 import AdminUserRolesView from '@/pages/admin/AdminUserRolesView.vue';
 import AdminUserPagesView from '@/pages/admin/AdminUserPagesView.vue';
+import EventsView from '@/pages/admin/EventsView.vue';
+import UserManagementView from '@/pages/admin/UserManagementView.vue';
 
 /**
  * Route definitions for the application
@@ -34,6 +36,16 @@ const routes = setupLayouts([
   {
     path: '/admin/user-pages',
     component: AdminUserPagesView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/events',
+    component: EventsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/user-management',
+    component: UserManagementView,
     meta: { requiresAuth: true }
   },
   {
