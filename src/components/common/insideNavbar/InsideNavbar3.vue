@@ -36,6 +36,25 @@
     return `Switch to ${currentTheme.value === 'dark' ? 'light' : 'dark'} theme`
   })
 
+  // Dynamic navbar color to match dashboard cards in both light and dark mode
+  // Vuetify v3: 'surface' is the default card color in both themes
+  const navbarColor = computed(() => 'surface')
+  const navbarStyle = computed(() => {
+    return {
+      top: isScrolled.value ? (xs.value ? '4px' : '10px') : (xs.value ? '8px' : '20px'),
+      left: '59%',
+      transform: `translateX(-50%) ${isScrolled.value ? 'scale(0.98)' : 'scale(1)'}`,
+      width: isScrolled.value ? (xs.value ? '96%' : '90%') : (xs.value ? '98%' : '95%'),
+      maxWidth: '1200px',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      backdropFilter: 'blur(12px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+      border: '2px solid rgba(120,120,160,0.10)',
+      boxShadow: '0 2px 16px 0 rgba(120, 120, 160, 0.10)',
+  marginBottom: '48px', // Increase space below navbar
+    }
+  })
+
   // Scroll handler for floating effect and auto-close drawer
   const handleScroll = () => {
     const currentScrollY = window.scrollY
@@ -90,20 +109,14 @@
   <div v-if="config?.showNavbar && navbarConfig">
     <!-- Floating Navbar using v-app-bar with Vuetify positioning -->
   <v-app-bar
-  :elevation="0"
-  :height="xs ? 56 : 64"
-  rounded="pill"
-  position="fixed"
-  class="mx-auto px-2 glass-nav"
-  :style="{
-    top: isScrolled ? (xs ? '4px' : '10px') : (xs ? '8px' : '20px'),
-    left: '59%',
-    transform: `translateX(-50%) ${isScrolled ? 'scale(0.98)' : 'scale(1)'}`,
-    width: isScrolled ? (xs ? '96%' : '90%') : (xs ? '98%' : '95%'),
-    maxWidth: '1200px',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-  }"
->
+    :elevation="7"
+    :height="xs ? 56 : 64"
+    rounded="pill"
+    position="fixed"
+    class="mx-auto px-2"
+    :color="navbarColor"
+    :style="navbarStyle"
+  >
       <!-- Logo Section with Badge -->
       <template #prepend>
         <div class="d-flex align-center">
@@ -374,9 +387,4 @@
 </template>
 
 <style scoped>
-.glass-nav {
-  background: rgba(255, 255, 255, 0.15); /* semi-transparent white */
-  backdrop-filter: blur(12px) saturate(180%); /* frosted glass effect */
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
-}
 </style>
