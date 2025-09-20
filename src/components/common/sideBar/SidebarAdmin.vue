@@ -22,6 +22,11 @@ const showSidebar = computed(() => !smAndDown.value)
 
 // Menu items structure - flat structure without parent grouping
 const menuItems = ref([
+   {
+    title: 'Dashboard',
+    icon: 'mdi-view-dashboard-outline',
+    route: '/dashboard'
+  },
   {
     title: 'Users',
     icon: 'mdi-account-multiple',
