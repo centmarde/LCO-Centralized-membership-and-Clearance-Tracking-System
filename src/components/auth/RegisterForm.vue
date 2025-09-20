@@ -39,6 +39,26 @@
 
         <v-row no-gutters>
           <v-col cols="12">
+            <v-select
+              v-model="registerForm.role"
+              label="Role"
+              variant="outlined"
+              density="comfortable"
+              :items="roleOptions"
+              :rules="[requiredValidator]"
+              :error-messages="errors.role"
+              prepend-inner-icon="mdi-account-group"
+              class="mb-4"
+              hint="Select your role in the organization"
+              persistent-hint
+              :loading="rolesStore.loading"
+              :disabled="rolesStore.loading"
+            />
+          </v-col>
+        </v-row>
+
+        <v-row no-gutters>
+          <v-col cols="12">
             <v-text-field
               v-model="registerForm.password"
               label="Password"
@@ -119,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import {
   requiredValidator,
   emailValidator,
@@ -129,16 +149,18 @@ import {
   getErrorMessage,
 } from "@/lib/validator";
 import { useAuthUserStore } from "@/stores/authUser";
+import { useUserRolesStore } from "@/stores/roles";
 import { useToast } from "vue-toastification";
 import { useRouter } from "vue-router";
 
 // Emits
-defineEmits<{
+const emit = defineEmits<{
   "switch-to-login": [];
 }>();
 
 // Composables
 const authStore = useAuthUserStore();
+const rolesStore = useUserRolesStore();
 const toast = useToast();
 const router = useRouter();
 
@@ -156,14 +178,24 @@ const isLoading = computed(() => loading.value || authStore.loading);
 const registerForm = reactive({
   username: "",
   email: "",
+  role: undefined as number | undefined,
   password: "",
   confirmPassword: "",
+});
+
+// Computed properties for role options
+const roleOptions = computed(() => {
+  return rolesStore.roles.map(role => ({
+    title: role.title || 'Untitled Role',
+    value: role.id
+  }));
 });
 
 // Error handling
 const errors = reactive({
   username: "",
   email: "",
+  role: "",
   password: "",
   confirmPassword: "",
 });
@@ -172,6 +204,7 @@ const errors = reactive({
 const clearErrors = () => {
   errors.username = "";
   errors.email = "";
+  errors.role = "";
   errors.password = "";
   errors.confirmPassword = "";
 };
@@ -179,6 +212,11 @@ const clearErrors = () => {
 const handleRegister = async () => {
   if (!formValid.value) {
     toast.error("Please fill in all required fields correctly");
+    return;
+  }
+
+  if (!registerForm.role) {
+    toast.error("Please select a role");
     return;
   }
 
@@ -194,7 +232,8 @@ const handleRegister = async () => {
     const result = await authStore.registerUser(
       registerForm.email,
       registerForm.password,
-      registerForm.username
+      registerForm.username,
+      registerForm.role
     );
 
     if (result.error) {
@@ -208,14 +247,16 @@ const handleRegister = async () => {
         errors.username = errorMessage;
       } else if (errorMessage.toLowerCase().includes("password")) {
         errors.password = errorMessage;
+      } else if (errorMessage.toLowerCase().includes("role")) {
+        errors.role = errorMessage;
       }
     } else {
       toast.success(
         "Account created successfully! Please check your email to verify your account."
       );
       resetForm();
-      // Emit to switch to login form
-      // $emit('switch-to-login')
+      // Switch back to login form after successful registration
+      emit('switch-to-login');
     }
   } catch (error: any) {
     toast.error(error.message || "An unexpected error occurred");
@@ -228,11 +269,17 @@ const handleRegister = async () => {
 const resetForm = () => {
   registerForm.username = "";
   registerForm.email = "";
+  registerForm.role = undefined;
   registerForm.password = "";
   registerForm.confirmPassword = "";
   clearErrors();
   formRef.value?.resetValidation();
 };
+
+// Load roles on component mount
+onMounted(async () => {
+  await rolesStore.fetchRoles();
+});
 
 // Expose methods for parent component
 defineExpose({

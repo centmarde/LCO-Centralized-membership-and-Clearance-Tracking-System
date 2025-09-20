@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useRouter, useRoute } from 'vue-router'
-import { doLogout } from '@/lib/supabase'
+import { useAuthUserStore } from '@/stores/authUser'
 
 // Vuetify display composable for responsive design
 const { smAndDown } = useDisplay()
@@ -10,6 +10,9 @@ const { smAndDown } = useDisplay()
 // Vue Router
 const router = useRouter()
 const route = useRoute()
+
+// Auth store
+const authStore = useAuthUserStore()
 
 // Reactive state for sidebar
 const isExpanded = ref(true)
@@ -48,7 +51,7 @@ const isRouteActive = (routePath: string) => {
 
 // Logout function
 const handleLogout = async () => {
-  await doLogout()
+  await authStore.signOut()
 }
 </script>
 

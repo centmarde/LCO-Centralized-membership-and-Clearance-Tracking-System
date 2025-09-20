@@ -1,5 +1,5 @@
 import { ref, computed, onMounted } from 'vue'
-import { useUserRolesStore, type Role, type CreateRoleData, type UpdateRoleData } from '@/stores/userRoles'
+import { useUserRolesStore, type Role, type CreateRoleData, type UpdateRoleData } from '@/stores/roles'
 
 export function useAdminUserRoles() {
   const userRolesStore = useUserRolesStore()
@@ -36,6 +36,7 @@ export function useAdminUserRoles() {
     formData.value = { title: '' }
     isDialogOpen.value = true
   }
+
 
   const openEditDialog = (role: Role) => {
     isEditing.value = true
