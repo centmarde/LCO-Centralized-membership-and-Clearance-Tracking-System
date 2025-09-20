@@ -22,6 +22,7 @@ declare module 'vue-router/auto-routes' {
     '/admin/AdminUserPagesView': RouteRecordInfo<'/admin/AdminUserPagesView', '/admin/AdminUserPagesView', Record<never, never>, Record<never, never>>,
     '/admin/AdminUserRolesView': RouteRecordInfo<'/admin/AdminUserRolesView', '/admin/AdminUserRolesView', Record<never, never>, Record<never, never>>,
     '/admin/DashboardView': RouteRecordInfo<'/admin/DashboardView', '/admin/DashboardView', Record<never, never>, Record<never, never>>,
+    '/admin/dialogs/AdminUserRolesDialog': RouteRecordInfo<'/admin/dialogs/AdminUserRolesDialog', '/admin/dialogs/AdminUserRolesDialog', Record<never, never>, Record<never, never>>,
     '/admin/EventsView': RouteRecordInfo<'/admin/EventsView', '/admin/EventsView', Record<never, never>, Record<never, never>>,
     '/admin/UserManagementView': RouteRecordInfo<'/admin/UserManagementView', '/admin/UserManagementView', Record<never, never>, Record<never, never>>,
     '/Auth': RouteRecordInfo<'/Auth', '/Auth', Record<never, never>, Record<never, never>>,

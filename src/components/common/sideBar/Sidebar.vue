@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthUserStore } from '@/stores/authUser'
+import { navigationConfig } from '@/utils/navigation'
 
 // Vuetify display composable for responsive design
 const { smAndDown } = useDisplay()
@@ -40,46 +41,15 @@ watch(
 // Hide sidebar on small screens
 const showSidebar = computed(() => !smAndDown.value)
 
-// Admin controls group
-const adminControlsGroup = ref({
-  title: 'Admin Controls',
-  icon: 'mdi-cog',
-  children: [
-    {
-      title: 'Dashboard',
-      icon: 'mdi-view-dashboard-outline',
-      route: '/dashboard'
-    },
-    {
-      title: 'User Management',
-      icon: 'mdi-account-multiple',
-      route: '/admin/user-management'
-    },
-    {
-      title: 'User Roles',
-      icon: 'mdi-account-key',
-      route: '/admin/user-roles'
-    },
-    {
-      title: 'Events',
-      icon: 'mdi-calendar-multiple',
-      route: '/admin/events'
-    }
-  ]
-})
+// Get navigation groups from shared config
+const navigationGroups = computed(() => navigationConfig)
 
-// My Organization group
-const myOrganizationGroup = ref({
-  title: 'My Organization',
-  icon: 'mdi-office-building',
-  children: [
-    {
-      title: 'Members',
-      icon: 'mdi-account-group',
-      route: '/organization/members'
-    }
-  ]
-})
+// Helper function to get group expansion state
+const getGroupExpansion = (groupTitle: string) => {
+  if (groupTitle === 'Admin Controls') return adminGroupExpanded
+  if (groupTitle === 'My Organization') return organizationGroupExpanded
+  return ref(true)
+}
 
 // Methods
 const navigateTo = (route: string) => {
@@ -125,58 +95,29 @@ const handleLogout = async () => {
 
     <!-- Navigation Menu -->
     <v-list nav class="pa-2">
-      <!-- My Organization Group -->
-      <div class="organization-controls-section">
+      <!-- Dynamic Navigation Groups -->
+      <div
+        v-for="group in navigationGroups"
+        :key="group.title"
+        class="navigation-group-section"
+      >
         <!-- Group Header -->
         <v-list-item
-          @click="organizationGroupExpanded = !organizationGroupExpanded"
+          @click="getGroupExpansion(group.title).value = !getGroupExpansion(group.title).value"
           class="mb-1 rounded-lg group-header"
-          :prepend-icon="myOrganizationGroup.icon"
-          :append-icon="organizationGroupExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          :prepend-icon="group.icon"
+          :append-icon="getGroupExpansion(group.title).value ? 'mdi-chevron-up' : 'mdi-chevron-down'"
         >
           <v-list-item-title class="font-weight-medium">
-            {{ myOrganizationGroup.title }}
+            {{ group.title }}
           </v-list-item-title>
         </v-list-item>
 
         <!-- Collapsible Children -->
         <v-expand-transition>
-          <div v-show="organizationGroupExpanded" class="organization-children">
+          <div v-show="getGroupExpansion(group.title).value" class="group-children">
             <v-list-item
-              v-for="child in myOrganizationGroup.children"
-              :key="child.title"
-              @click="navigateTo(child.route)"
-              class="mb-1 rounded-lg ml-4"
-              :class="{ 'v-list-item--active': isRouteActive(child.route) }"
-              :prepend-icon="child.icon"
-            >
-              <v-list-item-title class="font-weight-medium">
-                {{ child.title }}
-              </v-list-item-title>
-            </v-list-item>
-          </div>
-        </v-expand-transition>
-      </div>
-
-      <!-- Admin Controls Group -->
-      <div class="admin-controls-section">
-        <!-- Group Header -->
-        <v-list-item
-          @click="adminGroupExpanded = !adminGroupExpanded"
-          class="mb-1 rounded-lg group-header"
-          :prepend-icon="adminControlsGroup.icon"
-          :append-icon="adminGroupExpanded ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-        >
-          <v-list-item-title class="font-weight-medium">
-            {{ adminControlsGroup.title }}
-          </v-list-item-title>
-        </v-list-item>
-
-        <!-- Collapsible Children -->
-        <v-expand-transition>
-          <div v-show="adminGroupExpanded" class="admin-children">
-            <v-list-item
-              v-for="child in adminControlsGroup.children"
+              v-for="child in group.children"
               :key="child.title"
               @click="navigateTo(child.route)"
               class="mb-1 rounded-lg ml-4"
@@ -260,11 +201,9 @@ const handleLogout = async () => {
   background-color: rgba(var(--v-theme-error), 0.1) !important;
 }
 
-.admin-controls-section {
-  margin-bottom: 8px;
-}
-
-.organization-controls-section {
+.admin-controls-section,
+.organization-controls-section,
+.navigation-group-section {
   margin-bottom: 8px;
 }
 
@@ -277,13 +216,9 @@ const handleLogout = async () => {
   background-color: rgba(var(--v-theme-primary), 0.08) !important;
 }
 
-.admin-children {
-  background-color: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
-  padding: 4px 0;
-}
-
-.organization-children {
+.admin-children,
+.organization-children,
+.group-children {
   background-color: rgba(0, 0, 0, 0.02);
   border-radius: 8px;
   padding: 4px 0;
