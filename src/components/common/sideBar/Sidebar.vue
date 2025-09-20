@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthUserStore } from '@/stores/authUser'
+import { navigationConfig } from '@/utils/navigation'
 
 // Vuetify display composable for responsive design
 const { smAndDown } = useDisplay()
@@ -17,32 +18,38 @@ const authStore = useAuthUserStore()
 // Reactive state for sidebar
 const isExpanded = ref(true)
 
+// Control admin group expansion - make it persistent
+const adminGroupExpanded = ref(true)
+
+// Control organization group expansion - make it persistent
+const organizationGroupExpanded = ref(true)
+
+// Watch for route changes and keep admin group expanded if we're on an admin route
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath.startsWith('/admin') || newPath === '/dashboard') {
+      adminGroupExpanded.value = true
+    }
+    if (newPath.startsWith('/organization')) {
+      organizationGroupExpanded.value = true
+    }
+  },
+  { immediate: true }
+)
+
 // Hide sidebar on small screens
 const showSidebar = computed(() => !smAndDown.value)
 
-// Menu items structure - flat structure without parent grouping
-const menuItems = ref([
-   {
-    title: 'Dashboard',
-    icon: 'mdi-view-dashboard-outline',
-    route: '/dashboard'
-  },
-  {
-    title: 'Users',
-    icon: 'mdi-account-multiple',
-    route: '/admin/users'
-  },
-  {
-    title: 'User Roles',
-    icon: 'mdi-account-key',
-    route: '/admin/user-roles'
-  },
-  {
-    title: 'Events',
-    icon: 'mdi-file-document-multiple',
-    route: '/admin/events'
-  }
-])
+// Get navigation groups from shared config
+const navigationGroups = computed(() => navigationConfig)
+
+// Helper function to get group expansion state
+const getGroupExpansion = (groupTitle: string) => {
+  if (groupTitle === 'Admin Controls') return adminGroupExpanded
+  if (groupTitle === 'My Organization') return organizationGroupExpanded
+  return ref(true)
+}
 
 // Methods
 const navigateTo = (route: string) => {
@@ -88,19 +95,42 @@ const handleLogout = async () => {
 
     <!-- Navigation Menu -->
     <v-list nav class="pa-2">
-      <!-- Individual Menu Items -->
-      <v-list-item
-        v-for="item in menuItems"
-        :key="item.title"
-        @click="navigateTo(item.route)"
-        class="mb-1 rounded-lg"
-        :class="{ 'v-list-item--active': isRouteActive(item.route) }"
-        :prepend-icon="item.icon"
+      <!-- Dynamic Navigation Groups -->
+      <div
+        v-for="group in navigationGroups"
+        :key="group.title"
+        class="navigation-group-section"
       >
-        <v-list-item-title class="font-weight-medium">
-          {{ item.title }}
-        </v-list-item-title>
-      </v-list-item>
+        <!-- Group Header -->
+        <v-list-item
+          @click="getGroupExpansion(group.title).value = !getGroupExpansion(group.title).value"
+          class="mb-1 rounded-lg group-header"
+          :prepend-icon="group.icon"
+          :append-icon="getGroupExpansion(group.title).value ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+        >
+          <v-list-item-title class="font-weight-medium">
+            {{ group.title }}
+          </v-list-item-title>
+        </v-list-item>
+
+        <!-- Collapsible Children -->
+        <v-expand-transition>
+          <div v-show="getGroupExpansion(group.title).value" class="group-children">
+            <v-list-item
+              v-for="child in group.children"
+              :key="child.title"
+              @click="navigateTo(child.route)"
+              class="mb-1 rounded-lg ml-4"
+              :class="{ 'v-list-item--active': isRouteActive(child.route) }"
+              :prepend-icon="child.icon"
+            >
+              <v-list-item-title class="font-weight-medium">
+                {{ child.title }}
+              </v-list-item-title>
+            </v-list-item>
+          </div>
+        </v-expand-transition>
+      </div>
     </v-list>
 
     <!-- Sidebar Footer -->
@@ -169,5 +199,28 @@ const handleLogout = async () => {
 
 .logout-button:hover {
   background-color: rgba(var(--v-theme-error), 0.1) !important;
+}
+
+.admin-controls-section,
+.organization-controls-section,
+.navigation-group-section {
+  margin-bottom: 8px;
+}
+
+.group-header {
+  background-color: rgba(var(--v-theme-surface), 0.5) !important;
+  font-weight: 500;
+}
+
+.group-header:hover {
+  background-color: rgba(var(--v-theme-primary), 0.08) !important;
+}
+
+.admin-children,
+.organization-children,
+.group-children {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  padding: 4px 0;
 }
 </style>

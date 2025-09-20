@@ -27,7 +27,8 @@ declare module 'vue' {
     RegisterForm: typeof import('./components/auth/RegisterForm.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Sidebar1: typeof import('./components/common/sideBar/SidebarAdmin.vue')['default']
+    Sidebar: typeof import('./components/common/sideBar/Sidebar.vue')['default']
+    Sidebar1: typeof import('./co./components/common/sideBar/Sidebar.vuedefault']
     SidebarAdmin: typeof import('./components/common/sideBar/SidebarAdmin.vue')['default']
   }
 }

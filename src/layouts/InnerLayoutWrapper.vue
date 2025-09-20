@@ -46,7 +46,7 @@
 <script lang="ts" setup>
 import { onMounted } from 'vue'
 import { useLandingController } from '@/controller/landingController'
-import Sidebar1 from '@/components/common/sideBar/SidebarAdmin.vue'
+import Sidebar1 from '@/components/common/sideBar/Sidebar.vue'
 
 const { data, fetchLandingData } = useLandingController()
 

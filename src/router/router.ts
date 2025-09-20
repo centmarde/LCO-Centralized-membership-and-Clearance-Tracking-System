@@ -5,9 +5,13 @@ import Hero from '@/pages/index.vue';
 import Auth from '@/pages/Auth.vue';
 import Dashboard from '@/pages/admin/DashboardView.vue';
 import NotFound from '@/pages/NotFound.vue';
+import ForbiddenView from '@/pages/ForbiddenView.vue';
 import AdminUserRolesView from '@/pages/admin/AdminUserRolesView.vue';
 import AdminUserPagesView from '@/pages/admin/AdminUserPagesView.vue';
+import EventsView from '@/pages/admin/EventsView.vue';
+import UserManagementView from '@/pages/admin/UserManagementView.vue';
 
+import MembersView from '@/pages/myOrganization/MembersView.vue';
 /**
  * Route definitions for the application
  */
@@ -21,7 +25,7 @@ const routes = setupLayouts([
     component: Auth,
   },
   {
-    path: '/dashboard',
+    path: '/admin/dashboard',
     component: Dashboard,
     meta: { requiresAuth: true }
   },
@@ -34,6 +38,25 @@ const routes = setupLayouts([
     path: '/admin/user-pages',
     component: AdminUserPagesView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/events',
+    component: EventsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/user-management',
+    component: UserManagementView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/organization/members',
+    component: MembersView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/forbidden',
+    component: ForbiddenView,
   },
   {
     path: '/:pathMatch(.*)*',

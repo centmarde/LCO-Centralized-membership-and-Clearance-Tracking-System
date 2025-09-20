@@ -51,15 +51,13 @@ export const authGuard = async (to: RouteLocationNormalized, from: RouteLocation
             console.log('Is page allowed:', isPageAllowed);
 
             if (!isPageAllowed) {
-              toast.error("You don't have permission to access this page.");
               console.log('Access denied for path:', to.path, 'Role ID:', userRoleId);
-              return next("/dashboard"); // Redirect to dashboard if access denied
+              return next("/forbidden"); // Redirect to forbidden page if access denied
             }
           } else {
-            // No pages defined for this role - redirect to dashboard
-            toast.warning("No pages are configured for your role. Redirecting to dashboard.");
+            // No pages defined for this role - redirect to forbidden page
             console.log('No pages configured for role ID:', userRoleId);
-            return next("/dashboard");
+            return next("/forbidden");
           }
         } else {
           console.log('No role ID found in user metadata');
