@@ -26,6 +26,7 @@ declare module 'vue-router/auto-routes' {
     '/admin/UserManagementView': RouteRecordInfo<'/admin/UserManagementView', '/admin/UserManagementView', Record<never, never>, Record<never, never>>,
     '/Auth': RouteRecordInfo<'/Auth', '/Auth', Record<never, never>, Record<never, never>>,
     '/ForbiddenView': RouteRecordInfo<'/ForbiddenView', '/ForbiddenView', Record<never, never>, Record<never, never>>,
+    '/myOrganization/MembersView': RouteRecordInfo<'/myOrganization/MembersView', '/myOrganization/MembersView', Record<never, never>, Record<never, never>>,
     '/NotFound': RouteRecordInfo<'/NotFound', '/NotFound', Record<never, never>, Record<never, never>>,
   }
 }
