@@ -144,17 +144,9 @@
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
   }"
 >
-      <!-- Logo Section with Badge -->
+      <!-- Logo Section-->
       <template #prepend>
         <div class="d-flex align-center">
-          <v-badge
-            content="V3"
-            color="success"
-            dot
-            offset-x="8"
-            offset-y="8"
-            class="me-2"
-          >
             <!-- Logo Image with Icon Fallback -->
             <template v-if="navbarConfig.logo?.src">
               <v-img
@@ -192,7 +184,6 @@
                 />
               </v-avatar>
             </template>
-          </v-badge>
 
           <!-- Hide title on mobile to minimize navbar -->
           <div class="d-flex flex-column ms-2 d-none d-md-flex">
