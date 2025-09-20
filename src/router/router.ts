@@ -5,6 +5,7 @@ import Hero from '@/pages/index.vue';
 import Auth from '@/pages/Auth.vue';
 import Dashboard from '@/pages/admin/DashboardView.vue';
 import NotFound from '@/pages/NotFound.vue';
+import ForbiddenView from '@/pages/ForbiddenView.vue';
 import AdminUserRolesView from '@/pages/admin/AdminUserRolesView.vue';
 import AdminUserPagesView from '@/pages/admin/AdminUserPagesView.vue';
 
@@ -34,6 +35,10 @@ const routes = setupLayouts([
     path: '/admin/user-pages',
     component: AdminUserPagesView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/forbidden',
+    component: ForbiddenView,
   },
   {
     path: '/:pathMatch(.*)*',

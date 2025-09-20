@@ -60,3 +60,18 @@ export async function fetchStudentStats() {
     blocked,
   }
 }
+
+// Update student status
+export async function updateStudentStatus(studentId: string, newStatus: string) {
+  const { error } = await supabase
+    .from('students')
+    .update({ status: newStatus })
+    .eq('id', studentId)
+
+  if (error) {
+    console.error('Failed to update student status:', error)
+    throw error
+  }
+
+  return { success: true }
+}

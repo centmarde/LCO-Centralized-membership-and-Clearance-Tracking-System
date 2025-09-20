@@ -166,7 +166,7 @@ onMounted(async () => {
           <v-card-text class="text-center">
             <v-divider class="mb-4" />
 
-            <div class="text-body-2 text-medium-emphasis mb-2">
+            <div class="text-body-2 mb-2" style="color: #000;">
               Or continue with
             </div>
 
@@ -198,7 +198,7 @@ onMounted(async () => {
               </v-col>
             </v-row>
 
-                <div class="text-caption text-medium-emphasis mt-2">
+            <div class="text-caption mt-2" style="color: #000 !important;">
               Social login coming soon
             </div>
           </v-card-text>
