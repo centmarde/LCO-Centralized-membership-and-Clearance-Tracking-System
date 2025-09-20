@@ -33,9 +33,9 @@ const menuItems = ref([
     route: '/admin/user-roles'
   },
   {
-    title: 'User Pages',
+    title: 'Events',
     icon: 'mdi-file-document-multiple',
-    route: '/admin/user-pages'
+    route: '/admin/events'
   }
 ])
 
