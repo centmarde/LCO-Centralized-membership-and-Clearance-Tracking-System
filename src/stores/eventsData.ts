@@ -1,6 +1,9 @@
 import { supabase } from '@/lib/supabase'
 import type { Event, StudentEvent } from './studentsData'
 
+// Re-export types for external use
+export type { Event, StudentEvent } from './studentsData'
+
 // Event specific types
 export type CreateEventRequest = {
   title: string
