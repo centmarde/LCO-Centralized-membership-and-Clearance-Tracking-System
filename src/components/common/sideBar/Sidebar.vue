@@ -28,7 +28,7 @@ const organizationGroupExpanded = ref(true)
 watch(
   () => route.path,
   (newPath) => {
-    if (newPath.startsWith('/admin') || newPath === '/dashboard') {
+    if (newPath.startsWith('/admin') || newPath === '/admin/dashboard') {
       adminGroupExpanded.value = true
     }
     if (newPath.startsWith('/organization')) {
