@@ -5,8 +5,17 @@ import { useToast } from 'vue-toastification';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Service role client for admin operations
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 export async function doLogout() {
     // Confirm logout
