@@ -2,7 +2,7 @@ import { computed, ref } from "vue";
 import type { Ref } from "vue";
 import { defineStore } from "pinia";
 import { useRouter } from "vue-router";
-import { supabase } from "@/lib/supabase";
+import { supabase, supabaseAdmin } from "@/lib/supabase";
 interface UserData {
   id?: string;
   email?: string;
@@ -72,7 +72,7 @@ export const useAuthUserStore = defineStore("authUser", () => {
               full_name: full_name || username,
               student_number: student_number || null,
               email,
-              status: "Active",
+              status: "blocked",
               organization_id: organization_id || null
             }
           ]);
@@ -188,7 +188,7 @@ export const useAuthUserStore = defineStore("authUser", () => {
         return { error: new Error("No user ID provided") };
       }
 
-      const { data: { user }, error } = await supabase.auth.admin.getUserById(targetUserId);
+      const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(targetUserId);
 
       if (error) {
         return { error };
@@ -251,6 +251,54 @@ export const useAuthUserStore = defineStore("authUser", () => {
     }
   }
 
+  // Get all users (admin function)
+  async function getAllUsers() {
+    loading.value = true;
+    try {
+      // First, get all users from Supabase Auth using service role
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+
+      if (authError) {
+        return { error: authError };
+      }
+
+      // Get all students from the students table to merge additional info
+      const { data: studentsData, error: studentsError } = await supabaseAdmin
+        .from("students")
+        .select("*");
+
+      if (studentsError) {
+        console.warn("Could not fetch students data:", studentsError);
+      }
+
+      // Merge auth users with student data
+      const allUsers = authData.users.map(user => {
+        const studentInfo = studentsData?.find(student => student.user_id === user.id);
+
+        return {
+          id: user.id,
+          email: user.email,
+          created_at: user.created_at,
+          user_metadata: user.user_metadata,
+          app_metadata: user.app_metadata,
+          // Additional student info if available
+          full_name: studentInfo?.full_name || user.user_metadata?.full_name || user.email,
+          student_number: studentInfo?.student_number || null,
+          status: studentInfo?.status || 'blocked',
+          organization_id: studentInfo?.organization_id || null,
+          role_id: user.user_metadata?.role || studentInfo?.role_id || null
+        };
+      });
+
+      return { users: allUsers };
+    } catch (error) {
+      console.error("Error fetching all users:", error);
+      return { error };
+    } finally {
+      loading.value = false;
+    }
+  }
+
   // Call initialize on store creation
   initializeAuth();
 
@@ -274,6 +322,7 @@ export const useAuthUserStore = defineStore("authUser", () => {
     initializeAuth,
     getUser,
     getCurrentUser,
+    getAllUsers,
   };
 });
 

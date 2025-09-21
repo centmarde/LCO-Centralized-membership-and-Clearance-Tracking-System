@@ -20,11 +20,11 @@ export const authGuard = async (to: RouteLocationNormalized, from: RouteLocation
   // If user is authenticated and trying to access public/auth pages, redirect to dashboard
   if (isLoggedIn && publicPages.includes(to.path)) {
     /*  toast.info("You are already logged in. Redirecting to home."); */
-    return next("/dashboard");
+    return next("/admin/dashboard");
   }
 
   // Check role-based page access for authenticated users on protected routes
-  if (isLoggedIn && to.meta.requiresAuth && to.path !== "/dashboard") {
+  if (isLoggedIn && to.meta.requiresAuth && to.path !== "/admin/dashboard") {
     try {
       const authStore = useAuthUserStore();
       const pagesStore = useUserPagesStore();
