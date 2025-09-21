@@ -297,3 +297,45 @@ export async function fetchEventsWithRegistrationCounts(): Promise<(Event & { re
     registration_count: event.student_events?.[0]?.count || 0
   })) || []
 }
+
+// Get events with registration counts and status counts
+export async function fetchEventsWithStats(): Promise<(Event & {
+  registration_count: number
+  status_counts: {
+    blocked: number
+    cleared: number
+    pending: number
+  }
+})[]> {
+  const { data, error } = await supabase
+    .from('events')
+    .select(`
+      *,
+      student_events(status)
+    `)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching events with stats:', error)
+    throw error
+  }
+
+  return data?.map(event => {
+    const statusCounts = { blocked: 0, cleared: 0, pending: 0 }
+    const registrationCount = event.student_events?.length || 0
+
+    // Count statuses
+    event.student_events?.forEach((se: any) => {
+      const status = se.status?.toLowerCase()
+      if (status === 'blocked') statusCounts.blocked++
+      else if (status === 'cleared') statusCounts.cleared++
+      else if (status === 'pending' || !status) statusCounts.pending++
+    })
+
+    return {
+      ...event,
+      registration_count: registrationCount,
+      status_counts: statusCounts
+    }
+  }) || []
+}

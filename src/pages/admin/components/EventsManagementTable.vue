@@ -68,6 +68,36 @@
         </v-chip>
       </template>
 
+      <!-- Status Counts Column -->
+      <template v-slot:item.status_counts="{ item }">
+        <div class="d-flex flex-column ga-1">
+          <v-chip
+            v-if="(item.status_counts?.blocked || 0) > 0"
+            color="error"
+            size="x-small"
+          >
+            {{ item.status_counts?.blocked || 0 }} blocked
+          </v-chip>
+          <v-chip
+            v-if="(item.status_counts?.cleared || 0) > 0"
+            color="green"
+            size="x-small"
+          >
+            {{ item.status_counts?.cleared || 0 }} cleared
+          </v-chip>
+          <v-chip
+            v-if="(item.status_counts?.pending || 0) > 0"
+            color="warning"
+            size="x-small"
+          >
+            {{ item.status_counts?.pending || 0 }} pending
+          </v-chip>
+          <span v-if="!item.status_counts || ((item.status_counts.blocked || 0) === 0 && (item.status_counts.cleared || 0) === 0 && (item.status_counts.pending || 0) === 0)" class="text-grey text-caption">
+            No status data
+          </span>
+        </div>
+      </template>
+
       <!-- Actions Column -->
       <template v-slot:item.actions="{ item }">
         <v-btn
@@ -202,15 +232,21 @@ import {
   updateEvent,
   deleteEvent as deleteEventApi,
   fetchEventsWithRegistrationCounts,
+  fetchEventsWithStats,
   type Event,
   type CreateEventRequest
-} from '@/stores/eventsData'
-
-// Reactive state
+} from '@/stores/eventsData'// Reactive state
 const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
-const events = ref<(Event & { registration_count?: number })[]>([])
+const events = ref<(Event & {
+  registration_count?: number
+  status_counts?: {
+    blocked: number
+    cleared: number
+    pending: number
+  }
+})[]>([])
 const search = ref('')
 const dialog = ref(false)
 const deleteDialog = ref(false)
@@ -244,6 +280,7 @@ const headers = [
   { title: 'Date', value: 'date', sortable: true },
   { title: 'Created', value: 'created_at', sortable: true },
   { title: 'Registrations', value: 'registration_count', sortable: true },
+  { title: 'Status', value: 'status_counts', sortable: false, width: '200px' },
   { title: 'Actions', value: 'actions', sortable: false, width: '120px' }
 ]
 
@@ -261,9 +298,9 @@ const dialogTitle = computed(() => {
 const loadEvents = async () => {
   loading.value = true
   try {
-    const data = await fetchEventsWithRegistrationCounts()
+    const data = await fetchEventsWithStats()
     events.value = data
-    console.log('Events loaded:', data)
+    console.log('Events loaded with stats:', data)
   } catch (error) {
     console.error('Error loading events:', error)
     showSnackbar('Error loading events', 'error')
