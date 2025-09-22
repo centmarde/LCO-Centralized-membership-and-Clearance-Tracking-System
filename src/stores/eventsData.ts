@@ -1,3 +1,13 @@
+import { useAuthUserStore } from '@/stores/authUser';
+import { fetchBlockedEventsByUserId } from '@/stores/studentsData';
+
+// Loads blocked events for the currently authenticated user
+export async function loadBlockedEvents(): Promise<{ name: string; date: string; status: string }[]> {
+  const authUserStore = useAuthUserStore();
+  const userId = authUserStore.userData?.id;
+  if (!userId) throw new Error('User not authenticated');
+  return await fetchBlockedEventsByUserId(userId);
+}
 import { supabase } from '@/lib/supabase'
 import type { Event, StudentEvent } from './studentsData'
 

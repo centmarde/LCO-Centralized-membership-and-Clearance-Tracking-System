@@ -3,21 +3,18 @@
 import { ref, onMounted } from 'vue';
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
 import { useAuthUserStore } from '@/stores/authUser';
-import { fetchBlockedEventsByUserId } from '@/stores/studentsData';
+import { loadBlockedEvents } from '@/stores/eventsData';
 import { supabase } from '@/lib/supabase';
 
 const blockedEvents = ref<{ name: string; date: string; status: string }[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-const loadBlockedEvents = async () => {
+const loadBlockedEventsUI = async () => {
   loading.value = true;
   error.value = null;
   try {
-    const authUserStore = useAuthUserStore();
-    const userId = authUserStore.userData?.id;
-    if (!userId) throw new Error('User not authenticated');
-    blockedEvents.value = await fetchBlockedEventsByUserId(userId);
+    blockedEvents.value = await loadBlockedEvents();
   } catch (err: any) {
     error.value = err.message || 'Failed to load clearance data.';
     blockedEvents.value = [];
@@ -27,7 +24,7 @@ const loadBlockedEvents = async () => {
 };
 
 onMounted(() => {
-  loadBlockedEvents();
+  loadBlockedEventsUI();
 });
 </script>
 
@@ -46,7 +43,7 @@ onMounted(() => {
                     <p class="text-body-2 mb-0 opacity-90">Blocked Events & Clearance Status</p>
                   </div>
                 </div>
-                <v-btn color="white" variant="elevated" size="default" @click="loadBlockedEvents" :loading="loading" prepend-icon="mdi-refresh">
+                <v-btn color="white" variant="elevated" size="default" @click="loadBlockedEventsUI" :loading="loading" prepend-icon="mdi-refresh">
                   Refresh
                 </v-btn>
               </v-card-title>
