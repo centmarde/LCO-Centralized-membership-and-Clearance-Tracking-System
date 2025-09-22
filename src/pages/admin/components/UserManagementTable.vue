@@ -1,3 +1,153 @@
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
+import { useAuthUserStore } from '@/stores/authUser'
+import { useToast } from 'vue-toastification'
+
+interface User {
+  id: string
+  email?: string
+  created_at?: string
+  user_metadata?: Record<string, any>
+  app_metadata?: Record<string, any>
+  full_name?: string
+  student_number?: string
+  status?: string
+  organization_id?: number
+  role_id?: number
+}
+
+// Composables
+const authStore = useAuthUserStore()
+const toast = useToast()
+
+// Reactive data
+const users = ref<User[]>([])
+const loading = ref(false)
+const search = ref('')
+const userDialog = ref(false)
+const selectedUser = ref<User | null>(null)
+
+// Computed properties for status counts
+const clearedCount = computed(() =>
+  users.value.filter(user => user.status?.toLowerCase() === 'cleared').length
+)
+
+const blockedCount = computed(() =>
+  users.value.filter(user => user.status?.toLowerCase() === 'blocked').length
+)
+
+// Table headers
+const headers = [
+  { title: 'Full Name', key: 'full_name', sortable: true },
+  { title: 'Email', key: 'email', sortable: true },
+  { title: 'Student Number', key: 'student_number', sortable: true },
+  { title: 'Role', key: 'role_id', sortable: true },
+  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Created At', key: 'created_at', sortable: true },
+  { title: 'Actions', key: 'actions', sortable: false },
+]
+
+// Methods
+const fetchUsers = async () => {
+  loading.value = true
+  try {
+    const result = await authStore.getAllUsers()
+
+    if (result.error) {
+      toast.error('Failed to fetch users: ' + result.error)
+      console.error('Error fetching users:', result.error)
+      return
+    }
+
+    if (result.users) {
+      users.value = result.users
+     // toast.success(`Loaded ${result.users.length} users`)
+    }
+  } catch (error) {
+    toast.error('An unexpected error occurred while fetching users')
+    console.error('Unexpected error:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const getRoleColor = (roleId: number | null | undefined): string => {
+  switch (roleId) {
+    case 1: return 'red' // Admin
+    case 2: return 'blue' // Student
+    case 3: return 'green' // Teacher/Faculty
+    default: return 'grey'
+  }
+}
+
+const getRoleText = (roleId: number | null | undefined): string => {
+  switch (roleId) {
+    case 1: return 'Admin'
+    case 2: return 'Student'
+    case 3: return 'Faculty'
+    default: return 'Unknown'
+  }
+}
+
+const getStatusColor = (status: string | undefined): string => {
+  switch (status?.toLowerCase()) {
+    case 'cleared': return 'green'
+    case 'blocked': return 'red'
+    case 'active': return 'blue'
+    case 'inactive': return 'orange'
+    case 'suspended': return 'red'
+    default: return 'red' // Default to blocked color
+  }
+}
+
+const getStatusText = (status: string | undefined): string => {
+  const statusLower = status?.toLowerCase() || 'blocked'
+  switch (statusLower) {
+    case 'cleared': return `Cleared (${clearedCount.value})`
+    case 'blocked': return `Blocked (${blockedCount.value})`
+    case 'active': return 'Active'
+    case 'inactive': return 'Inactive'
+    case 'suspended': return 'Suspended'
+    default: return `Blocked (${blockedCount.value})`
+  }
+}
+
+const formatDate = (dateString: string | undefined): string => {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const viewUser = (user: User) => {
+  selectedUser.value = user
+  userDialog.value = true
+}
+
+const editUser = (user: User) => {
+  // TODO: Implement user editing functionality
+  toast.info('Edit functionality coming soon...')
+  console.log('Edit user:', user)
+}
+
+const deleteUser = (user: User) => {
+  // TODO: Implement user deletion functionality
+  if (confirm(`Are you sure you want to delete user ${user.full_name || user.email}?`)) {
+    toast.info('Delete functionality coming soon...')
+    console.log('Delete user:', user)
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  fetchUsers()
+})
+</script>
+
 <template>
   <v-card class="mt-5">
     <v-card-title class="d-flex justify-space-between align-center">
@@ -192,156 +342,6 @@
     </v-dialog>
   </v-card>
 </template>
-
-<script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useAuthUserStore } from '@/stores/authUser'
-import { useToast } from 'vue-toastification'
-
-interface User {
-  id: string
-  email?: string
-  created_at?: string
-  user_metadata?: Record<string, any>
-  app_metadata?: Record<string, any>
-  full_name?: string
-  student_number?: string
-  status?: string
-  organization_id?: number
-  role_id?: number
-}
-
-// Composables
-const authStore = useAuthUserStore()
-const toast = useToast()
-
-// Reactive data
-const users = ref<User[]>([])
-const loading = ref(false)
-const search = ref('')
-const userDialog = ref(false)
-const selectedUser = ref<User | null>(null)
-
-// Computed properties for status counts
-const clearedCount = computed(() =>
-  users.value.filter(user => user.status?.toLowerCase() === 'cleared').length
-)
-
-const blockedCount = computed(() =>
-  users.value.filter(user => user.status?.toLowerCase() === 'blocked').length
-)
-
-// Table headers
-const headers = [
-  { title: 'Full Name', key: 'full_name', sortable: true },
-  { title: 'Email', key: 'email', sortable: true },
-  { title: 'Student Number', key: 'student_number', sortable: true },
-  { title: 'Role', key: 'role_id', sortable: true },
-  { title: 'Status', key: 'status', sortable: true },
-  { title: 'Created At', key: 'created_at', sortable: true },
-  { title: 'Actions', key: 'actions', sortable: false },
-]
-
-// Methods
-const fetchUsers = async () => {
-  loading.value = true
-  try {
-    const result = await authStore.getAllUsers()
-
-    if (result.error) {
-      toast.error('Failed to fetch users: ' + result.error)
-      console.error('Error fetching users:', result.error)
-      return
-    }
-
-    if (result.users) {
-      users.value = result.users
-      toast.success(`Loaded ${result.users.length} users`)
-    }
-  } catch (error) {
-    toast.error('An unexpected error occurred while fetching users')
-    console.error('Unexpected error:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-const getRoleColor = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'red' // Admin
-    case 2: return 'blue' // Student
-    case 3: return 'green' // Teacher/Faculty
-    default: return 'grey'
-  }
-}
-
-const getRoleText = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'Admin'
-    case 2: return 'Student'
-    case 3: return 'Faculty'
-    default: return 'Unknown'
-  }
-}
-
-const getStatusColor = (status: string | undefined): string => {
-  switch (status?.toLowerCase()) {
-    case 'cleared': return 'green'
-    case 'blocked': return 'red'
-    case 'active': return 'blue'
-    case 'inactive': return 'orange'
-    case 'suspended': return 'red'
-    default: return 'red' // Default to blocked color
-  }
-}
-
-const getStatusText = (status: string | undefined): string => {
-  const statusLower = status?.toLowerCase() || 'blocked'
-  switch (statusLower) {
-    case 'cleared': return `Cleared (${clearedCount.value})`
-    case 'blocked': return `Blocked (${blockedCount.value})`
-    case 'active': return 'Active'
-    case 'inactive': return 'Inactive'
-    case 'suspended': return 'Suspended'
-    default: return `Blocked (${blockedCount.value})`
-  }
-}
-
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-const viewUser = (user: User) => {
-  selectedUser.value = user
-  userDialog.value = true
-}
-
-const editUser = (user: User) => {
-  // TODO: Implement user editing functionality
-  toast.info('Edit functionality coming soon...')
-  console.log('Edit user:', user)
-}
-
-const deleteUser = (user: User) => {
-  // TODO: Implement user deletion functionality
-  if (confirm(`Are you sure you want to delete user ${user.full_name || user.email}?`)) {
-    toast.info('Delete functionality coming soon...')
-    console.log('Delete user:', user)
-  }
-}
-
-// Lifecycle
-onMounted(() => {
-  fetchUsers()
-})
-</script>
 
 <style scoped>
 .v-card-title h3 {

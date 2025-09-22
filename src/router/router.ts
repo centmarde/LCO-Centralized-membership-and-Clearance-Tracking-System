@@ -12,6 +12,9 @@ import EventsView from '@/pages/admin/EventsView.vue';
 import UserManagementView from '@/pages/admin/UserManagementView.vue';
 
 import MembersView from '@/pages/myOrganization/MembersView.vue';
+
+import MyClearanceView from '@/pages/myAccounts/MyClearanceView.vue';
+import MyEventsView from '@/pages/myAccounts/MyEventsView.vue';
 /**
  * Route definitions for the application
  */
@@ -23,6 +26,16 @@ const routes = setupLayouts([
   {
     path: '/auth',
     component: Auth,
+  },
+  {
+    path: '/account/profile',
+    component: MyClearanceView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/account/events',
+    component: MyEventsView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/admin/dashboard',

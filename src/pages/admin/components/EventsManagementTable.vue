@@ -1,12 +1,5 @@
 <template>
   <v-card class="pa-4">
-    <v-card-title class="d-flex justify-space-between align-center">
-      <span class="text-h5">Events Management</span>
-      <v-btn color="primary" @click="openCreateDialog">
-        <v-icon left>mdi-plus</v-icon>
-        Add Event
-      </v-btn>
-    </v-card-title>
 
     <!-- Loading State -->
     <v-progress-linear
@@ -37,6 +30,14 @@
             class="mr-4"
           ></v-text-field>
           <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            @click="openCreateDialog"
+            class="mr-2"
+          >
+            <v-icon left>mdi-plus</v-icon>
+            Add Event
+          </v-btn>
           <v-btn
             color="primary"
             variant="outlined"

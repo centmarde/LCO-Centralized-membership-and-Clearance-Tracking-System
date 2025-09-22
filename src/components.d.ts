@@ -8,9 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    AppFooter: typeof import('./components/AppFooter.vue')['default']
     BottomBar: typeof import('./components/common/BottomBar.vue')['default']
-    HelloWorld: typeof import('./components/HelloWorld.vue')['default']
     InnerNavBar: typeof import('./components/common/InnerNavBar.vue')['default']
     InsideNavbar1: typeof import('./components/common/insideNavbar/InsideNavbar1.vue')['default']
     InsideNavbar2: typeof import('./components/common/insideNavbar/InsideNavbar2.vue')['default']
@@ -19,7 +17,6 @@ declare module 'vue' {
     LoginForm: typeof import('./components/auth/LoginForm.vue')['default']
     OuterFooter: typeof import('./components/common/outerFooters/OuterFooter.vue')['default']
     OuterFooter2: typeof import('./components/common/outerFooters/OuterFooter2.vue')['default']
-    OuterNavbar: typeof import('./components/common/outerNavbars/OuterNavbar1.vue')['default']
     OuterNavbar1: typeof import('./components/common/outerNavbars/OuterNavbar1.vue')['default']
     OuterNavbar2: typeof import('./components/common/outerNavbars/OuterNavbar2.vue')['default']
     OuterNavbar3: typeof import('./components/common/outerNavbars/OuterNavbar3.vue')['default']
@@ -28,7 +25,5 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Sidebar: typeof import('./components/common/sideBar/Sidebar.vue')['default']
-    Sidebar1: typeof import('./co./components/common/sideBar/Sidebar.vuedefault']
-    SidebarAdmin: typeof import('./components/common/sideBar/SidebarAdmin.vue')['default']
   }
 }

@@ -15,6 +15,22 @@ export interface NavigationGroup {
 
 export const navigationConfig: NavigationGroup[] = [
   {
+    title: 'My Account',
+    icon: 'mdi-account',
+    children: [
+      {
+        title: 'My Clearance',
+        icon: 'mdi-account-edit',
+        route: '/account/profile'
+      },
+      {
+        title: 'My Events',
+        icon: 'mdi-calendar',
+        route: '/account/events'
+      }
+    ]
+  },
+  {
     title: 'My Organization',
     icon: 'mdi-office-building',
     permission: 'organization.access',
@@ -51,13 +67,14 @@ export const navigationConfig: NavigationGroup[] = [
         permission: 'admin.roles.manage'
       },
       {
-        title: 'Events',
+        title: 'Event Management',
         icon: 'mdi-calendar-multiple',
         route: '/admin/events',
         permission: 'admin.events.manage'
       }
     ]
-  }
+  },
+
 ]
 
 // Helper function to get all permissions from navigation config
@@ -85,7 +102,7 @@ export const getNavigationWithSelection = (selectedPermissions: string[] = []): 
     ...group,
     children: group.children.map(item => ({
       ...item,
-      selected: item.permission ? selectedPermissions.includes(item.permission) : false
+      selected: selectedPermissions.includes(item.permission || item.route)
     }))
   }))
 }
