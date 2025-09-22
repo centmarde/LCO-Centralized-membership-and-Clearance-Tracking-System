@@ -1,12 +1,24 @@
 <script setup lang="ts">
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
 import EventsManagementTable from './components/EventsManagementTable.vue';
+import DashboardCardWidget from './components/DashboardCardWidget.vue';
+import CalendarEvents from './components/CalendarEvents.vue';
 </script>
 
 <template>
   <InnerLayoutWrapper>
     <template #content>
       <v-container fluid class="pa-6">
+        <v-row>
+          <v-col cols="12">
+           <DashboardCardWidget />
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12">
+            <CalendarEvents />
+          </v-col>
+        </v-row>
         <v-row>
           <v-col cols="12" class="mt-5">
             <EventsManagementTable />

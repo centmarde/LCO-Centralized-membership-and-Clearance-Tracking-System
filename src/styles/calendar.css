@@ -1,0 +1,204 @@
+/* Calendar Events Component Styles */
+
+.calendar-container .calendar-wrapper {
+  min-height: 600px;
+  height: 100%;
+}
+
+.calendar-container .calendar-large {
+  min-height: 600px;
+  height: 100%;
+}
+
+/* Deep selectors for vue-simple-calendar */
+.calendar-container .cv-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  height: 100%;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.calendar-container .cv-weeks {
+  flex: 1;
+  min-height: 0; /* Allow flexbox shrinking */
+}
+
+.calendar-container .cv-week {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+}
+
+.calendar-container .cv-day {
+  flex: 1;
+  min-height: 120px;
+  padding: 8px;
+}
+
+.calendar-container .cv-header-day {
+  background-color: rgb(var(--v-theme-surface-variant));
+  color: rgb(var(--v-theme-on-surface-variant));
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 1rem;
+  padding: 1rem 0;
+  min-height: 50px;
+}
+
+.calendar-container .cv-day {
+  border-color: rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.calendar-container .cv-day.today {
+  background-color: rgba(var(--v-theme-primary), 0.08);
+}
+
+.calendar-container .cv-day-number {
+  font-weight: 600;
+  color: rgb(var(--v-theme-on-surface));
+  font-size: 1.1rem;
+  padding: 4px 8px;
+}
+
+.calendar-container .cv-day.outsideOfMonth .cv-day-number {
+  color: rgb(var(--v-theme-on-surface-variant));
+  opacity: 0.6;
+}
+
+.calendar-container .calendar-event {
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 1px 0;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.calendar-container .calendar-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+}
+
+.calendar-container .event-title {
+  font-size: 0.75rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-container .event-time {
+  font-size: 0.625rem;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+/* Enhanced theme integration for calendar items */
+.calendar-container .cv-item {
+  background-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 1px 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid rgb(var(--v-theme-primary-darken-1));
+  box-shadow: 0 1px 3px rgba(var(--v-theme-on-surface), 0.12);
+}
+
+.calendar-container .cv-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(var(--v-theme-on-surface), 0.16);
+}
+
+.calendar-container .cv-item.past-event {
+  background-color: rgba(var(--v-theme-on-surface), 0.6);
+  color: rgb(var(--v-theme-surface));
+  border-left-color: rgba(var(--v-theme-on-surface), 0.8);
+  opacity: 0.7;
+}
+
+.calendar-container .cv-item.today-event {
+  background-color: rgb(var(--v-theme-secondary));
+  color: rgb(var(--v-theme-on-secondary));
+  border-left-color: rgb(var(--v-theme-secondary-darken-1));
+  animation: pulse 2s infinite;
+}
+
+.calendar-container .cv-item.future-event {
+  background-color: rgb(var(--v-theme-accent));
+  color: rgb(var(--v-theme-on-primary));
+  border-left-color: rgb(var(--v-theme-accent-darken-1));
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .calendar-container .calendar-wrapper {
+    min-height: 400px;
+  }
+
+  .calendar-container .cv-day {
+    min-height: 80px;
+    padding: 4px;
+  }
+
+  .calendar-container .cv-header-day {
+    font-size: 0.875rem;
+    padding: 0.75rem 0;
+    min-height: 40px;
+  }
+
+  .calendar-container .cv-day-number {
+    font-size: 1rem;
+  }
+
+  .calendar-container .cv-item {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .calendar-container .calendar-wrapper {
+    padding: 1rem;
+    min-height: 350px;
+  }
+
+  .calendar-container .cv-header-day {
+    font-size: 0.75rem;
+    padding: 0.5rem 0;
+  }
+
+  .calendar-container .cv-day {
+    min-height: 60px;
+  }
+
+  .calendar-container .cv-day-number {
+    font-size: 0.9rem;
+  }
+}
+
+/* Events summary styling */
+.calendar-container .events-summary .v-chip {
+  margin: 2px;
+  backdrop-filter: blur(10px);
+}
+
+.calendar-container .events-summary .v-chip--variant-outlined {
+  border-color: rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.05);
+}
+
+/* Pulse animation for today's events */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.8; }
+  100% { opacity: 1; }
+}

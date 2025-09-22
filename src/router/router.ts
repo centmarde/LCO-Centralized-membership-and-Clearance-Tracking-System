@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 import Hero from '@/pages/index.vue';
 import Auth from '@/pages/Auth.vue';
-import Dashboard from '@/pages/admin/DashboardView.vue';
+import Dashboard from '@/pages/HomeView.vue';
 import NotFound from '@/pages/NotFound.vue';
 import ForbiddenView from '@/pages/ForbiddenView.vue';
 import AdminUserRolesView from '@/pages/admin/AdminUserRolesView.vue';
@@ -38,7 +38,7 @@ const routes = setupLayouts([
     meta: { requiresAuth: true }
   },
   {
-    path: '/admin/dashboard',
+    path: '/account/home',
     component: Dashboard,
     meta: { requiresAuth: true }
   },

@@ -18,6 +18,12 @@ export const navigationConfig: NavigationGroup[] = [
     title: 'My Account',
     icon: 'mdi-account',
     children: [
+       {
+        title: 'Home',
+        icon: 'mdi-home',
+        route: '/account/home',
+        permission: 'admin.dashboard.view'
+      },
       {
         title: 'My Clearance',
         icon: 'mdi-account-edit',
@@ -48,12 +54,7 @@ export const navigationConfig: NavigationGroup[] = [
     icon: 'mdi-cog',
     permission: 'admin.access',
     children: [
-      {
-        title: 'Dashboard',
-        icon: 'mdi-view-dashboard-outline',
-        route: '/admin/dashboard',
-        permission: 'admin.dashboard.view'
-      },
+
       {
         title: 'User Management',
         icon: 'mdi-account-multiple',

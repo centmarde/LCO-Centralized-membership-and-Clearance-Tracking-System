@@ -101,14 +101,14 @@ const getStatusColor = (status: string | undefined): string => {
 }
 
 const getStatusText = (status: string | undefined): string => {
-  const statusLower = status?.toLowerCase() || 'blocked'
+  const statusLower = status?.toLowerCase()
   switch (statusLower) {
-    case 'cleared': return `Cleared (${clearedCount.value})`
-    case 'blocked': return `Blocked (${blockedCount.value})`
+    case 'cleared': return 'Cleared'
+    case 'blocked': return 'Blocked'
     case 'active': return 'Active'
     case 'inactive': return 'Inactive'
     case 'suspended': return 'Suspended'
-    default: return `Blocked (${blockedCount.value})`
+    default: return status || 'Unknown'
   }
 }
 
