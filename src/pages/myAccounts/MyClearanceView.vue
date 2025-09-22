@@ -3,7 +3,7 @@
 import { ref, onMounted } from 'vue';
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
 import { useAuthUserStore } from '@/stores/authUser';
-import { fetchStudents } from '@/stores/studentsData';
+import { fetchBlockedEventsByUserId } from '@/stores/studentsData';
 import { supabase } from '@/lib/supabase';
 
 const blockedEvents = ref<{ name: string; date: string; status: string }[]>([]);
@@ -17,30 +17,7 @@ const loadBlockedEvents = async () => {
     const authUserStore = useAuthUserStore();
     const userId = authUserStore.userData?.id;
     if (!userId) throw new Error('User not authenticated');
-    const students = await fetchStudents();
-    const student = students.find(s => s.user_id === userId);
-    if (!student) throw new Error('No student record found for current user');
-    const studentId = student.id;
-
-    // Directly query student_events and join events
-    const { data, error: seError } = await supabase
-      .from('student_events')
-      .select('status, events(title, date)')
-      .eq('student_id', studentId)
-      .ilike('status', 'blocked');
-
-    if (seError) throw seError;
-
-    blockedEvents.value = (data || [])
-      .filter(ev => ev.status)
-      .map(ev => {
-        const eventObj = Array.isArray(ev.events) ? ev.events[0] : ev.events;
-        return {
-          name: eventObj?.title || 'Event not found',
-          date: eventObj?.date || '-',
-          status: ev.status
-        };
-      });
+    blockedEvents.value = await fetchBlockedEventsByUserId(userId);
   } catch (err: any) {
     error.value = err.message || 'Failed to load clearance data.';
     blockedEvents.value = [];
