@@ -21,6 +21,7 @@ declare module 'vue-router/auto-routes' {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
     '/admin/AdminUserPagesView': RouteRecordInfo<'/admin/AdminUserPagesView', '/admin/AdminUserPagesView', Record<never, never>, Record<never, never>>,
     '/admin/AdminUserRolesView': RouteRecordInfo<'/admin/AdminUserRolesView', '/admin/AdminUserRolesView', Record<never, never>, Record<never, never>>,
+    '/admin/components/CalendarEvents': RouteRecordInfo<'/admin/components/CalendarEvents', '/admin/components/CalendarEvents', Record<never, never>, Record<never, never>>,
     '/admin/components/DashboardCardWidget': RouteRecordInfo<'/admin/components/DashboardCardWidget', '/admin/components/DashboardCardWidget', Record<never, never>, Record<never, never>>,
     '/admin/components/EventsManagementTable': RouteRecordInfo<'/admin/components/EventsManagementTable', '/admin/components/EventsManagementTable', Record<never, never>, Record<never, never>>,
     '/admin/components/UserManagementTable': RouteRecordInfo<'/admin/components/UserManagementTable', '/admin/components/UserManagementTable', Record<never, never>, Record<never, never>>,
