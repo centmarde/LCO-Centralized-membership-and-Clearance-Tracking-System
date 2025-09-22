@@ -391,8 +391,8 @@
               <v-list density="compact">
                 <v-list-item
                   prepend-icon="mdi-account"
-                  title="Profile"
-                  subtitle="View your profile"
+                  title="My Account"
+                  subtitle="View your account"
                 />
                <!--  <v-list-item
                   prepend-icon="mdi-cog"

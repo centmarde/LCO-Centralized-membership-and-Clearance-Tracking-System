@@ -86,20 +86,31 @@ export function useAdminUserRoles() {
     // If role operation was successful and we have a role ID, save permissions
     if (success && targetRoleId) {
       try {
-        // Convert permissions to routes using navigation config
+        // Convert permissions/routes to routes using navigation config
         const permissionToRouteMap: Record<string, string> = {}
+        const routeSet = new Set<string>()
 
-        // Build mapping from navigation config
+        // Build mapping from navigation config and collect routes
         navigationConfig.forEach(group => {
           group.children.forEach(item => {
-            if (item.permission && item.route) {
-              permissionToRouteMap[item.permission] = item.route
+            if (item.route) {
+              routeSet.add(item.route)
+              if (item.permission) {
+                permissionToRouteMap[item.permission] = item.route
+              }
             }
           })
         })
 
         const routes = selectedPermissions
-          .map(permission => permissionToRouteMap[permission])
+          .map(permission => {
+            // If it's already a route, return it directly
+            if (routeSet.has(permission)) {
+              return permission
+            }
+            // Otherwise, map permission to route
+            return permissionToRouteMap[permission]
+          })
           .filter(Boolean) as string[]
 
         // For editing, first delete existing role pages (silent mode)
