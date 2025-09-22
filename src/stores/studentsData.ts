@@ -1,3 +1,29 @@
+// Fetch blocked events for a specific student (by user_id)
+export async function fetchBlockedEventsByUserId(userId: string): Promise<{ name: string; date: string; status: string }[]> {
+  const students = await fetchStudents();
+  const student = students.find(s => s.user_id === userId);
+  if (!student) throw new Error('No student record found for current user');
+  const studentId = student.id;
+
+  const { data, error: seError } = await supabase
+    .from('student_events')
+    .select('status, events(title, date)')
+    .eq('student_id', studentId)
+    .ilike('status', 'blocked');
+
+  if (seError) throw seError;
+
+  return (data || [])
+    .filter(ev => ev.status)
+    .map(ev => {
+      const eventObj = Array.isArray(ev.events) ? ev.events[0] : ev.events;
+      return {
+        name: eventObj?.title || 'Event not found',
+        date: eventObj?.date || '-',
+        status: ev.status
+      };
+    });
+}
 import { supabase } from '@/lib/supabase'
 
 // Student types
@@ -7,6 +33,7 @@ export type StudentStatus = {
 
 export type StudentBase = {
   id: string
+  user_id: string
   full_name: string
   student_number: string
   email: string
@@ -60,6 +87,7 @@ export async function fetchStudents(): Promise<StudentWithOrganization[]> {
     .from('students')
     .select(`
       id,
+      user_id,
       full_name,
       student_number,
       email,
@@ -89,10 +117,11 @@ export async function fetchStudents(): Promise<StudentWithOrganization[]> {
         orgTitle = (student.organizations as any).title
       }
     }
-    return {
-      ...student,
-      organization: orgTitle,
-    }
+      return {
+        ...student,
+        user_id: student.user_id,
+        organization: orgTitle,
+      }
   })
 }
 
@@ -139,6 +168,7 @@ export async function fetchStudentsWithEvents(): Promise<StudentWithEvents[]> {
     .from('students')
     .select(`
       id,
+      user_id,
       full_name,
       student_number,
       email,
@@ -183,11 +213,12 @@ export async function fetchStudentsWithEvents(): Promise<StudentWithEvents[]> {
       status: se.status
     })) || []
 
-    return {
-      ...student,
-      organization: orgTitle,
-      student_events,
-    }
+      return {
+        ...student,
+        user_id: student.user_id,
+        organization: orgTitle,
+        student_events,
+      }
   })
 }
 
