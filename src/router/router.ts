@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 
 import Hero from '@/pages/index.vue';
 import Auth from '@/pages/Auth.vue';
-import Dashboard from '@/pages/admin/DashboardView.vue';
+import Dashboard from '@/pages/HomeView.vue';
 import NotFound from '@/pages/NotFound.vue';
 import ForbiddenView from '@/pages/ForbiddenView.vue';
 import AdminUserRolesView from '@/pages/admin/AdminUserRolesView.vue';
@@ -12,6 +12,9 @@ import EventsView from '@/pages/admin/EventsView.vue';
 import UserManagementView from '@/pages/admin/UserManagementView.vue';
 
 import MembersView from '@/pages/myOrganization/MembersView.vue';
+
+import MyClearanceView from '@/pages/myAccounts/MyClearanceView.vue';
+import MyEventsView from '@/pages/myAccounts/MyEventsView.vue';
 /**
  * Route definitions for the application
  */
@@ -25,7 +28,17 @@ const routes = setupLayouts([
     component: Auth,
   },
   {
-    path: '/admin/dashboard',
+    path: '/account/profile',
+    component: MyClearanceView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/account/events',
+    component: MyEventsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/account/home',
     component: Dashboard,
     meta: { requiresAuth: true }
   },

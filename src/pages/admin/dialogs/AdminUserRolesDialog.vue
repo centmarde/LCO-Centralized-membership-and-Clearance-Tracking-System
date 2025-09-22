@@ -46,6 +46,7 @@ const localFormData = computed({
 // Page control data - dynamically generated from navigation config
 const adminGroupExpanded = ref(true)
 const organizationGroupExpanded = ref(true)
+const myAccountGroupExpanded = ref(true)
 
 // Selected permissions for the role - initialized from current role permissions when editing
 const selectedPermissions = ref<string[]>([])
@@ -88,6 +89,7 @@ const navigationGroups = computed(() =>
 const getGroupExpansion = (groupTitle: string) => {
   if (groupTitle === 'Admin Controls') return adminGroupExpanded
   if (groupTitle === 'My Organization') return organizationGroupExpanded
+  if (groupTitle === 'My Account') return myAccountGroupExpanded
   return ref(true)
 }
 
@@ -193,11 +195,11 @@ const handleDelete = () => {
                       <template #prepend>
                         <v-checkbox
                           :model-value="child.selected"
-                          @update:model-value="(value: boolean | null) => togglePermission(child.permission || '', !!value)"
+                          @update:model-value="(value: boolean | null) => togglePermission(child.permission || child.route, !!value)"
                           hide-details
                           density="compact"
                           class="mr-2"
-                          :disabled="!child.permission"
+                          :disabled="!(child.permission || child.route)"
                         />
                         <v-icon :icon="child.icon" size="20" class="mr-2" />
                       </template>

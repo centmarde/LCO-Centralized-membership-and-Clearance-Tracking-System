@@ -5,6 +5,8 @@
   import { useDisplay } from 'vuetify'
   import { useTheme } from '@/composables/useTheme'
   import { useAuthUserStore } from '@/stores/authUser'
+  import { navigationConfig, type NavigationGroup, type NavigationItem } from '@/utils/navigation'
+  import { getEmailInitials, getUserDisplayName } from '@/utils/helpers'
 
   interface Props {
     config?: UIConfig | null
@@ -27,6 +29,34 @@
 
   const navbarConfig = computed(() => props.config?.navbar)
 
+  // Navigation handling
+  const currentRoute = computed(() => router.currentRoute.value.path)
+
+  // Get all navigation items flattened from groups for easier handling
+  const allNavigationItems = computed(() => {
+    const items: NavigationItem[] = []
+    navigationConfig.forEach(group => {
+      group.children.forEach(item => {
+        items.push(item)
+      })
+    })
+    return items
+  })
+
+  // Filter navigation based on user permissions (for now, show all - you can implement permission checking)
+  const filteredNavigation = computed(() => {
+    // For now, return all navigation items
+    // You can implement permission checking here based on authStore.userData
+    return navigationConfig
+  })
+
+  // Check if current route matches any navigation item
+  const isNavigationRoute = computed(() => {
+    return allNavigationItems.value.some(item =>
+      currentRoute.value.startsWith(item.route) || currentRoute.value === item.route
+    )
+  })
+
   // Theme toggle computed properties
   const currentTheme = computed(() => getCurrentTheme())
   const themeIcon = computed(() => {
@@ -35,6 +65,10 @@
   const themeTooltip = computed(() => {
     return `Switch to ${currentTheme.value === 'dark' ? 'light' : 'dark'} theme`
   })
+
+  // User avatar computed properties
+  const userInitials = computed(() => getEmailInitials(authStore.userEmail))
+  const userDisplayName = computed(() => getUserDisplayName(authStore.userData))
 
   // Dynamic navbar color to match dashboard cards in both light and dark mode
   // Vuetify v3: 'surface' is the default card color in both themes
@@ -124,6 +158,14 @@
     handleToggleTheme()
   }
 
+  function navigateToRoute(route: string) {
+    router.push(route)
+    // Close mobile drawer if open
+    if (drawer.value) {
+      drawer.value = false
+    }
+  }
+
   async function handleLogout () {
     try {
       await authStore.signOut()
@@ -137,7 +179,6 @@
   <div v-if="config?.showNavbar && navbarConfig">
     <!-- Floating Navbar using v-app-bar with Vuetify positioning -->
   <v-app-bar
-
   :elevation="0"
   :height="xs ? 56 : 64"
   rounded="pill"
@@ -147,8 +188,8 @@
     top: isScrolled ? (xs ? '4px' : '10px') : (xs ? '8px' : '20px'),
     left: lgAndUp ? '59%' : '50%',
     transform: `translateX(-50%) ${isScrolled ? 'scale(0.98)' : 'scale(1)'}`,
-    width: isScrolled ? (xs ? '96%' : '90%') : (xs ? '98%' : '95%'),
-    maxWidth: '1200px',
+    width: isScrolled ? (xs ? '96%' : (isNavigationRoute && mdAndUp ? '95%' : '90%')) : (xs ? '98%' : (isNavigationRoute && mdAndUp ? '98%' : '95%')),
+    maxWidth: isNavigationRoute && mdAndUp ? '1400px' : '1200px',
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
   }"
 >
@@ -215,6 +256,45 @@
         </div>
       </template>
 
+      <!-- Navigation Tabs (Desktop and Tablet) -->
+      <div v-if="mdAndUp && isNavigationRoute" class="d-flex align-center mx-4">
+        <v-menu
+          v-for="group in filteredNavigation"
+          :key="group.title"
+          location="bottom"
+          offset="8"
+        >
+          <template #activator="{ props: menuProps }">
+            <v-btn
+              v-bind="menuProps"
+              variant="text"
+              rounded="pill"
+              size="small"
+              :prepend-icon="group.icon"
+              class="mx-1"
+              :color="group.children.some(item => currentRoute.startsWith(item.route)) ? 'primary' : undefined"
+            >
+              <span class="text-caption font-weight-medium">{{ group.title }}</span>
+            </v-btn>
+          </template>
+
+          <v-card width="220" class="mt-2">
+            <v-list density="compact">
+              <v-list-item
+                v-for="item in group.children"
+                :key="item.route"
+                :prepend-icon="item.icon"
+                :title="item.title"
+                :active="currentRoute.startsWith(item.route)"
+                rounded="xl"
+                class="ma-1"
+                @click="navigateToRoute(item.route)"
+              />
+            </v-list>
+          </v-card>
+        </v-menu>
+      </div>
+
       <v-spacer />
 
       <!-- Desktop Actions -->
@@ -253,20 +333,84 @@
             </v-card>
           </v-menu>
 
+          <!-- User Avatar Menu -->
+          <v-menu location="bottom">
+            <template #activator="{ props: menuProps }">
+              <v-btn
+                v-bind="menuProps"
+                variant="text"
+                size="large"
+                class="ml-2"
+              >
+                <v-avatar
+                  size="32"
+                  color="primary"
+                  class="me-2"
+                >
+                  <span class="text-caption font-weight-bold">
+                    {{ userInitials }}
+                  </span>
+                </v-avatar>
+                <div class="d-flex flex-column align-start text-left">
+                  <span class="text-body-2 font-weight-medium">
+                    {{ userDisplayName }}
+                  </span>
+                  <span class="text-caption text-medium-emphasis">
+                    {{ authStore.userEmail }}
+                  </span>
+                </div>
+                <v-icon icon="mdi-chevron-down" class="ml-2" />
+              </v-btn>
+            </template>
 
-          <!-- Logout Button -->
-          <v-btn
-            :loading="authStore.loading"
-            variant="outlined"
-            rounded="pill"
-            size="large"
-            color="error"
-            prepend-icon="mdi-logout"
-            class="ml-2"
-            @click="handleLogout"
-          >
-            <span>Logout</span>
-          </v-btn>
+            <v-card width="280" class="mt-2">
+              <v-card-text class="pa-3">
+                <div class="d-flex align-center">
+                  <v-avatar
+                    size="40"
+                    color="primary"
+                    class="me-3"
+                  >
+                    <span class="text-subtitle-1 font-weight-bold">
+                      {{ userInitials }}
+                    </span>
+                  </v-avatar>
+                  <div class="d-flex flex-column">
+                    <span class="text-subtitle-2 font-weight-medium">
+                      {{ userDisplayName }}
+                    </span>
+                    <span class="text-caption text-medium-emphasis">
+                      {{ authStore.userEmail }}
+                    </span>
+                  </div>
+                </div>
+              </v-card-text>
+
+              <v-divider />
+
+              <v-list density="compact">
+                <v-list-item
+                  prepend-icon="mdi-account"
+                  title="My Account"
+                  subtitle="View your account"
+                />
+               <!--  <v-list-item
+                  prepend-icon="mdi-cog"
+                  title="Settings"
+                  subtitle="Account preferences"
+                /> -->
+                <v-divider class="my-1" />
+                <v-list-item
+                  prepend-icon="mdi-logout"
+                  title="Logout"
+                  subtitle="Sign out of your account"
+                  color="error"
+                  :loading="authStore.loading"
+                  @click="handleLogout"
+                />
+              </v-list>
+            </v-card>
+          </v-menu>
         </div>
 
         <!-- Mobile Menu Button -->
@@ -369,6 +513,35 @@
 
       <!-- Navigation List -->
       <v-list nav class="py-0">
+        <!-- Navigation Groups -->
+        <template v-for="group in filteredNavigation" :key="group.title">
+          <v-list-group :value="group.title">
+            <template #activator="{ props: activatorProps }">
+              <v-list-item
+                v-bind="activatorProps"
+                :prepend-icon="group.icon"
+                :title="group.title"
+                rounded="xl"
+                class="ma-2"
+                :color="group.children.some(item => currentRoute.startsWith(item.route)) ? 'primary' : undefined"
+              />
+            </template>
+
+            <v-list-item
+              v-for="item in group.children"
+              :key="item.route"
+              :prepend-icon="item.icon"
+              :title="item.title"
+              :active="currentRoute.startsWith(item.route)"
+              rounded="xl"
+              class="ma-2 ms-4"
+              @click="navigateToRoute(item.route)"
+            />
+          </v-list-group>
+        </template>
+
+        <v-divider class="my-2" />
+
         <!-- Theme Toggle -->
         <v-list-group value="Theme">
           <template #activator="{ props: activatorProps }">
@@ -400,15 +573,56 @@
           />
         </v-list-group>
 
-        <!-- Logout -->
-        <v-list-item
-          prepend-icon="mdi-logout"
-          title="Logout"
-          rounded="xl"
-          class="ma-2"
-          color="error"
-          @click="handleLogout"
-        />
+        <!-- User Profile Section -->
+        <v-list-group value="Profile">
+          <template #activator="{ props: activatorProps }">
+            <v-list-item
+              v-bind="activatorProps"
+              rounded="xl"
+              class="ma-2"
+            >
+              <template #prepend>
+                <v-avatar
+                  size="32"
+                  color="primary"
+                  class="me-3"
+                >
+                  <span class="text-caption font-weight-bold">
+                    {{ userInitials }}
+                  </span>
+                </v-avatar>
+              </template>
+              <v-list-item-title class="text-subtitle-2">
+                {{ userDisplayName }}
+              </v-list-item-title>
+              <v-list-item-subtitle class="text-caption">
+                {{ authStore.userEmail }}
+              </v-list-item-subtitle>
+            </v-list-item>
+          </template>
+
+          <v-list-item
+            prepend-icon="mdi-account"
+            title="Profile"
+            rounded="xl"
+            class="ma-2 ms-4"
+          />
+          <v-list-item
+            prepend-icon="mdi-cog"
+            title="Settings"
+            rounded="xl"
+            class="ma-2 ms-4"
+          />
+          <v-list-item
+            prepend-icon="mdi-logout"
+            title="Logout"
+            rounded="xl"
+            class="ma-2 ms-4"
+            color="error"
+            :loading="authStore.loading"
+            @click="handleLogout"
+          />
+        </v-list-group>
       </v-list>
 
       <!-- Empty append section -->

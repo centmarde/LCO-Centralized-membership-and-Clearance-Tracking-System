@@ -48,8 +48,8 @@ export function useRoleEditFetchDialog() {
   }
 
   /**
-   * Convert routes back to permissions
-   * This maps the stored routes to their corresponding permission keys using navigation config
+   * Convert routes back to permissions/routes for selection
+   * This maps the stored routes to their corresponding permission keys OR routes using navigation config
    */
   const routesToPermissions = (routes: string[]): string[] => {
     const routeToPermissionMap: Record<string, string> = {}
@@ -57,8 +57,9 @@ export function useRoleEditFetchDialog() {
     // Build mapping from navigation config
     navigationConfig.forEach(group => {
       group.children.forEach(item => {
-        if (item.route && item.permission) {
-          routeToPermissionMap[item.route] = item.permission
+        if (item.route) {
+          // Use permission if available, otherwise use the route itself
+          routeToPermissionMap[item.route] = item.permission || item.route
         }
       })
     })
@@ -69,23 +70,34 @@ export function useRoleEditFetchDialog() {
   }
 
   /**
-   * Convert permissions to routes for saving
-   * This maps permission keys to their corresponding routes using navigation config
+   * Convert permissions/routes to routes for saving
+   * This maps permission keys to their corresponding routes OR uses routes directly using navigation config
    */
   const permissionsToRoutes = (permissions: string[]): string[] => {
     const permissionToRouteMap: Record<string, string> = {}
+    const routeSet = new Set<string>()
 
-    // Build mapping from navigation config
+    // Build mapping from navigation config and collect routes
     navigationConfig.forEach(group => {
       group.children.forEach(item => {
-        if (item.permission && item.route) {
-          permissionToRouteMap[item.permission] = item.route
+        if (item.route) {
+          routeSet.add(item.route)
+          if (item.permission) {
+            permissionToRouteMap[item.permission] = item.route
+          }
         }
       })
     })
 
     return permissions
-      .map(permission => permissionToRouteMap[permission])
+      .map(permission => {
+        // If it's already a route, return it directly
+        if (routeSet.has(permission)) {
+          return permission
+        }
+        // Otherwise, map permission to route
+        return permissionToRouteMap[permission]
+      })
       .filter(Boolean) as string[]
   }
 

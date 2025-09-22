@@ -24,15 +24,21 @@ const adminGroupExpanded = ref(true)
 // Control organization group expansion - make it persistent
 const organizationGroupExpanded = ref(true)
 
+// Control my account group expansion - make it persistent
+const myAccountGroupExpanded = ref(true)
+
 // Watch for route changes and keep admin group expanded if we're on an admin route
 watch(
   () => route.path,
   (newPath) => {
-    if (newPath.startsWith('/admin') || newPath === '/dashboard') {
+    if (newPath.startsWith('/admin') ) {
       adminGroupExpanded.value = true
     }
     if (newPath.startsWith('/organization')) {
       organizationGroupExpanded.value = true
+    }
+    if (newPath.startsWith('/account')) {
+      myAccountGroupExpanded.value = true
     }
   },
   { immediate: true }
@@ -48,6 +54,7 @@ const navigationGroups = computed(() => navigationConfig)
 const getGroupExpansion = (groupTitle: string) => {
   if (groupTitle === 'Admin Controls') return adminGroupExpanded
   if (groupTitle === 'My Organization') return organizationGroupExpanded
+  if (groupTitle === 'My Account') return myAccountGroupExpanded
   return ref(true)
 }
 
