@@ -7,6 +7,7 @@ export type StudentStatus = {
 
 export type StudentBase = {
   id: string
+  user_id: string | null
   full_name: string
   student_number: string
   email: string
@@ -60,6 +61,7 @@ export async function fetchStudents(): Promise<StudentWithOrganization[]> {
     .from('students')
     .select(`
       id,
+      user_id,
       full_name,
       student_number,
       email,
@@ -139,6 +141,7 @@ export async function fetchStudentsWithEvents(): Promise<StudentWithEvents[]> {
     .from('students')
     .select(`
       id,
+      user_id,
       full_name,
       student_number,
       email,
@@ -185,6 +188,7 @@ export async function fetchStudentsWithEvents(): Promise<StudentWithEvents[]> {
 
     return {
       ...student,
+      user_id: student.user_id ?? null,
       organization: orgTitle,
       student_events,
     }
