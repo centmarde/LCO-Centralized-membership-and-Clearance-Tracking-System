@@ -6,6 +6,7 @@
   import { useTheme } from '@/composables/useTheme'
   import { useAuthUserStore } from '@/stores/authUser'
   import { navigationConfig, type NavigationGroup, type NavigationItem } from '@/utils/navigation'
+  import { getEmailInitials, getUserDisplayName } from '@/utils/helpers'
 
   interface Props {
     config?: UIConfig | null
@@ -64,6 +65,10 @@
   const themeTooltip = computed(() => {
     return `Switch to ${currentTheme.value === 'dark' ? 'light' : 'dark'} theme`
   })
+
+  // User avatar computed properties
+  const userInitials = computed(() => getEmailInitials(authStore.userEmail))
+  const userDisplayName = computed(() => getUserDisplayName(authStore.userData))
 
   // Dynamic navbar color to match dashboard cards in both light and dark mode
   // Vuetify v3: 'surface' is the default card color in both themes
@@ -328,20 +333,84 @@
             </v-card>
           </v-menu>
 
+          <!-- User Avatar Menu -->
+          <v-menu location="bottom">
+            <template #activator="{ props: menuProps }">
+              <v-btn
+                v-bind="menuProps"
+                variant="text"
+                size="large"
+                class="ml-2"
+              >
+                <v-avatar
+                  size="32"
+                  color="primary"
+                  class="me-2"
+                >
+                  <span class="text-caption font-weight-bold">
+                    {{ userInitials }}
+                  </span>
+                </v-avatar>
+                <div class="d-flex flex-column align-start text-left">
+                  <span class="text-body-2 font-weight-medium">
+                    {{ userDisplayName }}
+                  </span>
+                  <span class="text-caption text-medium-emphasis">
+                    {{ authStore.userEmail }}
+                  </span>
+                </div>
+                <v-icon icon="mdi-chevron-down" class="ml-2" />
+              </v-btn>
+            </template>
 
-          <!-- Logout Button -->
-          <v-btn
-            :loading="authStore.loading"
-            variant="outlined"
-            rounded="pill"
-            size="large"
-            color="error"
-            prepend-icon="mdi-logout"
-            class="ml-2"
-            @click="handleLogout"
-          >
-            <span>Logout</span>
-          </v-btn>
+            <v-card width="280" class="mt-2">
+              <v-card-text class="pa-3">
+                <div class="d-flex align-center">
+                  <v-avatar
+                    size="40"
+                    color="primary"
+                    class="me-3"
+                  >
+                    <span class="text-subtitle-1 font-weight-bold">
+                      {{ userInitials }}
+                    </span>
+                  </v-avatar>
+                  <div class="d-flex flex-column">
+                    <span class="text-subtitle-2 font-weight-medium">
+                      {{ userDisplayName }}
+                    </span>
+                    <span class="text-caption text-medium-emphasis">
+                      {{ authStore.userEmail }}
+                    </span>
+                  </div>
+                </div>
+              </v-card-text>
+
+              <v-divider />
+
+              <v-list density="compact">
+                <v-list-item
+                  prepend-icon="mdi-account"
+                  title="Profile"
+                  subtitle="View your profile"
+                />
+               <!--  <v-list-item
+                  prepend-icon="mdi-cog"
+                  title="Settings"
+                  subtitle="Account preferences"
+                /> -->
+                <v-divider class="my-1" />
+                <v-list-item
+                  prepend-icon="mdi-logout"
+                  title="Logout"
+                  subtitle="Sign out of your account"
+                  color="error"
+                  :loading="authStore.loading"
+                  @click="handleLogout"
+                />
+              </v-list>
+            </v-card>
+          </v-menu>
         </div>
 
         <!-- Mobile Menu Button -->
@@ -504,15 +573,56 @@
           />
         </v-list-group>
 
-        <!-- Logout -->
-        <v-list-item
-          prepend-icon="mdi-logout"
-          title="Logout"
-          rounded="xl"
-          class="ma-2"
-          color="error"
-          @click="handleLogout"
-        />
+        <!-- User Profile Section -->
+        <v-list-group value="Profile">
+          <template #activator="{ props: activatorProps }">
+            <v-list-item
+              v-bind="activatorProps"
+              rounded="xl"
+              class="ma-2"
+            >
+              <template #prepend>
+                <v-avatar
+                  size="32"
+                  color="primary"
+                  class="me-3"
+                >
+                  <span class="text-caption font-weight-bold">
+                    {{ userInitials }}
+                  </span>
+                </v-avatar>
+              </template>
+              <v-list-item-title class="text-subtitle-2">
+                {{ userDisplayName }}
+              </v-list-item-title>
+              <v-list-item-subtitle class="text-caption">
+                {{ authStore.userEmail }}
+              </v-list-item-subtitle>
+            </v-list-item>
+          </template>
+
+          <v-list-item
+            prepend-icon="mdi-account"
+            title="Profile"
+            rounded="xl"
+            class="ma-2 ms-4"
+          />
+          <v-list-item
+            prepend-icon="mdi-cog"
+            title="Settings"
+            rounded="xl"
+            class="ma-2 ms-4"
+          />
+          <v-list-item
+            prepend-icon="mdi-logout"
+            title="Logout"
+            rounded="xl"
+            class="ma-2 ms-4"
+            color="error"
+            :loading="authStore.loading"
+            @click="handleLogout"
+          />
+        </v-list-group>
       </v-list>
 
       <!-- Empty append section -->
