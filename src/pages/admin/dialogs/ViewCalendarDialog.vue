@@ -42,21 +42,10 @@ const {
   validationRules
 } = useViewCalendarDialog()
 
-// Computed properties for current event with proper reactivity and debugging
+// Computed properties for current event with proper reactivity
 const formattedDate = computed(() => {
-  console.log('🔍 Debug - Event object:', props.event)
-  console.log('🔍 Debug - Event date property:', props.event?.date)
-  console.log('🔍 Debug - Event date type:', typeof props.event?.date)
-
   if (props.event?.date) {
     const dateValue = new Date(props.event.date)
-    console.log('🔍 Debug - Parsed date:', dateValue)
-    console.log('🔍 Debug - Formatted date:', dateValue.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }))
-
     return dateValue.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -67,12 +56,8 @@ const formattedDate = computed(() => {
 })
 
 const formattedCreatedAt = computed(() => {
-  console.log('🔍 Debug - Event created_at:', props.event?.created_at)
-
   if (props.event?.created_at) {
     const createdDate = new Date(props.event.created_at)
-    console.log('🔍 Debug - Parsed created_at:', createdDate)
-
     return createdDate.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -96,25 +81,17 @@ const internalDialog = computed({
 
 // Watch for dialog open/close to initialize form
 watch(() => props.isOpen, (newValue) => {
-  console.log('🔍 Debug - Dialog isOpen changed:', newValue)
-
   if (newValue && props.event) {
-    console.log('🔍 Debug - Dialog opened with event:', props.event)
-    console.log('🔍 Debug - Event keys:', Object.keys(props.event))
-    console.log('🔍 Debug - Event date in watch:', props.event.date)
     initializeForm(props.event)
   } else if (!newValue) {
-    console.log('🔍 Debug - Dialog closed, resetting states')
     resetStates()
   }
 })
 
 // Watch for event changes
 watch(() => props.event, (newEvent) => {
-  console.log('🔍 Debug - Event prop changed:', newEvent)
   if (newEvent) {
-    console.log('🔍 Debug - New event date:', newEvent.date)
-    console.log('🔍 Debug - New event created_at:', newEvent.created_at)
+    // Event changed - form will be re-initialized when dialog opens
   }
 }, { deep: true })
 
@@ -137,7 +114,6 @@ const handleUpdateSubmit = async () => {
       closeDialog()
     }
   } catch (error) {
-    console.error('Failed to update event:', error)
     // Could add toast notification here
   }
 }
@@ -163,7 +139,6 @@ const handleDeleteSubmit = async () => {
       closeDialog()
     }
   } catch (error) {
-    console.error('Failed to delete event:', error)
     // Could add toast notification here
   }
 }
