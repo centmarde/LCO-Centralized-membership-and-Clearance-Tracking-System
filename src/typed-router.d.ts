@@ -25,7 +25,9 @@ declare module 'vue-router/auto-routes' {
     '/admin/components/DashboardCardWidget': RouteRecordInfo<'/admin/components/DashboardCardWidget', '/admin/components/DashboardCardWidget', Record<never, never>, Record<never, never>>,
     '/admin/components/EventsManagementTable': RouteRecordInfo<'/admin/components/EventsManagementTable', '/admin/components/EventsManagementTable', Record<never, never>, Record<never, never>>,
     '/admin/components/UserManagementTable': RouteRecordInfo<'/admin/components/UserManagementTable', '/admin/components/UserManagementTable', Record<never, never>, Record<never, never>>,
+    '/admin/dialogs/AddCalendarDialog': RouteRecordInfo<'/admin/dialogs/AddCalendarDialog', '/admin/dialogs/AddCalendarDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/AdminUserRolesDialog': RouteRecordInfo<'/admin/dialogs/AdminUserRolesDialog', '/admin/dialogs/AdminUserRolesDialog', Record<never, never>, Record<never, never>>,
+    '/admin/dialogs/ViewCalendarDialog': RouteRecordInfo<'/admin/dialogs/ViewCalendarDialog', '/admin/dialogs/ViewCalendarDialog', Record<never, never>, Record<never, never>>,
     '/admin/EventsView': RouteRecordInfo<'/admin/EventsView', '/admin/EventsView', Record<never, never>, Record<never, never>>,
     '/admin/UserManagementView': RouteRecordInfo<'/admin/UserManagementView', '/admin/UserManagementView', Record<never, never>, Record<never, never>>,
     '/Auth': RouteRecordInfo<'/Auth', '/Auth', Record<never, never>, Record<never, never>>,
@@ -35,5 +37,6 @@ declare module 'vue-router/auto-routes' {
     '/myAccounts/MyEventsView': RouteRecordInfo<'/myAccounts/MyEventsView', '/myAccounts/MyEventsView', Record<never, never>, Record<never, never>>,
     '/myOrganization/MembersView': RouteRecordInfo<'/myOrganization/MembersView', '/myOrganization/MembersView', Record<never, never>, Record<never, never>>,
     '/NotFound': RouteRecordInfo<'/NotFound', '/NotFound', Record<never, never>, Record<never, never>>,
+    '/students/StudentCalendar': RouteRecordInfo<'/students/StudentCalendar', '/students/StudentCalendar', Record<never, never>, Record<never, never>>,
   }
 }
