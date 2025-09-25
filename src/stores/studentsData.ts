@@ -354,3 +354,41 @@ export async function fetchEventStudents(eventId: number): Promise<StudentWithOr
     }
   }).filter(Boolean)
 }
+
+// Fetch student event details by user ID
+export async function fetchStudentEventDetailsByUserId(userId: string): Promise<any[]> {
+  // First get the student record to get the numeric student_id
+  const { data: studentData, error: studentError } = await supabase
+    .from('students')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+
+  if (studentError || !studentData) {
+    console.error('Could not find student record:', studentError);
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('student_events')
+    .select(`
+      id,
+      event_id,
+      status,
+      events (
+        id,
+        title,
+        date,
+        created_at
+      )
+    `)
+    .eq('student_id', studentData.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching student event details:', error);
+    return [];
+  }
+
+  return data || [];
+}
