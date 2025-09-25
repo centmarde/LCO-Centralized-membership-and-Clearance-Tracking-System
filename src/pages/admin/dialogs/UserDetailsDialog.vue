@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { 
+  getRoleColor, 
+  getRoleText, 
+  getStatusColor, 
+  getStatusText, 
+  formatDate 
+} from '@/utils/helpers'
 
 interface User {
   id: string
@@ -22,59 +29,6 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
-
-// Helper functions for display formatting
-const getRoleColor = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'red' // Admin
-    case 2: return 'blue' // Student
-    case 3: return 'green' // Teacher/Faculty
-    default: return 'grey'
-  }
-}
-
-const getRoleText = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'Admin'
-    case 2: return 'Student'
-    case 3: return 'Organization Leader'
-    default: return 'Unknown'
-  }
-}
-
-const getStatusColor = (status: string | undefined): string => {
-  switch (status?.toLowerCase()) {
-    case 'cleared': return 'green'
-    case 'blocked': return 'red'
-    case 'active': return 'blue'
-    case 'inactive': return 'orange'
-    case 'suspended': return 'red'
-    default: return 'red' // Default to blocked color
-  }
-}
-
-const getStatusText = (status: string | undefined): string => {
-  const statusLower = status?.toLowerCase()
-  switch (statusLower) {
-    case 'cleared': return 'Cleared'
-    case 'blocked': return 'Blocked'
-    case 'active': return 'Active'
-    case 'inactive': return 'Inactive'
-    case 'suspended': return 'Suspended'
-    default: return status || 'Unknown'
-  }
-}
-
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 const closeDialog = () => {
   emit('update:modelValue', false)

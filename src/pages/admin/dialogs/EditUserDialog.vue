@@ -5,6 +5,7 @@ import { useUserRolesStore } from '@/stores/roles'
 import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
 import { updateStudentEventStatus } from '@/stores/eventsData'
 import { useToast } from 'vue-toastification'
+import { getStatusColor, getStatusText } from '@/utils/helpers'
 
 interface User {
   id: string
@@ -50,30 +51,6 @@ const getErrorMessage = (error: any): string => {
     return error.msg
   }
   return 'Unknown error occurred'
-}
-
-// Helper functions for status display
-const getStatusColor = (status: string | undefined): string => {
-  switch (status?.toLowerCase()) {
-    case 'cleared': return 'green'
-    case 'blocked': return 'red'
-    case 'active': return 'blue'
-    case 'inactive': return 'orange'
-    case 'suspended': return 'red'
-    default: return 'red' // Default to blocked color
-  }
-}
-
-const getStatusText = (status: string | undefined): string => {
-  const statusLower = status?.toLowerCase()
-  switch (statusLower) {
-    case 'cleared': return 'Cleared'
-    case 'blocked': return 'Blocked'
-    case 'active': return 'Active'
-    case 'inactive': return 'Inactive'
-    case 'suspended': return 'Suspended'
-    default: return status || 'Unknown'
-  }
 }
 
 // Computed property to count changes

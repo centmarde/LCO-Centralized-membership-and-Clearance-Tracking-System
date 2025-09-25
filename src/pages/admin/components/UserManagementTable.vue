@@ -10,6 +10,15 @@ import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
 import EditUserDialog from '@/pages/admin/dialogs/EditUserDialog.vue'
 import UserDetailsDialog from '@/pages/admin/dialogs/UserDetailsDialog.vue'
 import StatusSummary from '@/pages/admin/components/StatusSummary.vue'
+import { 
+  getRoleColor, 
+  getRoleText, 
+  getStatusColor, 
+  getStatusText, 
+  formatDate, 
+  getUserStatusDisplay,
+  type UserStatusDisplay 
+} from '@/utils/helpers'
 
 interface User {
   id: string
@@ -55,46 +64,10 @@ const studentEventStatusMap = ref<Record<string, any[]>>({}) // userId -> events
 const deleteDialog = ref(false)
 const userToDelete = ref<User | null>(null)
 
-// Function to get user status display with blocked events count
-const getUserStatusDisplay = (user: User) => {
-  if (user.role_id !== 2) {
-    // For non-students, use the original status
-    return {
-      text: getStatusText(user.status),
-      color: getStatusColor(user.status),
-      showCount: false,
-      blockedCount: 0
-    }
-  }
-  
-  // For students, check their event statuses
+// Function to get user status display with blocked events count (using helper function)
+const getUserStatusDisplayForUser = (user: User): UserStatusDisplay => {
   const userEvents = studentEventStatusMap.value[user.id] || []
-  const blockedEvents = userEvents.filter(event => event.status?.toLowerCase() === 'blocked')
-  const clearedEvents = userEvents.filter(event => event.status?.toLowerCase() === 'cleared')
-  
-  if (blockedEvents.length > 0) {
-    return {
-      text: blockedEvents.length === 1 ? 'Blocked (1 event)' : `Blocked (${blockedEvents.length} events)`,
-      color: 'red',
-      showCount: true,
-      blockedCount: blockedEvents.length
-    }
-  } else if (clearedEvents.length > 0) {
-    return {
-      text: 'Cleared',
-      color: 'green',
-      showCount: false,
-      blockedCount: 0
-    }
-  } else {
-    // No events or unknown status
-    return {
-      text: getStatusText(user.status),
-      color: getStatusColor(user.status),
-      showCount: false,
-      blockedCount: 0
-    }
-  }
+  return getUserStatusDisplay(user, userEvents)
 }
 
 // Table headers
@@ -164,58 +137,6 @@ const fetchStudentEventStatuses = async () => {
 const refreshData = async () => {
   await fetchUsers()
   await fetchStudentEventStatuses()
-}
-
-const getRoleColor = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'red' // Admin
-    case 2: return 'blue' // Student
-    case 3: return 'green' // Teacher/Faculty
-    default: return 'grey'
-  }
-}
-
-const getRoleText = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'Admin'
-    case 2: return 'Student'
-    case 3: return 'Organization Leader'
-    default: return 'Unknown'
-  }
-}
-
-const getStatusColor = (status: string | undefined): string => {
-  switch (status?.toLowerCase()) {
-    case 'cleared': return 'green'
-    case 'blocked': return 'red'
-    case 'active': return 'blue'
-    case 'inactive': return 'orange'
-    case 'suspended': return 'red'
-    default: return 'red' // Default to blocked color
-  }
-}
-
-const getStatusText = (status: string | undefined): string => {
-  const statusLower = status?.toLowerCase()
-  switch (statusLower) {
-    case 'cleared': return 'Cleared'
-    case 'blocked': return 'Blocked'
-    case 'active': return 'Active'
-    case 'inactive': return 'Inactive'
-    case 'suspended': return 'Suspended'
-    default: return status || 'Unknown'
-  }
-}
-
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 const viewUser = (user: User) => {
@@ -305,11 +226,11 @@ onMounted(async () => {
 
         <template v-slot:item.status="{ item }">
           <v-chip
-            :color="getUserStatusDisplay(item).color"
+            :color="getUserStatusDisplayForUser(item).color"
             variant="tonal"
             size="small"
           >
-            {{ getUserStatusDisplay(item).text }}
+            {{ getUserStatusDisplayForUser(item).text }}
           </v-chip>
         </template>
 
