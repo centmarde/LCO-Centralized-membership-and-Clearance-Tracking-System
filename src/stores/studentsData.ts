@@ -365,7 +365,11 @@ export async function fetchStudentEventDetailsByUserId(userId: string): Promise<
     .single();
 
   if (studentError || !studentData) {
-    console.error('Could not find student record:', studentError);
+    // Only log if it's an actual error, not just "no record found"
+    if (studentError && studentError.code !== 'PGRST116') {
+      console.error('Error fetching student record:', studentError);
+    }
+    // Return empty array for users without student records (admins, faculty, etc.)
     return [];
   }
 
