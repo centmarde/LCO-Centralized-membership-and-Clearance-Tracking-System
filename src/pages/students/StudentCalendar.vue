@@ -140,7 +140,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-card class="calendar-container" elevation="2" rounded="lg">
+  <v-card class="calendar-container mt-5" elevation="7" rounded="lg">
     <v-card-title class="d-flex align-center justify-space-between pa-6 bg-primary text-white">
       <div class="d-flex align-center">
         <v-icon size="32" class="me-3">mdi-calendar-multiple</v-icon>
