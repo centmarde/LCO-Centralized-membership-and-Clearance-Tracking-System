@@ -279,62 +279,57 @@ onMounted(() => {
     </v-card-text>
 
     <!-- User Details Dialog -->
-    <v-dialog v-model="userDialog" max-width="600px">
-      <v-card v-if="selectedUser">
-        <v-card-title>
-          <span class="text-h5">User Details</span>
+    <v-dialog v-model="userDialog" max-width="500px">
+      <v-card v-if="selectedUser" class="pa-4">
+        <v-card-title class="d-flex flex-column align-center text-center">
+          <v-avatar color="primary" size="80" class="mb-4">
+            <v-icon size="50">mdi-account-circle</v-icon>
+          </v-avatar>
+          <h2 class="text-h5 mb-1">{{ selectedUser.full_name || 'User' }}</h2>
+          <p class="text-body-2 text-grey">{{ selectedUser.email }}</p>
         </v-card-title>
-        <v-card-text>
-          <v-container>
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Full Name"
-                  :model-value="selectedUser.full_name"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Email"
-                  :model-value="selectedUser.email"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Student Number"
-                  :model-value="selectedUser.student_number || 'N/A'"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Role"
-                  :model-value="getRoleText(selectedUser.role_id)"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Status"
-                  :model-value="selectedUser.status"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Created At"
-                  :model-value="formatDate(selectedUser.created_at)"
-                  readonly
-                />
-              </v-col>
-            </v-row>
-          </v-container>
+
+        <v-card-text class="mt-4">
+          <v-list density="compact">
+            <v-list-item prepend-icon="mdi-identifier">
+              <v-list-item-title>Student Number</v-list-item-title>
+              <v-list-item-subtitle>{{ selectedUser.student_number || 'N/A' }}</v-list-item-subtitle>
+            </v-list-item>
+
+            <v-divider class="my-2"></v-divider>
+
+            <v-list-item prepend-icon="mdi-account-tie">
+              <v-list-item-title>Role</v-list-item-title>
+              <v-list-item-subtitle>
+                <v-chip :color="getRoleColor(selectedUser.role_id)" variant="tonal" size="small">
+                  {{ getRoleText(selectedUser.role_id) }}
+                </v-chip>
+              </v-list-item-subtitle>
+            </v-list-item>
+
+            <v-divider class="my-2"></v-divider>
+
+            <v-list-item prepend-icon="mdi-list-status">
+              <v-list-item-title>Status</v-list-item-title>
+              <v-list-item-subtitle>
+                <v-chip :color="getStatusColor(selectedUser.status)" variant="tonal" size="small">
+                  {{ getStatusText(selectedUser.status) }}
+                </v-chip>
+              </v-list-item-subtitle>
+            </v-list-item>
+
+            <v-divider class="my-2"></v-divider>
+
+            <v-list-item prepend-icon="mdi-calendar-clock">
+              <v-list-item-title>Member Since</v-list-item-title>
+              <v-list-item-subtitle>{{ formatDate(selectedUser.created_at) }}</v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
         </v-card-text>
-        <v-card-actions>
+
+        <v-card-actions class="mt-4">
           <v-spacer></v-spacer>
-          <v-btn color="blue-darken-1" variant="text" @click="userDialog = false">
+          <v-btn color="primary" variant="flat" @click="userDialog = false" block>
             Close
           </v-btn>
         </v-card-actions>
