@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
+import StudentCalendar from '@/pages/students/StudentCalendar.vue';
 </script>
 
 <template>
@@ -8,14 +9,7 @@ import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
       <v-container fluid class="pa-6">
         <v-row>
           <v-col cols="12">
-            <v-card class="pa-6 text-center">
-              <v-card-title class="text-h4 mb-4">
-                My Events
-              </v-card-title>
-              <v-card-text class="text-h6 grey--text">
-                Coming Soon...
-              </v-card-text>
-            </v-card>
+            <StudentCalendar />
           </v-col>
         </v-row>
       </v-container>
