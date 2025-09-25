@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase'
 // Fetch blocked events for a specific student (by user_id)
 export async function fetchBlockedEventsByUserId(userId: string): Promise<{ name: string; date: string; status: string }[]> {
   const students = await fetchStudents();
@@ -24,7 +25,7 @@ export async function fetchBlockedEventsByUserId(userId: string): Promise<{ name
       };
     });
 }
-import { supabase } from '@/lib/supabase'
+
 
 // Student types
 export type StudentStatus = {
