@@ -20,6 +20,7 @@ interface SessionUser {
 export const useAuthUserStore = defineStore("authUser", () => {
   // States
   const userData: Ref<UserData | null> = ref(null);
+  const users: Ref<any[]> = ref([]);
   const authPages: Ref<string[]> = ref([]);
   const authBranchIds: Ref<number[]> = ref([]);
   const loading = ref(false);
@@ -286,13 +287,56 @@ export const useAuthUserStore = defineStore("authUser", () => {
           student_number: studentInfo?.student_number || null,
           status: studentInfo?.status || 'blocked',
           organization_id: studentInfo?.organization_id || null,
-          role_id: user.user_metadata?.role || studentInfo?.role_id || null
+          role_id: user.user_metadata?.role || studentInfo?.role_id || null,
+          student_id: studentInfo?.id || null // Add the numeric student ID
         };
       });
 
+      users.value = allUsers; // Store in reactive state
       return { users: allUsers };
     } catch (error) {
       console.error("Error fetching all users:", error);
+      return { error };
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // Update user function
+  async function updateUser(userId: string, updateData: { role_id?: number; status?: string }) {
+    loading.value = true;
+    try {
+      // Update auth user metadata
+      if (updateData.role_id) {
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+          userId,
+          {
+            user_metadata: {
+              role: updateData.role_id
+            }
+          }
+        );
+        if (authError) {
+          return { error: authError };
+        }
+      }
+
+      // Update student record if exists
+      const { error: studentError } = await supabaseAdmin
+        .from("students")
+        .update({
+          ...(updateData.role_id && { role_id: updateData.role_id }),
+          ...(updateData.status && { status: updateData.status })
+        })
+        .eq("user_id", userId);
+
+      if (studentError) {
+        console.warn("Could not update student record:", studentError);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error updating user:", error);
       return { error };
     } finally {
       loading.value = false;
@@ -305,6 +349,7 @@ export const useAuthUserStore = defineStore("authUser", () => {
   return {
     // State
     userData,
+    users,
     authPages,
     authBranchIds,
     loading,
@@ -323,6 +368,7 @@ export const useAuthUserStore = defineStore("authUser", () => {
     getUser,
     getCurrentUser,
     getAllUsers,
+    updateUser,
   };
 });
 
