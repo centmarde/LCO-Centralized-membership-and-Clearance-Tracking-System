@@ -26,6 +26,20 @@ const authStore = useAuthUserStore()
 const rolesStore = useUserRolesStore()
 const toast = useToast()
 
+// Helper function to extract error messages
+const getErrorMessage = (error: any): string => {
+  if (typeof error === 'string') {
+    return error
+  }
+  if (error?.message) {
+    return error.message
+  }
+  if (error?.msg) {
+    return error.msg
+  }
+  return 'Unknown error occurred'
+}
+
 // Reactive data
 const loading = ref(false)
 const search = ref('')
@@ -37,6 +51,9 @@ const studentEventDetails = ref<any[]>([])
 const editedEventStatuses = ref<Record<number, string>>({})
 const isSaving = ref(false)
 const studentEventStatusMap = ref<Record<string, any[]>>({}) // userId -> events array
+const deleteDialog = ref(false)
+const userToDelete = ref<User | null>(null)
+const isDeleting = ref(false)
 
 // Computed properties for status counts
 const clearedCount = computed(() =>
@@ -119,7 +136,7 @@ const fetchUsers = async () => {
     const result = await authStore.getAllUsers()
 
     if (result.error) {
-      toast.error('Failed to fetch users: ' + result.error)
+      toast.error('Failed to fetch users: ' + getErrorMessage(result.error))
       console.error('Error fetching users:', result.error)
       return
     }
@@ -139,8 +156,8 @@ const fetchUsers = async () => {
 // Fetch event status data for all students
 const fetchStudentEventStatuses = async () => {
   try {
-    // Get all students from the user list
-    const students = authStore.users.filter(user => user.role_id === 2)
+    // Get all students from the user list (users with role_id === 2 AND student_id exists)
+    const students = authStore.users.filter(user => user.role_id === 2 && user.student_id)
     
     // Clear the current map
     studentEventStatusMap.value = {}
@@ -150,8 +167,11 @@ const fetchStudentEventStatuses = async () => {
       try {
         const eventDetails = await fetchStudentEventDetailsByUserId(student.id)
         studentEventStatusMap.value[student.id] = eventDetails
-      } catch (error) {
-        console.error(`Failed to fetch events for student ${student.id}:`, error)
+      } catch (error: any) {
+        // Only log unexpected errors, not "student record not found" which is expected for non-students
+        if (error?.code !== 'PGRST116' && error?.message !== 'Could not find student record') {
+          console.error(`Failed to fetch events for student ${student.id}:`, error)
+        }
         // Set empty array for students with fetch errors
         studentEventStatusMap.value[student.id] = []
       }
@@ -311,11 +331,39 @@ const saveUser = async () => {
 }
 
 const deleteUser = (user: User) => {
-  // TODO: Implement user deletion functionality
-  if (confirm(`Are you sure you want to delete user ${user.full_name || user.email}?`)) {
-    toast.info('Delete functionality coming soon...')
-    console.log('Delete user:', user)
+  userToDelete.value = user
+  deleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (!userToDelete.value) return
+  
+  isDeleting.value = true
+  try {
+    const result = await authStore.deleteUser(userToDelete.value.id)
+    
+    if (result.error) {
+      toast.error('Failed to delete user: ' + getErrorMessage(result.error))
+      console.error('Error deleting user:', result.error)
+      return
+    }
+
+    toast.success(`User ${userToDelete.value.full_name || userToDelete.value.email} deleted successfully!`)
+    await refreshData() // Refresh the user list and student event statuses
+    
+  } catch (error) {
+    toast.error('An unexpected error occurred while deleting user')
+    console.error('Unexpected error:', error)
+  } finally {
+    isDeleting.value = false
+    deleteDialog.value = false
+    userToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  deleteDialog.value = false
+  userToDelete.value = null
 }
 
 // Lifecycle
@@ -643,6 +691,56 @@ onMounted(async () => {
             :loading="isSaving"
           >
             Save
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <v-dialog v-model="deleteDialog" max-width="500px" persistent>
+      <v-card>
+        <v-card-title class="text-h5 text-center">
+          <v-icon color="error" size="large" class="mb-2">mdi-alert-circle</v-icon>
+          <div>Confirm Deletion</div>
+        </v-card-title>
+        
+        <v-card-text class="text-center">
+          <div class="mb-4">
+            <p>Are you sure you want to delete this user?</p>
+            <div v-if="userToDelete" class="mt-4 pa-3 bg-grey-lighten-4 rounded">
+              <div class="text-h6 font-weight-bold">{{ userToDelete.full_name || 'No Name' }}</div>
+              <div class="text-body-2 text-grey-darken-1">{{ userToDelete.email }}</div>
+              <div v-if="userToDelete.student_number" class="text-body-2 text-grey-darken-1">
+                Student Number: {{ userToDelete.student_number }}
+              </div>
+            </div>
+          </div>
+          <v-alert
+            type="warning"
+            variant="tonal"
+            class="text-left"
+          >
+            <strong>Warning:</strong> This action cannot be undone. All associated data including student records and event registrations will be permanently deleted.
+          </v-alert>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            color="grey"
+            variant="text"
+            @click="cancelDelete"
+            :disabled="isDeleting"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="error"
+            variant="flat"
+            @click="confirmDelete"
+            :loading="isDeleting"
+          >
+            Delete User
           </v-btn>
         </v-card-actions>
       </v-card>
