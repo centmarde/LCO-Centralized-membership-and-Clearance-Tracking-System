@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from 'vue-toastification'
 import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
 import EditUserDialog from '@/pages/admin/dialogs/EditUserDialog.vue'
+import UserDetailsDialog from '@/pages/admin/dialogs/UserDetailsDialog.vue'
 
 interface User {
   id: string
@@ -186,7 +187,7 @@ const getRoleText = (roleId: number | null | undefined): string => {
   switch (roleId) {
     case 1: return 'Admin'
     case 2: return 'Student'
-    case 3: return 'Faculty'
+    case 3: return 'Organization Leader'
     default: return 'Unknown'
   }
 }
@@ -386,62 +387,10 @@ onMounted(async () => {
     </v-card-text>
 
     <!-- User Details Dialog -->
-    <v-dialog v-model="userDialog" max-width="500px">
-      <v-card v-if="selectedUser" class="pa-4">
-        <v-card-title class="d-flex flex-column align-center text-center">
-          <v-avatar color="primary" size="80" class="mb-4">
-            <v-icon size="50">mdi-account-circle</v-icon>
-          </v-avatar>
-          <h2 class="text-h5 mb-1">{{ selectedUser.full_name || 'User' }}</h2>
-          <p class="text-body-2 text-grey">{{ selectedUser.email }}</p>
-        </v-card-title>
-
-        <v-card-text class="mt-4">
-          <v-list density="compact">
-            <v-list-item prepend-icon="mdi-identifier">
-              <v-list-item-title>Student Number</v-list-item-title>
-              <v-list-item-subtitle>{{ selectedUser.student_number || 'N/A' }}</v-list-item-subtitle>
-            </v-list-item>
-
-            <v-divider class="my-2"></v-divider>
-
-            <v-list-item prepend-icon="mdi-account-tie">
-              <v-list-item-title>Role</v-list-item-title>
-              <v-list-item-subtitle>
-                <v-chip :color="getRoleColor(selectedUser.role_id)" variant="tonal" size="small">
-                  {{ getRoleText(selectedUser.role_id) }}
-                </v-chip>
-              </v-list-item-subtitle>
-            </v-list-item>
-
-            <v-divider class="my-2"></v-divider>
-
-            <v-list-item prepend-icon="mdi-list-status">
-              <v-list-item-title>Status</v-list-item-title>
-              <v-list-item-subtitle>
-                <v-chip :color="getStatusColor(selectedUser.status)" variant="tonal" size="small">
-                  {{ getStatusText(selectedUser.status) }}
-                </v-chip>
-              </v-list-item-subtitle>
-            </v-list-item>
-
-            <v-divider class="my-2"></v-divider>
-
-            <v-list-item prepend-icon="mdi-calendar-clock">
-              <v-list-item-title>Member Since</v-list-item-title>
-              <v-list-item-subtitle>{{ formatDate(selectedUser.created_at) }}</v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
-        </v-card-text>
-
-        <v-card-actions class="mt-4">
-          <v-spacer></v-spacer>
-          <v-btn color="primary" variant="flat" @click="userDialog = false" block>
-            Close
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <UserDetailsDialog 
+      v-model="userDialog" 
+      :user="selectedUser"
+    />
 
     <!-- Edit User Dialog -->
     <EditUserDialog 
