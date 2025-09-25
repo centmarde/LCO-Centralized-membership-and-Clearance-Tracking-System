@@ -343,6 +343,61 @@ export const useAuthUserStore = defineStore("authUser", () => {
     }
   }
 
+  // Delete user function
+  async function deleteUser(userId: string) {
+    loading.value = true;
+    try {
+      // First get student data before deleting to get the student_id
+      const { data: studentData } = await supabaseAdmin
+        .from("students")
+        .select("id")
+        .eq("user_id", userId)
+        .single();
+
+      // Delete related student_events if student exists
+      if (studentData) {
+        const { error: studentEventsError } = await supabaseAdmin
+          .from("student_events")
+          .delete()
+          .eq("student_id", studentData.id);
+
+        if (studentEventsError) {
+          console.warn("Could not delete student events:", studentEventsError);
+        }
+      }
+
+      // Delete student record if exists
+      const { error: studentError } = await supabaseAdmin
+        .from("students")
+        .delete()
+        .eq("user_id", userId);
+
+      if (studentError) {
+        console.warn("Could not delete student record:", studentError);
+      }
+
+      // Finally delete the auth user
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      if (authError) {
+        return { error: authError };
+      }
+
+      // Remove user from local users array
+      const userIndex = users.value.findIndex(user => user.id === userId);
+      if (userIndex > -1) {
+        users.value.splice(userIndex, 1);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return { error };
+    } finally {
+      loading.value = false;
+    }
+  }
+
   // Call initialize on store creation
   initializeAuth();
 
@@ -369,6 +424,7 @@ export const useAuthUserStore = defineStore("authUser", () => {
     getCurrentUser,
     getAllUsers,
     updateUser,
+    deleteUser,
   };
 });
 
