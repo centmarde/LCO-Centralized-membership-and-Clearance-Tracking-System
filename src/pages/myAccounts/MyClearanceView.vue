@@ -76,11 +76,14 @@ onMounted(() => {
                       sm="6"
                       md="4"
                     >
-                      <v-card elevation="7" rounded="lg" class="fill-height d-flex flex-column">
-                        <v-card-title class="text-h6 font-weight-bold">{{ event.name }}</v-card-title>
-                        <v-card-subtitle class="pb-2">{{ event.date }}</v-card-subtitle>
-                        <v-card-text class="mt-auto">
-                          <v-chip color="error" variant="elevated" size="small">{{ event.status }}</v-chip>
+                      <v-card elevation="2" rounded="lg" class="fill-height">
+                        <v-card-text class="d-flex align-center justify-space-between pa-4">
+                          <div class="flex-grow-1">
+                            <h3 class="text-h6 font-weight-bold">{{ event.name }}</h3>
+                            <p class="text-body-2 text-medium-emphasis mb-0">{{ event.date }}</p>
+                          </div>
+                          <v-chip color="error" variant="elevated" size="small" class="mx-4">{{ event.status }}</v-chip>
+                          <v-icon color="error" size="40">mdi-alert-circle-outline</v-icon>
                         </v-card-text>
                       </v-card>
                     </v-col>
