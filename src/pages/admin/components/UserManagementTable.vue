@@ -9,6 +9,7 @@ import { useToast } from 'vue-toastification'
 import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
 import EditUserDialog from '@/pages/admin/dialogs/EditUserDialog.vue'
 import UserDetailsDialog from '@/pages/admin/dialogs/UserDetailsDialog.vue'
+import StatusSummary from '@/pages/admin/components/StatusSummary.vue'
 
 interface User {
   id: string
@@ -53,15 +54,6 @@ const editingUser = ref<User | null>(null)
 const studentEventStatusMap = ref<Record<string, any[]>>({}) // userId -> events array
 const deleteDialog = ref(false)
 const userToDelete = ref<User | null>(null)
-
-// Computed properties for status counts
-const clearedCount = computed(() =>
-  authStore.users.filter(user => user.status?.toLowerCase() === 'cleared').length
-)
-
-const blockedCount = computed(() =>
-  authStore.users.filter(user => user.status?.toLowerCase() === 'blocked').length
-)
 
 // Function to get user status display with blocked events count
 const getUserStatusDisplay = (user: User) => {
@@ -274,28 +266,7 @@ onMounted(async () => {
     </v-card-title>
 
     <!-- Status Summary -->
-    <v-card-subtitle>
-      <v-row class="ma-0">
-        <v-col cols="auto" class="pa-1">
-          <v-chip color="green" variant="tonal" size="small">
-            <v-icon left size="small">mdi-check-circle</v-icon>
-            Cleared: {{ clearedCount }}
-          </v-chip>
-        </v-col>
-        <v-col cols="auto" class="pa-1">
-          <v-chip color="red" variant="tonal" size="small">
-            <v-icon left size="small">mdi-block-helper</v-icon>
-            Blocked: {{ blockedCount }}
-          </v-chip>
-        </v-col>
-        <v-col cols="auto" class="pa-1">
-          <v-chip color="blue" variant="tonal" size="small">
-            <v-icon left size="small">mdi-account-group</v-icon>
-            Total: {{ authStore.users.length }}
-          </v-chip>
-        </v-col>
-      </v-row>
-    </v-card-subtitle>
+    <StatusSummary :users="authStore.users" />
 
     <v-card-text>
       <v-data-table
