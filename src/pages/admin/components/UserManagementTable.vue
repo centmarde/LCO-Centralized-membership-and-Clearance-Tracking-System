@@ -6,6 +6,7 @@ import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
 import { updateStudentEventStatus } from '@/stores/eventsData'
 import { supabase } from '@/lib/supabase'
 import { useToast } from 'vue-toastification'
+import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
 
 interface User {
   id: string
@@ -53,7 +54,6 @@ const isSaving = ref(false)
 const studentEventStatusMap = ref<Record<string, any[]>>({}) // userId -> events array
 const deleteDialog = ref(false)
 const userToDelete = ref<User | null>(null)
-const isDeleting = ref(false)
 
 // Computed properties for status counts
 const clearedCount = computed(() =>
@@ -335,35 +335,8 @@ const deleteUser = (user: User) => {
   deleteDialog.value = true
 }
 
-const confirmDelete = async () => {
-  if (!userToDelete.value) return
-  
-  isDeleting.value = true
-  try {
-    const result = await authStore.deleteUser(userToDelete.value.id)
-    
-    if (result.error) {
-      toast.error('Failed to delete user: ' + getErrorMessage(result.error))
-      console.error('Error deleting user:', result.error)
-      return
-    }
-
-    toast.success(`User ${userToDelete.value.full_name || userToDelete.value.email} deleted successfully!`)
-    await refreshData() // Refresh the user list and student event statuses
-    
-  } catch (error) {
-    toast.error('An unexpected error occurred while deleting user')
-    console.error('Unexpected error:', error)
-  } finally {
-    isDeleting.value = false
-    deleteDialog.value = false
-    userToDelete.value = null
-  }
-}
-
-const cancelDelete = () => {
-  deleteDialog.value = false
-  userToDelete.value = null
+const onUserDeleted = async () => {
+  await refreshData() // Refresh the user list and student event statuses
 }
 
 // Lifecycle
@@ -696,55 +669,12 @@ onMounted(async () => {
       </v-card>
     </v-dialog>
 
-    <!-- Delete Confirmation Dialog -->
-    <v-dialog v-model="deleteDialog" max-width="500px" persistent>
-      <v-card>
-        <v-card-title class="text-h5 text-center">
-          <v-icon color="error" size="large" class="mb-2">mdi-alert-circle</v-icon>
-          <div>Confirm Deletion</div>
-        </v-card-title>
-        
-        <v-card-text class="text-center">
-          <div class="mb-4">
-            <p>Are you sure you want to delete this user?</p>
-            <div v-if="userToDelete" class="mt-4 pa-3 bg-grey-lighten-4 rounded">
-              <div class="text-h6 font-weight-bold">{{ userToDelete.full_name || 'No Name' }}</div>
-              <div class="text-body-2 text-grey-darken-1">{{ userToDelete.email }}</div>
-              <div v-if="userToDelete.student_number" class="text-body-2 text-grey-darken-1">
-                Student Number: {{ userToDelete.student_number }}
-              </div>
-            </div>
-          </div>
-          <v-alert
-            type="warning"
-            variant="tonal"
-            class="text-left"
-          >
-            <strong>Warning:</strong> This action cannot be undone. All associated data including student records and event registrations will be permanently deleted.
-          </v-alert>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            color="grey"
-            variant="text"
-            @click="cancelDelete"
-            :disabled="isDeleting"
-          >
-            Cancel
-          </v-btn>
-          <v-btn
-            color="error"
-            variant="flat"
-            @click="confirmDelete"
-            :loading="isDeleting"
-          >
-            Delete User
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- Delete User Dialog -->
+    <DeleteUserDialog 
+      v-model="deleteDialog" 
+      :user="userToDelete" 
+      @user-deleted="onUserDeleted"
+    />
   </v-card>
 </template>
 
