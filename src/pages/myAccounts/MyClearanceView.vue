@@ -31,10 +31,10 @@ onMounted(() => {
 <template>
   <InnerLayoutWrapper>
     <template #content>
-      <v-container fluid class="pa-6">
+      <v-container fluid class="pa-6 mt-5" >
         <v-row>
           <v-col cols="12">
-            <v-card class="pa-0" elevation="2" rounded="lg">
+            <v-card class="pa-0" elevation="7" rounded="lg">
               <v-card-title class="d-flex align-center justify-space-between pa-6 bg-primary text-white">
                 <div class="d-flex align-center">
                   <v-icon size="32" class="me-3">mdi-shield-check</v-icon>
@@ -43,9 +43,16 @@ onMounted(() => {
                     <p class="text-body-2 mb-0 opacity-90">Blocked Events & Clearance Status</p>
                   </div>
                 </div>
-                <v-btn color="white" variant="elevated" size="default" @click="loadBlockedEventsUI" :loading="loading" prepend-icon="mdi-refresh">
-                  Refresh
-                </v-btn>
+                <div class="d-none d-sm-block">
+                  <v-btn color="white" variant="elevated" size="default" @click="loadBlockedEventsUI" :loading="loading" prepend-icon="mdi-refresh">
+                    Refresh
+                  </v-btn>
+                </div>
+                <div class="d-block d-sm-none">
+                  <v-btn color="white" variant="elevated" size="small" @click="loadBlockedEventsUI" :loading="loading" icon>
+                    <v-icon>mdi-refresh</v-icon>
+                  </v-btn>
+                </div>
               </v-card-title>
               <v-divider></v-divider>
               <v-card-text class="pa-6">
@@ -61,24 +68,23 @@ onMounted(() => {
                   <div class="text-h6">You have no blocked events. You are clear!</div>
                 </div>
                 <div v-else>
-                  <v-table density="comfortable" class="mb-0">
-                    <thead>
-                      <tr>
-                        <th>Event Name</th>
-                        <th>Date</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="event in blockedEvents" :key="event.name + event.date">
-                        <td>{{ event.name }}</td>
-                        <td>{{ event.date }}</td>
-                        <td>
+                  <v-row>
+                    <v-col
+                      v-for="event in blockedEvents"
+                      :key="event.name + event.date"
+                      cols="12"
+                      sm="6"
+                      md="4"
+                    >
+                      <v-card elevation="7" rounded="lg" class="fill-height d-flex flex-column">
+                        <v-card-title class="text-h6 font-weight-bold">{{ event.name }}</v-card-title>
+                        <v-card-subtitle class="pb-2">{{ event.date }}</v-card-subtitle>
+                        <v-card-text class="mt-auto">
                           <v-chip color="error" variant="elevated" size="small">{{ event.status }}</v-chip>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </v-table>
+                        </v-card-text>
+                      </v-card>
+                    </v-col>
+                  </v-row>
                 </div>
               </v-card-text>
             </v-card>
