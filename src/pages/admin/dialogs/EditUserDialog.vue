@@ -5,7 +5,7 @@ import { useUserRolesStore } from '@/stores/roles'
 import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
 import { updateStudentEventStatus } from '@/stores/eventsData'
 import { useToast } from 'vue-toastification'
-import { getStatusColor, getStatusText } from '@/utils/helpers'
+import { getStatusColor, getStatusText, getErrorMessage } from '@/utils/helpers'
 
 interface User {
   id: string
@@ -38,20 +38,6 @@ const isSaving = ref(false)
 const editingUser = ref<User | null>(null)
 const studentEventDetails = ref<any[]>([])
 const editedEventStatuses = ref<Record<number, string>>({})
-
-// Helper function to extract error messages
-const getErrorMessage = (error: any): string => {
-  if (typeof error === 'string') {
-    return error
-  }
-  if (error?.message) {
-    return error.message
-  }
-  if (error?.msg) {
-    return error.msg
-  }
-  return 'Unknown error occurred'
-}
 
 // Computed property to count changes
 const changesCount = computed(() => {

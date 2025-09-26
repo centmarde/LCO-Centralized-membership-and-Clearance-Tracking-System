@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useToast } from 'vue-toastification'
+import { getRoleText, getErrorMessage } from '@/utils/helpers'
 
 interface User {
   id: string
@@ -29,29 +30,6 @@ const toast = useToast()
 
 const isDeleting = ref(false)
 
-// Helper function to extract error messages
-const getErrorMessage = (error: any): string => {
-  if (typeof error === 'string') {
-    return error
-  }
-  if (error?.message) {
-    return error.message
-  }
-  if (error?.msg) {
-    return error.msg
-  }
-  return 'Unknown error occurred'
-}
-
-// Helper function to get role text
-const getRoleText = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'Admin'
-    case 2: return 'Student'
-    case 3: return 'Faculty'
-    default: return 'Unknown'
-  }
-}
 
 const confirmDelete = async () => {
   if (!props.user) return

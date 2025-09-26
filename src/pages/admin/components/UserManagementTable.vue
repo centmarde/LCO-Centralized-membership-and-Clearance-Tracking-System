@@ -17,6 +17,7 @@ import {
   getStatusText, 
   formatDate, 
   getUserStatusDisplay,
+  getErrorMessage,
   type UserStatusDisplay 
 } from '@/utils/helpers'
 
@@ -38,20 +39,6 @@ interface User {
 const authStore = useAuthUserStore()
 const rolesStore = useUserRolesStore()
 const toast = useToast()
-
-// Helper function to extract error messages
-const getErrorMessage = (error: any): string => {
-  if (typeof error === 'string') {
-    return error
-  }
-  if (error?.message) {
-    return error.message
-  }
-  if (error?.msg) {
-    return error.msg
-  }
-  return 'Unknown error occurred'
-}
 
 // Reactive data
 const loading = ref(false)
