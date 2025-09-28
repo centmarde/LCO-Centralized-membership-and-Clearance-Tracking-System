@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, defineOptions } from 'vue'
-import { useTheme } from 'vuetify'
 import { CalendarView, CalendarViewHeader } from 'vue-simple-calendar'
 import { fetchEvents, fetchEventsWithStats } from '@/stores/eventsData'
 import type { Event } from '@/stores/eventsData'
+import { useCalendarView, calendarViews } from '@/pages/admin/composables/calendarView'
+import AddCalendarDialog from '@/pages/admin/dialogs/AddCalendarDialog.vue'
+import ViewCalendarDialog from '@/pages/admin/dialogs/ViewCalendarDialog.vue'
 import 'vue-simple-calendar/dist/vue-simple-calendar.css'
 import '@/styles/calendar.css'
 
@@ -12,125 +14,49 @@ defineOptions({
   name: 'CalendarEventsWidget'
 })
 
+// Use calendar view composable
+const {
+  currentView,
+  currentPeriodStart,
+  showDate,
+  displayPeriodUom,
+  displayPeriodCount,
+  startingDayOfWeek,
+  isDarkMode,
+  currentThemeColors,
+  displayPeriodLabel,
+  changeView,
+  goToToday,
+  goToPreviousPeriod,
+  goToNextPeriod,
+  formatEventsForCalendar,
+  getEventCounts,
+  storageUtils,
+  eventClickUtils
+} = useCalendarView()
+
 // Reactive data
 const events = ref<Event[]>([])
 const loading = ref(false)
 const selectedDate = ref(new Date())
-const theme = useTheme()
 
-// Calendar configuration with enhanced controls
+// Dialog state
+const showAddEventDialog = ref(false)
+const selectedDateForEvent = ref<Date | null>(null)
+const showViewEventDialog = ref(false)
+const selectedEvent = ref<Event | null>(null)
+
+// Calendar configuration
 const calendarRef = ref(null)
-const showDate = ref(new Date())
-const displayPeriodUom = ref('month')
-const displayPeriodCount = ref(1)
-const startingDayOfWeek = ref(0) // Sunday = 0
-const currentPeriodStart = ref(new Date())
 
-// Calendar view options
-const calendarViews = [
-  { title: 'Month', value: 'month', icon: 'mdi-calendar-month' },
-  { title: 'Week', value: 'week', icon: 'mdi-calendar-week' }
-]
-
-const currentView = ref('month')
-
-// Computed properties for theme integration
-const isDarkMode = computed(() => theme.global.current.value.dark)
-const currentThemeColors = computed(() => theme.global.current.value.colors)
-
-// Format events for vue-simple-calendar with enhanced styling
+// Format events for vue-simple-calendar using composable
 const calendarEvents = computed(() => {
-  return events.value.map(event => ({
-    id: event.id.toString(),
-    title: event.title,
-    startDate: new Date(event.date || new Date()),
-    endDate: new Date(event.date || new Date()),
-    classes: getEventClasses(event),
-    originalEvent: event
-  }))
+  return formatEventsForCalendar(events.value)
 })
 
-// Enhanced display period label
-const displayPeriodLabel = computed(() => {
-  if (!currentPeriodStart.value) return ''
-
-  const start = currentPeriodStart.value
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long'
-  }
-
-  if (currentView.value === 'week') {
-    const end = new Date(start)
-    end.setDate(start.getDate() + 6)
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-  }
-
-  return start.toLocaleDateString('en-US', options)
-})
-
-// Helper function to determine text color based on background
-const getContrastYIQ = (hexcolor: string): string => {
-  if (!hexcolor) return '#000000'
-
-  const r = parseInt(hexcolor.substr(1,2),16)
-  const g = parseInt(hexcolor.substr(3,2),16)
-  const b = parseInt(hexcolor.substr(5,2),16)
-  const yiq = ((r*299)+(g*587)+(b*114))/1000
-  return (yiq >= 128) ? '#000000' : '#FFFFFF'
-}
-
-// Get event color based on theme
-const getEventColor = (event: Event): string => {
-  const colors = currentThemeColors.value
-  // Use primary color for events, could be enhanced based on event type/category
-  return colors.primary || '#1976d2'
-}
-
-// Get CSS classes based on event properties
-const getEventClasses = (event: Event): string[] => {
-  const classes = ['event-item']
-
-  // Add classes based on date
-  const eventDate = new Date(event.date || new Date())
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  eventDate.setHours(0, 0, 0, 0)
-
-  if (eventDate < today) {
-    classes.push('past-event')
-  } else if (eventDate.getTime() === today.getTime()) {
-    classes.push('today-event')
-  } else {
-    classes.push('future-event')
-  }
-
-  return classes
-}
-
-// Get events count by status
+// Get events count by status using composable
 const eventsCounts = computed(() => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  return {
-    total: events.value.length,
-    past: events.value.filter(e => {
-      const eventDate = new Date(e.date || new Date())
-      eventDate.setHours(0, 0, 0, 0)
-      return eventDate < today
-    }).length,
-    today: events.value.filter(e => {
-      const eventDate = new Date(e.date || new Date())
-      eventDate.setHours(0, 0, 0, 0)
-      return eventDate.getTime() === today.getTime()
-    }).length,
-    upcoming: events.value.filter(e => {
-      const eventDate = new Date(e.date || new Date())
-      eventDate.setHours(0, 0, 0, 0)
-      return eventDate > today
-    }).length
-  }
+  return getEventCounts(events.value)
 })
 
 // Load events data
@@ -145,74 +71,78 @@ const loadEvents = async () => {
   }
 }
 
-// Handle event click
+// Handle event click using composable utilities
 const onEventClick = (event: any) => {
-  console.log('Event clicked:', event.originalEvent)
-  // You can add event details modal or navigation here
+  const actualEvent = eventClickUtils.resolveEventFromClick(event, events.value)
+
+  if (actualEvent) {
+    // Save to localStorage using composable
+    storageUtils.saveEvent(actualEvent)
+
+    // Set selected event and open view dialog
+    selectedEvent.value = actualEvent
+    showViewEventDialog.value = true
+  } else {
+    console.warn('Could not resolve event from click data')
+    // Try to load last event from storage as fallback
+    const storedEvent = storageUtils.loadEvent()
+    if (storedEvent) {
+      console.log('Using stored event as fallback:', storedEvent)
+      selectedEvent.value = storedEvent
+      showViewEventDialog.value = true
+    }
+  }
 }
 
-// Handle date click
+// Handle date click using composable utilities
 const onDateClick = (date: Date) => {
   console.log('Date clicked:', date)
-  // You can add new event creation here
+
+  // Save to localStorage using composable
+  storageUtils.saveDate(date)
+
+  // Set selected date and open dialog for creating new event
+  selectedDateForEvent.value = date
+  showAddEventDialog.value = true
 }
 
-// Enhanced calendar navigation methods
-const changeView = (view: string) => {
-  currentView.value = view
-
-  switch (view) {
-    case 'month':
-      displayPeriodUom.value = 'month'
-      displayPeriodCount.value = 1
-      break
-    case 'week':
-      displayPeriodUom.value = 'week'
-      displayPeriodCount.value = 1
-      break
-  }
+// Handle adding new event
+const openAddEventDialog = () => {
+  selectedDateForEvent.value = null // No specific date selected
+  showAddEventDialog.value = true
 }
 
-const goToToday = () => {
-  currentPeriodStart.value = new Date()
-  showDate.value = new Date()
+// Handle event created
+const onEventCreated = (newEvent: Event) => {
+  console.log('New event created:', newEvent)
+  // Refresh events list to include the new event
+  loadEvents()
 }
 
-const goToPreviousPeriod = () => {
-  const current = new Date(currentPeriodStart.value)
-
-  switch (currentView.value) {
-    case 'month':
-      current.setMonth(current.getMonth() - 1)
-      break
-    case 'week':
-      current.setDate(current.getDate() - 7)
-      break
-  }
-
-  currentPeriodStart.value = current
-  showDate.value = current
+// Handle event updated
+const onEventUpdated = (updatedEvent: Event) => {
+  console.log('Event updated:', updatedEvent)
+  // Refresh events list to show updated event
+  loadEvents()
 }
 
-const goToNextPeriod = () => {
-  const current = new Date(currentPeriodStart.value)
-
-  switch (currentView.value) {
-    case 'month':
-      current.setMonth(current.getMonth() + 1)
-      break
-    case 'week':
-      current.setDate(current.getDate() + 7)
-      break
-  }
-
-  currentPeriodStart.value = current
-  showDate.value = current
+// Handle event deleted
+const onEventDeleted = (eventId: number) => {
+  console.log('Event deleted:', eventId)
+  // Refresh events list to remove deleted event
+  loadEvents()
 }
 
 // Load data on component mount
 onMounted(() => {
   loadEvents()
+
+  // Optionally restore last clicked event state (commented out by default)
+  // const storedEvent = storageUtils.loadEvent()
+  // if (storedEvent) {
+  //   console.log('Restored event from storage:', storedEvent)
+  //   selectedEvent.value = storedEvent
+  // }
 })
 </script>
 
@@ -227,16 +157,28 @@ onMounted(() => {
           <p class="text-body-2 mb-0 opacity-90">View and manage organizational events</p>
         </div>
       </div>
-      <v-btn
-        color="white"
-        variant="elevated"
-        size="default"
-        @click="loadEvents"
-        :loading="loading"
-        prepend-icon="mdi-refresh"
-      >
-        Refresh
-      </v-btn>
+      <div class="d-flex align-center ga-2">
+        <v-btn
+          color="white"
+          variant="outlined"
+          size="default"
+          @click="openAddEventDialog"
+          prepend-icon="mdi-calendar-plus"
+          class="me-2"
+        >
+          Add Event
+        </v-btn>
+        <v-btn
+          color="white"
+          variant="elevated"
+          size="default"
+          @click="loadEvents"
+          :loading="loading"
+          prepend-icon="mdi-refresh"
+        >
+          Refresh
+        </v-btn>
+      </div>
     </v-card-title>
 
     <v-divider></v-divider>    <!-- Calendar Controls -->
@@ -391,5 +333,20 @@ onMounted(() => {
         </v-col>
       </v-row>
     </v-card-text>
+
+    <!-- Add Event Dialog -->
+    <AddCalendarDialog
+      v-model="showAddEventDialog"
+      :selected-date="selectedDateForEvent"
+      @event-created="onEventCreated"
+    />
+
+    <!-- View Event Dialog -->
+    <ViewCalendarDialog
+      v-model:is-open="showViewEventDialog"
+      :event="selectedEvent"
+      @event-updated="onEventUpdated"
+      @event-deleted="onEventDeleted"
+    />
   </v-card>
 </template>

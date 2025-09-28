@@ -1,7 +1,25 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useAuthUserStore } from '@/stores/authUser'
+import { useUserRolesStore } from '@/stores/roles'
+import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
+import { updateStudentEventStatus } from '@/stores/eventsData'
+import { supabase } from '@/lib/supabase'
 import { useToast } from 'vue-toastification'
+import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
+import EditUserDialog from '@/pages/admin/dialogs/EditUserDialog.vue'
+import UserDetailsDialog from '@/pages/admin/dialogs/UserDetailsDialog.vue'
+import StatusSummary from '@/pages/admin/components/StatusSummary.vue'
+import { 
+  getRoleColor, 
+  getRoleText, 
+  getStatusColor, 
+  getStatusText, 
+  formatDate, 
+  getUserStatusDisplay,
+  getErrorMessage,
+  type UserStatusDisplay 
+} from '@/utils/helpers'
 
 interface User {
   id: string
@@ -14,27 +32,30 @@ interface User {
   status?: string
   organization_id?: number
   role_id?: number
+  student_id?: number
 }
 
 // Composables
 const authStore = useAuthUserStore()
+const rolesStore = useUserRolesStore()
 const toast = useToast()
 
 // Reactive data
-const users = ref<User[]>([])
 const loading = ref(false)
 const search = ref('')
 const userDialog = ref(false)
+const editDialog = ref(false)
 const selectedUser = ref<User | null>(null)
+const editingUser = ref<User | null>(null)
+const studentEventStatusMap = ref<Record<string, any[]>>({}) // userId -> events array
+const deleteDialog = ref(false)
+const userToDelete = ref<User | null>(null)
 
-// Computed properties for status counts
-const clearedCount = computed(() =>
-  users.value.filter(user => user.status?.toLowerCase() === 'cleared').length
-)
-
-const blockedCount = computed(() =>
-  users.value.filter(user => user.status?.toLowerCase() === 'blocked').length
-)
+// Function to get user status display with blocked events count (using helper function)
+const getUserStatusDisplayForUser = (user: User): UserStatusDisplay => {
+  const userEvents = studentEventStatusMap.value[user.id] || []
+  return getUserStatusDisplay(user, userEvents)
+}
 
 // Table headers
 const headers = [
@@ -54,14 +75,14 @@ const fetchUsers = async () => {
     const result = await authStore.getAllUsers()
 
     if (result.error) {
-      toast.error('Failed to fetch users: ' + result.error)
+      toast.error('Failed to fetch users: ' + getErrorMessage(result.error))
       console.error('Error fetching users:', result.error)
       return
     }
 
+    // Users are now stored in authStore.users reactively
     if (result.users) {
-      users.value = result.users
-     // toast.success(`Loaded ${result.users.length} users`)
+      // toast.success(`Loaded ${result.users.length} users`)
     }
   } catch (error) {
     toast.error('An unexpected error occurred while fetching users')
@@ -71,56 +92,38 @@ const fetchUsers = async () => {
   }
 }
 
-const getRoleColor = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'red' // Admin
-    case 2: return 'blue' // Student
-    case 3: return 'green' // Teacher/Faculty
-    default: return 'grey'
+// Fetch event status data for all students
+const fetchStudentEventStatuses = async () => {
+  try {
+    // Get all students from the user list (users with role_id === 2 AND student_id exists)
+    const students = authStore.users.filter(user => user.role_id === 2 && user.student_id)
+    
+    // Clear the current map
+    studentEventStatusMap.value = {}
+    
+    // Fetch event details for each student
+    for (const student of students) {
+      try {
+        const eventDetails = await fetchStudentEventDetailsByUserId(student.id)
+        studentEventStatusMap.value[student.id] = eventDetails
+      } catch (error: any) {
+        // Only log unexpected errors, not "student record not found" which is expected for non-students
+        if (error?.code !== 'PGRST116' && error?.message !== 'Could not find student record') {
+          console.error(`Failed to fetch events for student ${student.id}:`, error)
+        }
+        // Set empty array for students with fetch errors
+        studentEventStatusMap.value[student.id] = []
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching student event statuses:', error)
   }
 }
 
-const getRoleText = (roleId: number | null | undefined): string => {
-  switch (roleId) {
-    case 1: return 'Admin'
-    case 2: return 'Student'
-    case 3: return 'Faculty'
-    default: return 'Unknown'
-  }
-}
-
-const getStatusColor = (status: string | undefined): string => {
-  switch (status?.toLowerCase()) {
-    case 'cleared': return 'green'
-    case 'blocked': return 'red'
-    case 'active': return 'blue'
-    case 'inactive': return 'orange'
-    case 'suspended': return 'red'
-    default: return 'red' // Default to blocked color
-  }
-}
-
-const getStatusText = (status: string | undefined): string => {
-  const statusLower = status?.toLowerCase()
-  switch (statusLower) {
-    case 'cleared': return 'Cleared'
-    case 'blocked': return 'Blocked'
-    case 'active': return 'Active'
-    case 'inactive': return 'Inactive'
-    case 'suspended': return 'Suspended'
-    default: return status || 'Unknown'
-  }
-}
-
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+// Combined refresh function
+const refreshData = async () => {
+  await fetchUsers()
+  await fetchStudentEventStatuses()
 }
 
 const viewUser = (user: User) => {
@@ -129,22 +132,27 @@ const viewUser = (user: User) => {
 }
 
 const editUser = (user: User) => {
-  // TODO: Implement user editing functionality
-  toast.info('Edit functionality coming soon...')
-  console.log('Edit user:', user)
+  editingUser.value = user
+  editDialog.value = true
+}
+
+const onUserUpdated = async () => {
+  await refreshData() // Refresh the user list and student event statuses
 }
 
 const deleteUser = (user: User) => {
-  // TODO: Implement user deletion functionality
-  if (confirm(`Are you sure you want to delete user ${user.full_name || user.email}?`)) {
-    toast.info('Delete functionality coming soon...')
-    console.log('Delete user:', user)
-  }
+  userToDelete.value = user
+  deleteDialog.value = true
+}
+
+const onUserDeleted = async () => {
+  await refreshData() // Refresh the user list and student event statuses
 }
 
 // Lifecycle
-onMounted(() => {
-  fetchUsers()
+onMounted(async () => {
+  await refreshData()
+  await rolesStore.fetchRoles()
 })
 </script>
 
@@ -158,7 +166,7 @@ onMounted(() => {
       <v-btn
         color="primary"
         prepend-icon="mdi-refresh"
-        @click="fetchUsers"
+        @click="refreshData"
         :loading="loading"
       >
         Refresh
@@ -166,33 +174,12 @@ onMounted(() => {
     </v-card-title>
 
     <!-- Status Summary -->
-    <v-card-subtitle>
-      <v-row class="ma-0">
-        <v-col cols="auto" class="pa-1">
-          <v-chip color="green" variant="tonal" size="small">
-            <v-icon left size="small">mdi-check-circle</v-icon>
-            Cleared: {{ clearedCount }}
-          </v-chip>
-        </v-col>
-        <v-col cols="auto" class="pa-1">
-          <v-chip color="red" variant="tonal" size="small">
-            <v-icon left size="small">mdi-block-helper</v-icon>
-            Blocked: {{ blockedCount }}
-          </v-chip>
-        </v-col>
-        <v-col cols="auto" class="pa-1">
-          <v-chip color="blue" variant="tonal" size="small">
-            <v-icon left size="small">mdi-account-group</v-icon>
-            Total: {{ users.length }}
-          </v-chip>
-        </v-col>
-      </v-row>
-    </v-card-subtitle>
+    <StatusSummary :users="authStore.users" />
 
     <v-card-text>
       <v-data-table
         :headers="headers"
-        :items="users"
+        :items="authStore.users"
         :loading="loading"
         class="elevation-1"
         item-key="id"
@@ -226,11 +213,11 @@ onMounted(() => {
 
         <template v-slot:item.status="{ item }">
           <v-chip
-            :color="getStatusColor(item.status)"
+            :color="getUserStatusDisplayForUser(item).color"
             variant="tonal"
             size="small"
           >
-            {{ getStatusText(item.status) }}
+            {{ getUserStatusDisplayForUser(item).text }}
           </v-chip>
         </template>
 
@@ -279,67 +266,24 @@ onMounted(() => {
     </v-card-text>
 
     <!-- User Details Dialog -->
-    <v-dialog v-model="userDialog" max-width="600px">
-      <v-card v-if="selectedUser">
-        <v-card-title>
-          <span class="text-h5">User Details</span>
-        </v-card-title>
-        <v-card-text>
-          <v-container>
-            <v-row>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Full Name"
-                  :model-value="selectedUser.full_name"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Email"
-                  :model-value="selectedUser.email"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Student Number"
-                  :model-value="selectedUser.student_number || 'N/A'"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Role"
-                  :model-value="getRoleText(selectedUser.role_id)"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Status"
-                  :model-value="selectedUser.status"
-                  readonly
-                />
-              </v-col>
-              <v-col cols="12" md="6">
-                <v-text-field
-                  label="Created At"
-                  :model-value="formatDate(selectedUser.created_at)"
-                  readonly
-                />
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="blue-darken-1" variant="text" @click="userDialog = false">
-            Close
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <UserDetailsDialog 
+      v-model="userDialog" 
+      :user="selectedUser"
+    />
+
+    <!-- Edit User Dialog -->
+    <EditUserDialog 
+      v-model="editDialog" 
+      :user="editingUser" 
+      @user-updated="onUserUpdated"
+    />
+
+    <!-- Delete User Dialog -->
+    <DeleteUserDialog 
+      v-model="deleteDialog" 
+      :user="userToDelete" 
+      @user-deleted="onUserDeleted"
+    />
   </v-card>
 </template>
 
