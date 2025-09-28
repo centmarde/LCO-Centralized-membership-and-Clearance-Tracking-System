@@ -140,7 +140,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-card class="calendar-container" elevation="2" rounded="lg">
+  <v-card class="calendar-container mt-5" elevation="7" rounded="lg">
     <v-card-title class="d-flex align-center justify-space-between pa-6 bg-primary text-white">
       <div class="d-flex align-center">
         <v-icon size="32" class="me-3">mdi-calendar-multiple</v-icon>
@@ -149,16 +149,30 @@ onMounted(() => {
           <p class="text-body-2 mb-0 opacity-90">Registered and Upcoming Events</p>
         </div>
       </div>
-      <v-btn
-        color="white"
-        variant="elevated"
-        size="default"
-        @click="loadEvents"
-        :loading="loading"
-        prepend-icon="mdi-refresh"
-      >
-        Refresh
-      </v-btn>
+      <div class="d-none d-sm-block">
+        <v-btn
+          color="white"
+          variant="elevated"
+          size="default"
+          @click="loadEvents"
+          :loading="loading"
+          prepend-icon="mdi-refresh"
+        >
+          Refresh
+        </v-btn>
+      </div>
+      <div class="d-block d-sm-none">
+        <v-btn
+          color="white"
+          variant="elevated"
+          size="small"
+          @click="loadEvents"
+          :loading="loading"
+          icon
+        >
+          <v-icon>mdi-refresh</v-icon>
+        </v-btn>
+      </div>
     </v-card-title>
     <v-divider></v-divider>
     <v-card-text class="pa-6 pb-0">

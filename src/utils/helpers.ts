@@ -3,6 +3,24 @@
  */
 
 /**
+ * Extracts a readable error message from various error formats
+ * @param error - The error object to extract message from
+ * @returns A human-readable error message string
+ */
+export function getErrorMessage(error: any): string {
+  if (typeof error === 'string') {
+    return error
+  }
+  if (error?.message) {
+    return error.message
+  }
+  if (error?.msg) {
+    return error.msg
+  }
+  return 'Unknown error occurred'
+}
+
+/**
  * Generates initials from an email address for avatar display
  * @param email - The email address to extract initials from
  * @returns A string of 1-2 uppercase letters representing the user's initials
@@ -56,4 +74,140 @@ export function getUserDisplayName(userData: {
   }
 
   return 'User';
+}
+
+/**
+ * Gets the color associated with a role ID
+ * @param roleId - The role ID to get color for
+ * @returns A color string for Vuetify components
+ */
+export function getRoleColor(roleId: number | null | undefined): string {
+  switch (roleId) {
+    case 1: return 'red' // Admin
+    case 2: return 'blue' // Student
+    case 3: return 'green' // Teacher/Faculty
+    default: return 'grey'
+  }
+}
+
+/**
+ * Gets the text representation of a role ID
+ * @param roleId - The role ID to get text for
+ * @returns A human-readable role name
+ */
+export function getRoleText(roleId: number | null | undefined): string {
+  switch (roleId) {
+    case 1: return 'Admin'
+    case 2: return 'Student'
+    case 3: return 'Organization Leader'
+    default: return 'Unknown'
+  }
+}
+
+/**
+ * Gets the color associated with a user status
+ * @param status - The status string to get color for
+ * @returns A color string for Vuetify components
+ */
+export function getStatusColor(status: string | undefined): string {
+  switch (status?.toLowerCase()) {
+    case 'cleared': return 'green'
+    case 'blocked': return 'red'
+    case 'active': return 'blue'
+    case 'inactive': return 'orange'
+    case 'suspended': return 'red'
+    default: return 'red' // Default to blocked color
+  }
+}
+
+/**
+ * Gets the text representation of a user status
+ * @param status - The status string to format
+ * @returns A human-readable status text
+ */
+export function getStatusText(status: string | undefined): string {
+  const statusLower = status?.toLowerCase()
+  switch (statusLower) {
+    case 'cleared': return 'Cleared'
+    case 'blocked': return 'Blocked'
+    case 'active': return 'Active'
+    case 'inactive': return 'Inactive'
+    case 'suspended': return 'Suspended'
+    default: return status || 'Unknown'
+  }
+}
+
+/**
+ * Formats a date string into a human-readable format
+ * @param dateString - The date string to format
+ * @returns A formatted date string or 'N/A' if no date provided
+ */
+export function formatDate(dateString: string | undefined): string {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+/**
+ * Interface for user status display information
+ */
+export interface UserStatusDisplay {
+  text: string
+  color: string
+  showCount: boolean
+  blockedCount: number
+}
+
+/**
+ * Gets the user status display with blocked events count for students
+ * @param user - The user object to get status display for
+ * @param userEvents - Array of events for the user (for students)
+ * @returns UserStatusDisplay object with text, color, and count information
+ */
+export function getUserStatusDisplay(
+  user: { id: string; role_id?: number; status?: string }, 
+  userEvents: any[] = []
+): UserStatusDisplay {
+  if (user.role_id !== 2) {
+    // For non-students, use the original status
+    return {
+      text: getStatusText(user.status),
+      color: getStatusColor(user.status),
+      showCount: false,
+      blockedCount: 0
+    }
+  }
+  
+  // For students, check their event statuses
+  const blockedEvents = userEvents.filter(event => event.status?.toLowerCase() === 'blocked')
+  const clearedEvents = userEvents.filter(event => event.status?.toLowerCase() === 'cleared')
+  
+  if (blockedEvents.length > 0) {
+    return {
+      text: blockedEvents.length === 1 ? 'Blocked (1 event)' : `Blocked (${blockedEvents.length} events)`,
+      color: 'red',
+      showCount: true,
+      blockedCount: blockedEvents.length
+    }
+  } else if (clearedEvents.length > 0) {
+    return {
+      text: 'Cleared',
+      color: 'green',
+      showCount: false,
+      blockedCount: 0
+    }
+  } else {
+    // No events or unknown status
+    return {
+      text: getStatusText(user.status),
+      color: getStatusColor(user.status),
+      showCount: false,
+      blockedCount: 0
+    }
+  }
 }
