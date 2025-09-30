@@ -64,7 +64,7 @@
           variant="flat"
           @click="handleSave"
           :loading="saving"
-          :disabled="!formValid"
+          :disabled="!props.organizationForm.title.trim()"
         >
           {{ editingOrganization ? 'Update' : 'Create' }}
         </v-btn>
@@ -74,9 +74,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { getEmailInitials } from '@/utils/helpers'
-import { organizationValidationRules } from '../utils/organizationConfig'
+import { organizationValidationRules } from '@/utils/helpers'
 import type { Organization, OrganizationLeader } from '../composables/useOrganizations'
 
 // Props
@@ -113,10 +113,33 @@ const localDialog = computed({
   set: (value) => emit('update:dialog', value)
 })
 
+// Watch for form changes to validate
+watch(() => props.organizationForm.title, async () => {
+  if (formRef.value) {
+    await nextTick()
+    formRef.value.validate()
+  }
+}, { immediate: true })
+
+// Watch for dialog opening to reset validation
+watch(() => props.dialog, async (newVal) => {
+  if (newVal && formRef.value) {
+    await nextTick()
+    // Reset validation and then validate
+    formRef.value.resetValidation()
+    if (props.organizationForm.title) {
+      formRef.value.validate()
+    }
+  }
+})
+
 // Event handlers
-const handleSave = () => {
-  if (formValid.value) {
-    emit('save')
+const handleSave = async () => {
+  if (formRef.value) {
+    const { valid } = await formRef.value.validate()
+    if (valid) {
+      emit('save')
+    }
   }
 }
 
