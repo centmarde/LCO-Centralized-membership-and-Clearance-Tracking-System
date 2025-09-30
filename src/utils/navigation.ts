@@ -72,6 +72,12 @@ export const navigationConfig: NavigationGroup[] = [
         icon: 'mdi-calendar-multiple',
         route: '/admin/events',
         permission: 'admin.events.manage'
+      },
+      {
+        title: 'Manage Organizations',
+        icon: 'mdi-domain',
+        route: '/admin/organizations',
+        permission: 'admin.organizations.manage'
       }
     ]
   },
