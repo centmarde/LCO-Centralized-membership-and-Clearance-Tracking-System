@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
-import { getEmailInitials, formatDate } from '@/utils/helpers'
+import { onMounted, computed, ref } from 'vue'
+import { 
+  getEmailInitials, 
+  formatDate, 
+  createViewMembersHandler,
+  organizationsTableHeaders 
+} from '@/utils/helpers'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
 import OrganizationFormDialog from './dialogs/OrganizationFormDialog.vue'
 import OrganizationDeleteDialog from './dialogs/OrganizationDeleteDialog.vue'
+import OrganizationMembersDialog from './dialogs/OrganizationMembersDialog.vue'
 import { useOrganizations } from './composables/useOrganizations'
 import { useDialogs } from './composables/useDialogs'
-import { organizationsTableHeaders } from './utils/organizationConfig'
+import { useOrganizationMembers } from './composables/useOrganizationMembers'
 
 // Composables
 const {
@@ -44,8 +50,30 @@ const {
   closeDeleteDialog
 } = useDialogs()
 
+const {
+  // State
+  loading: loadingMembers,
+  saving: savingMembers,
+  deleting: deletingMembers,
+  members,
+  availableStudents,
+  memberForm,
+  // Actions
+  fetchOrganizationMembers,
+  fetchAvailableStudents,
+  addMemberToOrganization,
+  updateOrganizationMember,
+  removeMemberFromOrganization,
+  resetMemberForm,
+  clearMembersData
+} = useOrganizationMembers()
+
 // Table configuration
 const headers = organizationsTableHeaders
+
+// Member dialog state
+const membersDialog = ref(false)
+const selectedOrganization = ref<any>(null)
 
 // Computed properties
 const filteredOrganizations = computed(() => {
@@ -76,8 +104,6 @@ const handleDeleteOrganization = (organization: any) => {
 }
 
 const handleSaveOrganization = async () => {
-  if (!formValid.value) return
-  
   const success = await saveOrganization()
   if (success) {
     closeDialog()
@@ -97,6 +123,36 @@ const handleConfirmDelete = async () => {
   if (success) {
     closeDeleteDialog()
   }
+}
+
+// Member viewing handler (admin view) with debug logging
+const baseHandleViewMembers = createViewMembersHandler({
+  setSelectedOrganization: (org) => { selectedOrganization.value = org },
+  setMembersDialog: (open) => { membersDialog.value = open },
+  fetchOrganizationMembers,
+  viewOnly: true // Admin view is read-only
+})
+
+const handleViewMembers = async (organization: any) => {
+  console.log('OrganizationsView - Opening members dialog for organization:', organization.id)
+  console.log('OrganizationsView - Current members before fetch:', members.value?.length || 0)
+  
+  // Use the helper for core functionality
+  await baseHandleViewMembers(organization)
+  
+  console.log('OrganizationsView - Members after fetch:', members.value?.length || 0)
+}
+
+// These handlers are not needed in admin view-only mode
+const handleAddMember = () => {} // No-op for admin view
+const handleUpdateMember = () => {} // No-op for admin view  
+const handleRemoveMember = () => {} // No-op for admin view
+
+const handleCloseMembersDialog = () => {
+  membersDialog.value = false
+  selectedOrganization.value = null
+  // Clear members data to prevent showing stale data
+  clearMembersData()
 }
 
 // Lifecycle
@@ -238,6 +294,13 @@ onMounted(() => {
                   </template>
                   <v-list density="compact">
                     <v-list-item
+                      @click="handleViewMembers(organization)"
+                      prepend-icon="mdi-eye"
+                    >
+                      <v-list-item-title>View Members</v-list-item-title>
+                    </v-list-item>
+                    <v-divider />
+                    <v-list-item
                       @click="handleEditOrganization(organization)"
                       prepend-icon="mdi-pencil"
                     >
@@ -318,6 +381,23 @@ onMounted(() => {
       :organization-to-delete="organizationToDelete"
       @confirm="handleConfirmDelete"
       @close="closeDeleteDialog"
+    />
+
+    <!-- Organization Members Dialog -->
+    <OrganizationMembersDialog
+      v-model:dialog="membersDialog"
+      :loading="loadingMembers"
+      :saving="savingMembers"
+      :organization-id="selectedOrganization?.id || null"
+      :organization-title="selectedOrganization?.title || ''"
+      :members="members"
+      :available-students="availableStudents"
+      :member-form="memberForm"
+      :view-only="true"
+      @add-member="handleAddMember"
+      @update-member="handleUpdateMember"
+      @remove-member="handleRemoveMember"
+      @close="handleCloseMembersDialog"
     />
             </div>
           </v-col>
