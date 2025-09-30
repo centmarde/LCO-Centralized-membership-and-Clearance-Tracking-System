@@ -1,115 +1,336 @@
+<script setup lang="ts">
+import { onMounted, computed } from 'vue'
+import { getEmailInitials, formatDate } from '@/utils/helpers'
+import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
+import OrganizationFormDialog from './dialogs/OrganizationFormDialog.vue'
+import OrganizationDeleteDialog from './dialogs/OrganizationDeleteDialog.vue'
+import { useOrganizations } from './composables/useOrganizations'
+import { useDialogs } from './composables/useDialogs'
+import { organizationsTableHeaders } from './utils/organizationConfig'
+
+// Composables
+const {
+  // State
+  loading,
+  saving,
+  deleting,
+  loadingLeaders,
+  organizations,
+  organizationLeaders,
+  editingOrganization,
+  organizationToDelete,
+  organizationForm,
+  // Actions
+  fetchOrganizations,
+  saveOrganization,
+  deleteOrganization,
+  prepareCreateOrganization,
+  prepareEditOrganization,
+  prepareDeleteOrganization,
+  resetForm
+} = useOrganizations()
+
+const {
+  // State
+  dialog,
+  deleteDialog,
+  formValid,
+  formRef,
+  search,
+  // Actions
+  openDialog,
+  closeDialog,
+  openDeleteDialog,
+  closeDeleteDialog
+} = useDialogs()
+
+// Table configuration
+const headers = organizationsTableHeaders
+
+// Computed properties
+const filteredOrganizations = computed(() => {
+  if (!search.value) return organizations.value
+  
+  const searchTerm = search.value.toLowerCase()
+  return organizations.value.filter(org => 
+    org.title.toLowerCase().includes(searchTerm) ||
+    org.leader?.full_name?.toLowerCase().includes(searchTerm) ||
+    org.leader?.email?.toLowerCase().includes(searchTerm)
+  )
+})
+
+// Event handlers
+const handleCreateOrganization = () => {
+  prepareCreateOrganization()
+  openDialog()
+}
+
+const handleEditOrganization = (organization: any) => {
+  prepareEditOrganization(organization)
+  openDialog()
+}
+
+const handleDeleteOrganization = (organization: any) => {
+  prepareDeleteOrganization(organization)
+  openDeleteDialog()
+}
+
+const handleSaveOrganization = async () => {
+  if (!formValid.value) return
+  
+  const success = await saveOrganization()
+  if (success) {
+    closeDialog()
+    resetForm()
+  }
+}
+
+const handleCloseDialog = () => {
+  closeDialog()
+  resetForm()
+}
+
+const handleConfirmDelete = async () => {
+  if (!organizationToDelete.value) return
+  
+  const success = await deleteOrganization(organizationToDelete.value)
+  if (success) {
+    closeDeleteDialog()
+  }
+}
+
+// Lifecycle
+onMounted(() => {
+  fetchOrganizations()
+})
+</script>
+
 <template>
-  <div class="organizations-container">
+  <InnerLayoutWrapper>
+    <template #content>
+      <v-container fluid class="pa-6">
+        <v-row>
+          <v-col cols="12">
+            <div class="organizations-container">
     <!-- Page Header -->
-    <v-card class="mb-6" elevation="2">
-      <v-card-title class="d-flex justify-space-between align-center pa-6">
-        <div>
-          <h1 class="text-h4 font-weight-bold primary--text mb-2">
-            <v-icon class="mr-3" size="large" color="primary">mdi-domain</v-icon>
-            Organization Management
-          </h1>
-          <p class="text-subtitle-1 text-grey mb-0">
-            Manage organizations and their settings
-          </p>
+    <v-card class="mb-6" elevation="7" rounded="lg">
+      <v-card-title class="pa-4 bg-primary text-white">
+        <!-- Mobile Layout -->
+        <div class="d-block d-sm-none w-100">
+          <div class="d-flex align-center justify-space-between mb-3">
+            <div class="d-flex align-center">
+              <v-icon size="28" class="me-2">mdi-domain</v-icon>
+              <h2 class="text-h6 font-weight-bold">Manage Organizations</h2>
+            </div>
+            <v-btn 
+              color="white" 
+              variant="elevated" 
+              size="small" 
+              @click="handleCreateOrganization" 
+              :loading="loading" 
+              icon
+            >
+              <v-icon>mdi-plus</v-icon>
+            </v-btn>
+          </div>
+          <p class="text-body-2 mb-0 opacity-90">Manage organizations and leaders</p>
         </div>
-        <v-chip color="warning" variant="elevated" size="large">
-          <v-icon start>mdi-clock-outline</v-icon>
-          Coming Soon
-        </v-chip>
+        
+        <!-- Desktop Layout -->
+        <div class="d-none d-sm-flex align-center justify-space-between w-100">
+          <div class="d-flex align-center">
+            <v-icon size="32" class="me-3">mdi-domain</v-icon>
+            <div>
+              <h2 class="text-h5 font-weight-bold mb-1">Manage Organizations</h2>
+              <p class="text-body-2 mb-0 opacity-90">Manage organizations and their leaders</p>
+            </div>
+          </div>
+          <v-btn 
+            color="white" 
+            variant="elevated" 
+            size="default" 
+            @click="handleCreateOrganization" 
+            :loading="loading" 
+            prepend-icon="mdi-plus"
+          >
+            Create Organization
+          </v-btn>
+        </div>
       </v-card-title>
     </v-card>
 
-    <!-- Coming Soon Content -->
-    <v-row justify="center">
-      <v-col cols="12" md="8" lg="6">
-        <v-card class="text-center pa-8" elevation="3">
-          <v-avatar size="120" color="primary" class="mb-6">
-            <v-icon size="60" color="white">mdi-office-building-cog</v-icon>
-          </v-avatar>
-          
-          <h2 class="text-h4 font-weight-bold mb-4">Organizations CRUD</h2>
-          <p class="text-h6 text-grey mb-6">
-            This feature is currently under development
-          </p>
-          
-          <v-divider class="my-6"></v-divider>
-          
-          <div class="text-left">
-            <h3 class="text-h6 font-weight-medium mb-4">Planned Features:</h3>
-            <v-list class="bg-transparent">
-              <v-list-item class="pa-2">
-                <template #prepend>
-                  <v-icon color="success">mdi-check-circle</v-icon>
-                </template>
-                <v-list-item-title>Create new organizations</v-list-item-title>
-              </v-list-item>
-              
-              <v-list-item class="pa-2">
-                <template #prepend>
-                  <v-icon color="success">mdi-check-circle</v-icon>
-                </template>
-                <v-list-item-title>Edit organization details</v-list-item-title>
-              </v-list-item>
-              
-              <v-list-item class="pa-2">
-                <template #prepend>
-                  <v-icon color="success">mdi-check-circle</v-icon>
-                </template>
-                <v-list-item-title>View organization members</v-list-item-title>
-              </v-list-item>
-              
-              <v-list-item class="pa-2">
-                <template #prepend>
-                  <v-icon color="success">mdi-check-circle</v-icon>
-                </template>
-                <v-list-item-title>Manage organization settings</v-list-item-title>
-              </v-list-item>
-              
-              <v-list-item class="pa-2">
-                <template #prepend>
-                  <v-icon color="success">mdi-check-circle</v-icon>
-                </template>
-                <v-list-item-title>Delete organizations</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </div>
-          
-          <v-divider class="my-6"></v-divider>
-          
-          <v-btn
-            color="primary"
-            variant="tonal"
-            size="large"
-            class="mb-4"
-            @click="goBack"
+    <!-- Search Bar -->
+    <v-card class="mb-4" elevation="2">
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="search"
+              prepend-inner-icon="mdi-magnify"
+              label="Search organizations..."
+              variant="outlined"
+              hide-details
+              clearable
+              density="compact"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+
+    <!-- Organizations Cards Grid -->
+    <div v-if="loading" class="text-center pa-8">
+      <v-progress-circular indeterminate color="primary" size="60" class="mb-4" />
+      <div class="text-h6">Loading organizations...</div>
+    </div>
+
+    <div v-else-if="filteredOrganizations.length === 0 && !loading">
+      <v-card elevation="2" class="text-center pa-8">
+        <v-icon size="80" color="grey-lighten-1" class="mb-4">mdi-domain-off</v-icon>
+        <h3 class="text-h5 mb-2">No organizations found</h3>
+        <p class="text-body-1 text-medium-emphasis mb-4">
+          {{ search ? `No organizations match "${search}"` : 'Create your first organization to get started.' }}
+        </p>
+        <v-btn
+          v-if="!search"
+          color="primary"
+          prepend-icon="mdi-plus"
+          @click="handleCreateOrganization"
+          size="large"
+        >
+          Create First Organization
+        </v-btn>
+      </v-card>
+    </div>
+
+    <div v-else>
+      <v-row>
+        <v-col
+          v-for="organization in filteredOrganizations"
+          :key="organization.id"
+          cols="12"
+          sm="6"
+          md="4"
+          lg="3"
+        >
+          <v-card
+            elevation="3"
+            rounded="lg"
+            class="organization-card fill-height"
+            hover
           >
-            <v-icon start>mdi-arrow-left</v-icon>
-            Go Back to Dashboard
-          </v-btn>
-          
-          <p class="text-caption text-grey">
-            This page will be available in a future update
-          </p>
-        </v-card>
-      </v-col>
-    </v-row>
-  </div>
+            <!-- Card Header with Organization Info -->
+            <v-card-title class="pa-4 pb-2">
+              <div class="d-flex align-center justify-space-between w-100">
+                <div class="flex-grow-1">
+                  <v-icon color="primary" size="24" class="mr-2">mdi-domain</v-icon>
+                  <span class="text-h6 font-weight-bold">{{ organization.title }}</span>
+                </div>
+                <!-- Action Menu -->
+                <v-menu location="bottom end">
+                  <template v-slot:activator="{ props }">
+                    <v-btn
+                      icon="mdi-dots-vertical"
+                      variant="text"
+                      size="small"
+                      v-bind="props"
+                    />
+                  </template>
+                  <v-list density="compact">
+                    <v-list-item
+                      @click="handleEditOrganization(organization)"
+                      prepend-icon="mdi-pencil"
+                    >
+                      <v-list-item-title>Edit</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item
+                      @click="handleDeleteOrganization(organization)"
+                      prepend-icon="mdi-delete"
+                      class="text-error"
+                    >
+                      <v-list-item-title>Delete</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
+              </div>
+            </v-card-title>
+
+            <!-- Card Content -->
+            <v-card-text class="pa-4 pt-0">
+              <!-- Leader Information -->
+              <div class="mb-3">
+                <div class="text-caption text-medium-emphasis mb-1">Organization Leader</div>
+                <div v-if="organization.leader" class="d-flex align-center">
+                  <v-avatar size="28" color="primary" class="mr-2">
+                    <span class="text-white text-caption">
+                      {{ getEmailInitials(organization.leader.email) }}
+                    </span>
+                  </v-avatar>
+                  <div class="flex-grow-1">
+                    <div class="text-body-2 font-weight-medium">
+                      {{ organization.leader.full_name || organization.leader.email }}
+                    </div>
+                    <div class="text-caption text-medium-emphasis">
+                      {{ organization.leader.email }}
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="d-flex align-center">
+                  <v-avatar size="28" color="grey-lighten-2" class="mr-2">
+                    <v-icon size="16" color="grey">mdi-account-off</v-icon>
+                  </v-avatar>
+                  <v-chip color="warning" variant="tonal" size="small">
+                    No Leader Assigned
+                  </v-chip>
+                </div>
+              </div>
+
+              <!-- Creation Date -->
+              <div class="mb-0">
+                <div class="text-caption text-medium-emphasis mb-1">Created</div>
+                <div class="d-flex align-center">
+                  <v-icon size="16" color="grey" class="mr-1">mdi-calendar</v-icon>
+                  <span class="text-body-2">{{ formatDate(organization.created_at) }}</span>
+                </div>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
+    <!-- Create/Edit Organization Dialog -->
+    <OrganizationFormDialog
+      v-model:dialog="dialog"
+      :saving="saving"
+      :loading-leaders="loadingLeaders"
+      :editing-organization="editingOrganization"
+      :organization-form="organizationForm"
+      :organization-leaders="organizationLeaders"
+      @save="handleSaveOrganization"
+      @close="handleCloseDialog"
+    />
+
+    <!-- Delete Confirmation Dialog -->
+    <OrganizationDeleteDialog
+      v-model:dialog="deleteDialog"
+      :deleting="deleting"
+      :organization-to-delete="organizationToDelete"
+      @confirm="handleConfirmDelete"
+      @close="closeDeleteDialog"
+    />
+            </div>
+          </v-col>
+        </v-row>
+      </v-container>
+    </template>
+  </InnerLayoutWrapper>
 </template>
-
-<script setup lang="ts">
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-const goBack = () => {
-  router.push('/admin/user-management')
-}
-</script>
 
 <style scoped>
 .organizations-container {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -117,12 +338,32 @@ const goBack = () => {
   border-radius: 12px !important;
 }
 
-.v-list-item {
-  border-radius: 8px;
-  margin-bottom: 4px;
+.organization-card {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.v-avatar {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+.organization-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.organization-card .v-card-title {
+  background: rgba(var(--v-theme-surface), 0.02);
+  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
+}
+
+/* Mobile optimizations */
+@media (max-width: 600px) {
+  .organizations-container {
+    padding: 10px;
+  }
+}
+
+/* Responsive grid improvements */
+@media (min-width: 1400px) {
+  .organizations-container {
+    max-width: 1600px;
+  }
 }
 </style>
