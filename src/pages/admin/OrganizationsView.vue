@@ -383,13 +383,14 @@ onMounted(() => {
       @close="closeDeleteDialog"
     />
 
-    <!-- Organization Members Dialog -->
+    <!-- Organization Members Dialog (only show if organization is selected) -->
     <OrganizationMembersDialog
+      v-if="selectedOrganization?.id"
       v-model:dialog="membersDialog"
       :loading="loadingMembers"
       :saving="savingMembers"
-      :organization-id="selectedOrganization?.id || null"
-      :organization-title="selectedOrganization?.title || ''"
+      :organization-id="selectedOrganization.id"
+      :organization-title="selectedOrganization.title || 'Unknown Organization'"
       :members="members"
       :available-students="availableStudents"
       :member-form="memberForm"

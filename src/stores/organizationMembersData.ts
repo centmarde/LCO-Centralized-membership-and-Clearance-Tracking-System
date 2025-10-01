@@ -59,13 +59,13 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
   const availableStudents = ref<any[]>([])
   const currentOrganizationId = ref<string | null>(null)
   
-  // Form data
+  // Form data - all fields initialized with proper defaults (no null)
   const memberForm = reactive({
-    student_id: null as string | null,
-    organization_id: null as string | null,
+    student_id: '' as string,
+    organization_id: '' as string,
     status: 'active' as OrganizationMember['status'],
     member_role: 'member' as OrganizationMember['member_role'],
-    notes: null as string | null
+    notes: '' as string
   })
 
   /**
@@ -211,7 +211,11 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
    * Adds a student to an organization
    */
   const addMemberToOrganization = async (): Promise<boolean> => {
+    console.log('addMemberToOrganization called with form:', memberForm)
+    console.log('student_id:', memberForm.student_id, 'organization_id:', memberForm.organization_id)
+    
     if (!memberForm.student_id || !memberForm.organization_id) {
+      console.error('Validation failed - student_id:', memberForm.student_id, 'organization_id:', memberForm.organization_id)
       toast.error('Student and organization are required')
       return false
     }
@@ -367,14 +371,16 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
   }
 
   /**
-   * Resets the member form
+   * Resets the member form (preserves organization_id to allow adding multiple members)
    */
   const resetMemberForm = () => {
-    memberForm.student_id = null
-    memberForm.organization_id = null
+    const currentOrgId = memberForm.organization_id // Preserve the organization ID
+    memberForm.student_id = ''
+    memberForm.organization_id = currentOrgId // Keep the organization ID
     memberForm.status = 'active'
     memberForm.member_role = 'member'
-    memberForm.notes = null
+    memberForm.notes = ''
+    console.log('Form reset, organization_id preserved:', memberForm.organization_id)
   }
 
   /**

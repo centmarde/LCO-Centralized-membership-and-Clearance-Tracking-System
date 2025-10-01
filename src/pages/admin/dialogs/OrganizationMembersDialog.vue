@@ -7,16 +7,16 @@ interface Props {
   dialog: boolean
   loading: boolean
   saving: boolean
-  organizationId: string | null
+  organizationId: string
   organizationTitle: string
   members: OrganizationMember[]
   availableStudents: any[]
   memberForm: {
-    student_id: string | null
-    organization_id: string | null
+    student_id: string
+    organization_id: string
     status: 'active' | 'inactive' | 'pending' | 'suspended'
     member_role: 'member' | 'officer' | 'secretary' | 'treasurer' | 'vice_president'
-    notes: string | null
+    notes: string
   }
   viewOnly?: boolean // New prop to make dialog read-only
 }
@@ -53,6 +53,28 @@ const dialogValue = computed({
 const statusOptions = memberStatusOptions
 const roleOptions = memberRoleOptions
 
+// Helper methods to update individual form fields
+// These directly mutate the reactive memberForm from the store
+const updateStudentId = (value: string | null) => {
+  props.memberForm.student_id = value || ''
+  console.log('Student ID updated to:', props.memberForm.student_id)
+}
+
+const updateMemberRole = (value: string) => {
+  props.memberForm.member_role = value as any
+  console.log('Member role updated to:', props.memberForm.member_role)
+}
+
+const updateStatus = (value: string) => {
+  props.memberForm.status = value as any
+  console.log('Status updated to:', props.memberForm.status)
+}
+
+const updateNotes = (value: string | null) => {
+  props.memberForm.notes = value || ''
+  console.log('Notes updated to:', props.memberForm.notes)
+}
+
 // Methods
 const handleAddMember = () => {
   emit('add-member')
@@ -75,10 +97,16 @@ const getRoleTitle = getMemberRoleTitle
 
 // Watch for dialog changes to reset form
 watch(() => props.dialog, (newVal) => {
+  console.log('Dialog watch triggered:', newVal, 'organizationId:', props.organizationId)
   if (newVal && props.organizationId) {
+    // Set the organization_id when dialog opens
+    console.log('Setting organization_id from', props.memberForm.organization_id, 'to', props.organizationId)
     props.memberForm.organization_id = props.organizationId
+    console.log('Dialog opened for organization:', props.organizationId)
+    console.log('Form organization_id set to:', props.memberForm.organization_id)
+    console.log('Full form state:', { ...props.memberForm })
   }
-})
+}, { immediate: true })
 </script>
 
 <template>
@@ -128,7 +156,8 @@ watch(() => props.dialog, (newVal) => {
               <v-row>
                 <v-col cols="12" md="6">
                   <v-select
-                    v-model="memberForm.student_id"
+                    :model-value="memberForm.student_id"
+                    @update:model-value="updateStudentId"
                     :items="availableStudents"
                     item-value="id"
                     item-title="display_name"
@@ -153,7 +182,8 @@ watch(() => props.dialog, (newVal) => {
                 </v-col>
                 <v-col cols="12" md="3">
                   <v-select
-                    v-model="memberForm.member_role"
+                    :model-value="memberForm.member_role"
+                    @update:model-value="updateMemberRole"
                     :items="roleOptions"
                     label="Member Role"
                     variant="outlined"
@@ -162,7 +192,8 @@ watch(() => props.dialog, (newVal) => {
                 </v-col>
                 <v-col cols="12" md="3">
                   <v-select
-                    v-model="memberForm.status"
+                    :model-value="memberForm.status"
+                    @update:model-value="updateStatus"
                     :items="statusOptions"
                     label="Status"
                     variant="outlined"
@@ -171,7 +202,8 @@ watch(() => props.dialog, (newVal) => {
                 </v-col>
                 <v-col cols="12">
                   <v-textarea
-                    v-model="memberForm.notes"
+                    :model-value="memberForm.notes"
+                    @update:model-value="updateNotes"
                     label="Notes (Optional)"
                     variant="outlined"
                     density="compact"
@@ -209,7 +241,9 @@ watch(() => props.dialog, (newVal) => {
               <div v-else-if="members.length === 0" class="text-center pa-8">
                 <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-account-group-outline</v-icon>
                 <h3 class="text-h6 mb-2">No members yet</h3>
-                <p class="text-body-2 text-medium-emphasis">Add the first member to get started.</p>
+                <p class="text-body-2 text-medium-emphasis">
+                  {{ viewOnly ? 'This organization has no members.' : 'Add the first member to get started.' }}
+                </p>
               </div>
 
               <v-list v-else class="pa-0">
