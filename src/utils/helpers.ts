@@ -211,3 +211,258 @@ export function getUserStatusDisplay(
     }
   }
 }
+
+// ========================================
+// ORGANIZATION MEMBERS HELPERS
+// ========================================
+
+/**
+ * Organization member management configuration
+ */
+export const memberStatusOptions = [
+  { value: 'active', title: 'Active', color: 'success', icon: 'mdi-check-circle' },
+  { value: 'pending', title: 'Pending', color: 'warning', icon: 'mdi-clock' },
+  { value: 'inactive', title: 'Inactive', color: 'grey', icon: 'mdi-minus-circle' },
+  { value: 'suspended', title: 'Suspended', color: 'error', icon: 'mdi-alert-circle' }
+] as const
+
+export const memberRoleOptions = [
+  { value: 'member', title: 'Member', description: 'Regular organization member' },
+  { value: 'officer', title: 'Officer', description: 'Organization officer with special responsibilities' },
+  { value: 'secretary', title: 'Secretary', description: 'Handles documentation and communications' },
+  { value: 'treasurer', title: 'Treasurer', description: 'Manages organization finances' },
+  { value: 'vice_president', title: 'Vice President', description: 'Second-in-command of the organization' }
+] as const
+
+export type MemberStatus = typeof memberStatusOptions[number]['value']
+export type MemberRole = typeof memberRoleOptions[number]['value']
+
+/**
+ * Gets the color for a member status
+ */
+export const getMemberStatusColor = (status: string): string => {
+  const option = memberStatusOptions.find(opt => opt.value === status)
+  return option?.color || 'grey'
+}
+
+/**
+ * Gets the icon for a member status
+ */
+export const getMemberStatusIcon = (status: string): string => {
+  const option = memberStatusOptions.find(opt => opt.value === status)
+  return option?.icon || 'mdi-help-circle'
+}
+
+/**
+ * Gets the title for a member role
+ */
+export const getMemberRoleTitle = (role: string): string => {
+  const option = memberRoleOptions.find(opt => opt.value === role)
+  return option?.title || role
+}
+
+/**
+ * Gets the description for a member role
+ */
+export const getMemberRoleDescription = (role: string): string => {
+  const option = memberRoleOptions.find(opt => opt.value === role)
+  return option?.description || ''
+}
+
+/**
+ * Validates if a member status is valid
+ */
+export const isValidMemberStatus = (status: string): status is MemberStatus => {
+  return memberStatusOptions.some(opt => opt.value === status)
+}
+
+/**
+ * Validates if a member role is valid
+ */
+export const isValidMemberRole = (role: string): role is MemberRole => {
+  return memberRoleOptions.some(opt => opt.value === role)
+}
+
+// ========================================
+// ORGANIZATION VIEW HELPERS
+// ========================================
+
+/**
+ * Filters organizations by leader ID
+ * @param organizations - Array of organizations
+ * @param leaderId - ID of the leader to filter by
+ * @returns Organizations where the user is the leader
+ */
+export const filterOrganizationsByLeader = (organizations: any[], leaderId: string | undefined): any[] => {
+  if (!leaderId) return []
+  return organizations.filter(org => org.leader_id === leaderId)
+}
+
+/**
+ * Filters organization members by search term
+ * @param members - Array of organization members
+ * @param searchTerm - Search term to filter by
+ * @returns Filtered members matching the search term
+ */
+export const filterMembersBySearch = (members: any[], searchTerm: string): any[] => {
+  if (!searchTerm) return members
+  
+  const term = searchTerm.toLowerCase()
+  return members.filter(member => 
+    member.student?.full_name?.toLowerCase().includes(term) ||
+    member.student?.email?.toLowerCase().includes(term) ||
+    member.student?.student_number?.toLowerCase().includes(term)
+  )
+}
+
+/**
+ * Prepares organization data for card display
+ * @param organization - Organization object
+ * @returns Formatted organization data for UI display
+ */
+export const prepareOrganizationCardData = (organization: any) => {
+  return {
+    id: organization.id,
+    title: organization.title || 'Untitled Organization',
+    createdAt: organization.created_at,
+    formattedCreatedAt: formatDate(organization.created_at),
+    isLeader: true, // This would be determined by the calling component
+    memberCount: organization.member_count || 0
+  }
+}
+
+/**
+ * Creates member management handlers factory
+ * @param config - Configuration object with callbacks and state
+ * @returns Object with standardized member management handlers
+ */
+export const createMemberManagementHandlers = (config: {
+  setSelectedOrganization: (org: any) => void
+  setMembersDialog: (open: boolean) => void
+  fetchOrganizationMembers: (orgId: string) => Promise<any>
+  fetchAvailableStudents: (orgId: string) => Promise<any>
+  addMemberToOrganization: () => Promise<boolean>
+  updateOrganizationMember: (memberId: string, updates: any) => Promise<boolean>
+  removeMemberFromOrganization: (memberId: string) => Promise<boolean>
+  resetMemberForm: () => void
+  clearMembersData: () => void
+  getSelectedOrganization: () => any
+}) => {
+  
+  const handleManageMembers = async (organization: any) => {
+    config.setSelectedOrganization(organization)
+    config.setMembersDialog(true)
+    
+    // Fetch members and available students
+    await Promise.all([
+      config.fetchOrganizationMembers(organization.id),
+      config.fetchAvailableStudents(organization.id)
+    ])
+  }
+
+  const handleAddMember = async () => {
+    const success = await config.addMemberToOrganization()
+    if (success) {
+      config.resetMemberForm()
+      // Refresh members list
+      const selectedOrg = config.getSelectedOrganization()
+      if (selectedOrg) {
+        await Promise.all([
+          config.fetchOrganizationMembers(selectedOrg.id),
+          config.fetchAvailableStudents(selectedOrg.id)
+        ])
+      }
+    }
+  }
+
+  const handleUpdateMember = async (memberId: string, updates: any) => {
+    const success = await config.updateOrganizationMember(memberId, updates)
+    if (success) {
+      const selectedOrg = config.getSelectedOrganization()
+      if (selectedOrg) {
+        // Refresh members list
+        await config.fetchOrganizationMembers(selectedOrg.id)
+      }
+    }
+  }
+
+  const handleRemoveMember = async (memberId: string) => {
+    const success = await config.removeMemberFromOrganization(memberId)
+    if (success) {
+      const selectedOrg = config.getSelectedOrganization()
+      if (selectedOrg) {
+        // Refresh members list
+        await config.fetchOrganizationMembers(selectedOrg.id)
+      }
+    }
+  }
+
+  const handleCloseMembersDialog = () => {
+    config.setMembersDialog(false)
+    config.setSelectedOrganization(null)
+    // Clear members data to prevent showing stale data
+    config.clearMembersData()
+  }
+
+  return {
+    handleManageMembers,
+    handleAddMember,
+    handleUpdateMember,
+    handleRemoveMember,
+    handleCloseMembersDialog
+  }
+}
+
+/**
+ * Creates a handler for viewing organization members (admin/read-only mode)
+ * @param config - Configuration object with callbacks and state
+ * @returns Handler function for viewing members
+ */
+export const createViewMembersHandler = (config: {
+  setSelectedOrganization: (org: any) => void
+  setMembersDialog: (open: boolean) => void
+  fetchOrganizationMembers: (orgId: string) => Promise<any>
+  fetchAvailableStudents?: (orgId: string) => Promise<any> // Optional for view-only mode
+  viewOnly?: boolean // If true, won't fetch available students
+}) => {
+  
+  return async (organization: any) => {
+    config.setSelectedOrganization(organization)
+    config.setMembersDialog(true)
+    
+    // Fetch members, and optionally available students based on mode
+    if (config.viewOnly || !config.fetchAvailableStudents) {
+      // View-only mode: fetch members only
+      await config.fetchOrganizationMembers(organization.id)
+    } else {
+      // Full management mode: fetch both members and available students
+      await Promise.all([
+        config.fetchOrganizationMembers(organization.id),
+        config.fetchAvailableStudents(organization.id)
+      ])
+    }
+  }
+}
+
+// ========================================
+// ORGANIZATION CONFIGURATION
+// ========================================
+
+/**
+ * Table configuration for Organizations data table
+ */
+export const organizationsTableHeaders = [
+  { title: 'Organization Name', key: 'title', sortable: true },
+  { title: 'Leader', key: 'leader', sortable: true },
+  { title: 'Created Date', key: 'created_at', sortable: true },
+  { title: 'Actions', key: 'actions', sortable: false },
+]
+
+/**
+ * Form validation rules for organizations
+ */
+export const organizationValidationRules = {
+  title: [
+    (v: string) => !!v || 'Organization name is required'
+  ]
+}
