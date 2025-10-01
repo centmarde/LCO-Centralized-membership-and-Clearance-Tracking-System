@@ -10,6 +10,7 @@ import AdminUserRolesView from '@/pages/admin/AdminUserRolesView.vue';
 import AdminUserPagesView from '@/pages/admin/AdminUserPagesView.vue';
 import EventsView from '@/pages/admin/EventsView.vue';
 import UserManagementView from '@/pages/admin/UserManagementView.vue';
+import OrganizationsView from '@/pages/admin/OrganizationsView.vue';
 
 import MembersView from '@/pages/myOrganization/MembersView.vue';
 
@@ -60,6 +61,11 @@ const routes = setupLayouts([
   {
     path: '/admin/user-management',
     component: UserManagementView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/organizations',
+    component: OrganizationsView,
     meta: { requiresAuth: true }
   },
   {
