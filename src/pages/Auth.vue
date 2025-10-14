@@ -298,12 +298,12 @@ onMounted(async () => {
 
 /* Light theme overlay */
 .quote-background-overlay.light-overlay {
-  background-color: rgba(255, 255, 255, 0.85);
+     background-color:  rgba(227, 255, 230, 0.664);
 }
 
 /* Dark theme overlay */
 .quote-background-overlay.dark-overlay {
-  background-color: rgba(0, 0, 0, 0.70);
+  background-color: rgba(2, 27, 5, 0.685);
 }
 
 .quote-content {

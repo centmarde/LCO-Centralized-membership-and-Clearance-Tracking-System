@@ -39,11 +39,6 @@ const routes = setupLayouts([
     meta: { requiresAuth: true }
   },
   {
-    path: '/account/home',
-    component: Dashboard,
-    meta: { requiresAuth: true }
-  },
-  {
     path: '/admin/user-roles',
     component: AdminUserRolesView,
     meta: { requiresAuth: true }

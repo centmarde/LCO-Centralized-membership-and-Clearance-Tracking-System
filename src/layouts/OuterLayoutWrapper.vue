@@ -93,12 +93,12 @@
 
   /* Light theme overlay - subtle white overlay */
   .background-overlay.light-overlay {
-    background-color: rgba(255, 255, 255, 0.75);
+    background-color:  rgba(227, 255, 230, 0.664);
   }
 
   /* Dark theme overlay - darker overlay for better readability */
   .background-overlay.dark-overlay {
-    background-color: rgba(0, 0, 0, 0.65);
+    background-color: rgba(2, 27, 5, 0.685);
   }
 
   .content-wrapper {

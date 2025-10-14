@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
-import { 
-  getEmailInitials, 
-  formatDate, 
-  filterOrganizationsByLeader, 
-  filterMembersBySearch, 
-  createMemberManagementHandlers 
+import {
+  getEmailInitials,
+  formatDate,
+  filterOrganizationsByLeader,
+  filterMembersBySearch,
+  createMemberManagementHandlers
 } from '@/utils/helpers'
 import { useAuthUserStore } from '@/stores/authUser'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
@@ -89,9 +89,9 @@ onMounted(() => {
       <v-container fluid class="pa-6">
         <v-row>
           <v-col cols="12">
-            <div class="members-container">
+            <div >
               <!-- Page Header -->
-              <v-card class="mb-6" elevation="7" rounded="lg">
+              <v-card class="my-6" elevation="7" rounded="lg">
                 <v-card-title class="pa-4 bg-primary text-white">
                   <div class="d-flex align-center">
                     <v-icon size="32" class="me-3">mdi-account-group</v-icon>
@@ -110,17 +110,15 @@ onMounted(() => {
               </div>
 
               <!-- No Organizations -->
-              <div v-else-if="userOrganizations.length === 0">
-                <v-card elevation="2" class="text-center pa-8">
-                  <v-icon size="80" color="grey-lighten-1" class="mb-4">mdi-domain-off</v-icon>
-                  <h3 class="text-h5 mb-2">No Organizations Found</h3>
-                  <p class="text-body-1 text-medium-emphasis mb-4">
-                    You are not currently assigned as a leader of any organization.
-                  </p>
-                  <p class="text-body-2 text-medium-emphasis">
-                    Contact an administrator to be assigned as an organization leader.
-                  </p>
-                </v-card>
+              <div v-else-if="userOrganizations.length === 0" class="text-center pa-8">
+                <img src="/images/fail.png" alt="No organizations" class="mb-4" style="width: 400px; height: auto;" />
+                <h3 class="text-h5 mb-2">No Organizations Found</h3>
+                <p class="text-body-1 text-medium-emphasis mb-4">
+                  You are not currently assigned as a leader of any organization.
+                </p>
+                <p class="text-body-2 text-medium-emphasis">
+                  Contact an administrator to be assigned as an organization leader.
+                </p>
               </div>
 
               <!-- Organizations Grid -->
@@ -205,11 +203,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.members-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
+
 
 .organization-card {
   transition: all 0.3s ease;

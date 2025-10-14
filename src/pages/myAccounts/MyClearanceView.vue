@@ -34,7 +34,7 @@ onMounted(() => {
       <v-container fluid class="pa-6 mt-5" >
         <v-row>
           <v-col cols="12">
-            <v-card class="pa-0" elevation="7" rounded="lg">
+
               <v-card-title class="d-flex align-center justify-space-between pa-6 bg-primary text-white">
                 <div class="d-flex align-center">
                   <v-icon size="32" class="me-3">mdi-shield-check</v-icon>
@@ -55,15 +55,21 @@ onMounted(() => {
                 </div>
               </v-card-title>
               <v-divider></v-divider>
-              <v-card-text class="pa-6">
+              <div class="pa-6">
                 <div v-if="loading" class="text-center">
                   <v-progress-circular indeterminate color="primary" size="40" class="mb-4" />
                   <div>Loading clearance data...</div>
                 </div>
-                <div v-else-if="error" class="text-center text-error">
+               <!--  <div v-else-if="error" class="text-center text-error">
                   {{ error }}
-                </div>
+                </div> -->
                 <div v-else-if="blockedEvents.length === 0" class="text-center text-success">
+                  <v-img
+                    src="/images/cleared.png"
+                    alt="Cleared"
+                    max-width="300"
+                    class="mx-auto mb-4"
+                  />
                   <v-icon color="success" size="48" class="mb-2">mdi-check-circle</v-icon>
                   <div class="text-h6">You have no blocked events. You are clear!</div>
                 </div>
@@ -89,8 +95,8 @@ onMounted(() => {
                     </v-col>
                   </v-row>
                 </div>
-              </v-card-text>
-            </v-card>
+              </div>
+
           </v-col>
         </v-row>
       </v-container>

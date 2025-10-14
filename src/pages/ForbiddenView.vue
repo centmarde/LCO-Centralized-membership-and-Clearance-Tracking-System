@@ -14,7 +14,7 @@ const themeError = ref<string | null>(null);
 
 // Methods
 const navigateToDashboard = () => {
-  router.push("/account/home");
+  router.push("/account/profile");
 };
 
 const goBack = () => {
