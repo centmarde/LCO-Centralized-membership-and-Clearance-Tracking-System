@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useUserRolesStore } from '@/stores/roles'
 import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
@@ -10,15 +11,15 @@ import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
 import EditUserDialog from '@/pages/admin/dialogs/EditUserDialog.vue'
 import UserDetailsDialog from '@/pages/admin/dialogs/UserDetailsDialog.vue'
 import StatusSummary from '@/pages/admin/components/StatusSummary.vue'
-import { 
-  getRoleColor, 
-  getRoleText, 
-  getStatusColor, 
-  getStatusText, 
-  formatDate, 
+import {
+  getRoleColor,
+  getRoleText,
+  getStatusColor,
+  getStatusText,
+  formatDate,
   getUserStatusDisplay,
   getErrorMessage,
-  type UserStatusDisplay 
+  type UserStatusDisplay
 } from '@/utils/helpers'
 
 interface User {
@@ -36,6 +37,7 @@ interface User {
 }
 
 // Composables
+const { xs, smAndDown, mdAndUp } = useDisplay()
 const authStore = useAuthUserStore()
 const rolesStore = useUserRolesStore()
 const toast = useToast()
@@ -50,6 +52,8 @@ const editingUser = ref<User | null>(null)
 const studentEventStatusMap = ref<Record<string, any[]>>({}) // userId -> events array
 const deleteDialog = ref(false)
 const userToDelete = ref<User | null>(null)
+const page = ref(1)
+const itemsPerPage = ref(4)
 
 // Function to get user status display with blocked events count (using helper function)
 const getUserStatusDisplayForUser = (user: User): UserStatusDisplay => {
@@ -57,16 +61,28 @@ const getUserStatusDisplayForUser = (user: User): UserStatusDisplay => {
   return getUserStatusDisplay(user, userEvents)
 }
 
-// Table headers
-const headers = [
-  { title: 'Full Name', key: 'full_name', sortable: true },
-  { title: 'Email', key: 'email', sortable: true },
-  { title: 'Student Number', key: 'student_number', sortable: true },
-  { title: 'Role', key: 'role_id', sortable: true },
-  { title: 'Status', key: 'status', sortable: true },
-  { title: 'Created At', key: 'created_at', sortable: true },
-  { title: 'Actions', key: 'actions', sortable: false },
-]
+// Computed filtered and paginated users
+const filteredUsers = computed(() => {
+  if (!search.value) {
+    return authStore.users
+  }
+  const searchLower = search.value.toLowerCase()
+  return authStore.users.filter(user =>
+    user.full_name?.toLowerCase().includes(searchLower) ||
+    user.email?.toLowerCase().includes(searchLower) ||
+    user.student_number?.toLowerCase().includes(searchLower)
+  )
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredUsers.value.length / itemsPerPage.value)
+})
+
+const paginatedUsers = computed(() => {
+  const start = (page.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredUsers.value.slice(start, end)
+})
 
 // Methods
 const fetchUsers = async () => {
@@ -97,10 +113,10 @@ const fetchStudentEventStatuses = async () => {
   try {
     // Get all students from the user list (users with role_id === 2 AND student_id exists)
     const students = authStore.users.filter(user => user.role_id === 2 && user.student_id)
-    
+
     // Clear the current map
     studentEventStatusMap.value = {}
-    
+
     // Fetch event details for each student
     for (const student of students) {
       try {
@@ -157,19 +173,33 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-card class="mt-5">
-    <v-card-title class="d-flex justify-space-between align-center">
-      <div>
-        <h3>User Management</h3>
-        <p class="text-subtitle-1 text-grey">Manage all system users</p>
+  <div class="mt-5">
+    <v-card-title
+      :class="[
+        'd-flex',
+        'align-center',
+        smAndDown ? 'flex-column' : 'justify-space-between',
+        smAndDown ? 'gap-3' : ''
+      ]"
+    >
+      <div :class="smAndDown ? 'text-center' : ''">
+        <h3 :class="xs ? 'text-h6' : 'text-h5'">User Management</h3>
+        <p :class="xs ? 'text-caption' : 'text-subtitle-1'" class="text-grey">
+          Manage all system users
+        </p>
       </div>
       <v-btn
         color="primary"
-        prepend-icon="mdi-refresh"
+        :prepend-icon="smAndDown ? undefined : 'mdi-refresh'"
+        :icon="xs ? 'mdi-refresh' : undefined"
         @click="refreshData"
         :loading="loading"
+        :size="xs ? 'default' : 'large'"
+        :block="smAndDown && !xs"
+        :variant="xs ? 'elevated' : undefined"
       >
-        Refresh
+        <v-icon v-if="xs" color="white">mdi-refresh</v-icon>
+        <span v-if="!xs">Refresh</span>
       </v-btn>
     </v-card-title>
 
@@ -177,118 +207,208 @@ onMounted(async () => {
     <StatusSummary :users="authStore.users" />
 
     <v-card-text>
-      <v-data-table
-        :headers="headers"
-        :items="authStore.users"
-        :loading="loading"
-        class="elevation-1"
-        item-key="id"
-        :search="search"
-        show-current-page
-      >
-        <template v-slot:top>
-          <v-row class="ma-2">
-            <v-col cols="12" md="4">
-              <v-text-field
-                v-model="search"
-                prepend-inner-icon="mdi-magnify"
-                label="Search users..."
-                single-line
-                hide-details
-                clearable
-              />
-            </v-col>
-          </v-row>
-        </template>
+      <!-- Search Bar -->
+      <v-row class="mb-4">
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="search"
+            prepend-inner-icon="mdi-magnify"
+            label="Search users..."
+            single-line
+            hide-details
+            clearable
+            variant="outlined"
+            density="comfortable"
+          />
+        </v-col>
+      </v-row>
 
-        <template v-slot:item.role_id="{ item }">
-          <v-chip
-            :color="getRoleColor(item.role_id)"
-            variant="tonal"
-            size="small"
-          >
-            {{ getRoleText(item.role_id) }}
-          </v-chip>
-        </template>
+      <!-- Loading State -->
+      <div v-if="loading" class="d-flex flex-column gap-4">
+        <v-skeleton-loader
+          v-for="i in 4"
+          :key="i"
+          type="card"
+          class="mb-4"
+        ></v-skeleton-loader>
+      </div>
 
-        <template v-slot:item.status="{ item }">
-          <v-chip
-            :color="getUserStatusDisplayForUser(item).color"
-            variant="tonal"
-            size="small"
-          >
-            {{ getUserStatusDisplayForUser(item).text }}
-          </v-chip>
-        </template>
+      <!-- No Data State -->
+      <div v-else-if="filteredUsers.length === 0" class="text-center pa-8">
+        <v-icon size="64" color="grey">mdi-account-off</v-icon>
+        <p class="text-h6 mt-4">No users found</p>
+        <p class="text-body-2 text-grey">
+          {{ search ? 'No users match your search criteria.' : 'There are no users in the system yet.' }}
+        </p>
+      </div>
 
-        <template v-slot:item.created_at="{ item }">
-          {{ formatDate(item.created_at) }}
-        </template>
+      <!-- User Cards Grid -->
+      <v-row v-else>
+        <v-col
+          v-for="user in paginatedUsers"
+          :key="user.id"
+          cols="12"
+          sm="6"
+          md="6"
+          lg="3"
+        >
+          <v-card class="user-card" elevation="2" hover>
+            <v-card-title class="d-flex align-center pb-2">
+              <v-avatar color="primary" size="40" class="mr-3">
+                <span class="text-h6">{{ user.full_name?.charAt(0).toUpperCase() || '?' }}</span>
+              </v-avatar>
+              <div class="text-truncate flex-grow-1">
+                <div class="text-subtitle-1 font-weight-bold text-truncate">
+                  {{ user.full_name || 'N/A' }}
+                </div>
+                <div class="text-caption text-grey">
+                  {{ user.student_number || 'No ID' }}
+                </div>
+              </div>
+            </v-card-title>
 
-        <template v-slot:item.actions="{ item }">
-          <v-btn
-            icon="mdi-eye"
-            variant="text"
-            size="small"
-            @click="viewUser(item)"
-          >
-          </v-btn>
-          <v-btn
-            icon="mdi-pencil"
-            variant="text"
-            size="small"
-            @click="editUser(item)"
-            color="primary"
-          >
-          </v-btn>
-          <v-btn
-            icon="mdi-delete"
-            variant="text"
-            size="small"
-            @click="deleteUser(item)"
-            color="error"
-          >
-          </v-btn>
-        </template>
+            <v-divider></v-divider>
 
-        <template v-slot:no-data>
-          <div class="text-center pa-4">
-            <v-icon size="64" color="grey">mdi-account-off</v-icon>
-            <p class="text-h6 mt-4">No users found</p>
-            <p class="text-body-2 text-grey">There are no users in the system yet.</p>
-          </div>
-        </template>
+            <v-card-text>
+              <div class="user-info mb-3">
+                <div class="d-flex align-center mb-2">
+                  <v-icon size="small" class="mr-2">mdi-email</v-icon>
+                  <span class="text-body-2 text-truncate">{{ user.email || 'N/A' }}</span>
+                </div>
+                <div class="d-flex align-center mb-2">
+                  <v-icon size="small" class="mr-2">mdi-calendar</v-icon>
+                  <span class="text-body-2">{{ formatDate(user.created_at) }}</span>
+                </div>
+              </div>
 
-        <template v-slot:loading>
-          <v-skeleton-loader type="table-row@10"></v-skeleton-loader>
-        </template>
-      </v-data-table>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <v-chip
+                  :color="getRoleColor(user.role_id)"
+                  variant="tonal"
+                  size="small"
+                  label
+                >
+                  <v-icon start size="small">mdi-shield-account</v-icon>
+                  {{ getRoleText(user.role_id) }}
+                </v-chip>
+                <v-chip
+                  :color="getUserStatusDisplayForUser(user).color"
+                  variant="tonal"
+                  size="small"
+                  label
+                >
+                  <v-icon start size="small">mdi-circle</v-icon>
+                  {{ getUserStatusDisplayForUser(user).text }}
+                </v-chip>
+              </div>
+            </v-card-text>
+
+            <v-divider></v-divider>
+
+            <v-card-actions class="justify-space-between px-4">
+              <v-btn
+                icon="mdi-eye"
+                variant="text"
+                size="small"
+                @click="viewUser(user)"
+                color="info"
+              >
+                <v-icon>mdi-eye</v-icon>
+                <v-tooltip activator="parent" location="top">View Details</v-tooltip>
+              </v-btn>
+              <v-btn
+                icon="mdi-pencil"
+                variant="text"
+                size="small"
+                @click="editUser(user)"
+                color="primary"
+              >
+                <v-icon>mdi-pencil</v-icon>
+                <v-tooltip activator="parent" location="top">Edit User</v-tooltip>
+              </v-btn>
+              <v-btn
+                icon="mdi-delete"
+                variant="text"
+                size="small"
+                @click="deleteUser(user)"
+                color="error"
+              >
+                <v-icon>mdi-delete</v-icon>
+                <v-tooltip activator="parent" location="top">Delete User</v-tooltip>
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- Pagination -->
+      <v-row v-if="!loading && filteredUsers.length > 0" class="mt-4">
+        <v-col cols="12" class="d-flex justify-center align-center">
+          <v-pagination
+            v-model="page"
+            :length="totalPages"
+            :total-visible="5"
+            rounded="circle"
+            show-first-last-page
+          ></v-pagination>
+        </v-col>
+        <v-col cols="12" class="text-center">
+          <span class="text-body-2 text-grey">
+            Showing {{ (page - 1) * itemsPerPage + 1 }} -
+            {{ Math.min(page * itemsPerPage, filteredUsers.length) }}
+            of {{ filteredUsers.length }} users
+          </span>
+        </v-col>
+      </v-row>
     </v-card-text>
 
     <!-- User Details Dialog -->
-    <UserDetailsDialog 
-      v-model="userDialog" 
+    <UserDetailsDialog
+      v-model="userDialog"
       :user="selectedUser"
     />
 
     <!-- Edit User Dialog -->
-    <EditUserDialog 
-      v-model="editDialog" 
-      :user="editingUser" 
+    <EditUserDialog
+      v-model="editDialog"
+      :user="editingUser"
       @user-updated="onUserUpdated"
     />
 
     <!-- Delete User Dialog -->
-    <DeleteUserDialog 
-      v-model="deleteDialog" 
-      :user="userToDelete" 
+    <DeleteUserDialog
+      v-model="deleteDialog"
+      :user="userToDelete"
       @user-deleted="onUserDeleted"
     />
-  </v-card>
+  </div>
 </template>
 
 <style scoped>
 .v-card-title h3 {
   margin-bottom: 4px;
+}
+
+.user-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease-in-out;
+}
+
+.user-card:hover {
+  transform: translateY(-4px);
+}
+
+.user-info {
+  min-height: 60px;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.gap-4 {
+  gap: 16px;
 }
 </style>

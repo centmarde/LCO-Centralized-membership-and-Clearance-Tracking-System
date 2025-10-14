@@ -1,134 +1,215 @@
 <template>
-  <v-card class="pa-4">
-
-    <!-- Loading State -->
-    <v-progress-linear
-      v-if="loading"
-      indeterminate
-      color="primary"
-      class="mb-4"
-    ></v-progress-linear>
-
-    <!-- Data Table -->
-    <v-data-table
-      :headers="headers"
-      :items="events"
-      :loading="loading"
-      :search="search"
-      class="elevation-1"
-      item-key="id"
+  <div class="mt-5">
+    <v-card-title
+      :class="[
+        'd-flex',
+        'align-center',
+        smAndDown ? 'flex-column' : 'justify-space-between',
+        smAndDown ? 'gap-3' : ''
+      ]"
     >
-      <!-- Top Slot with Search -->
-      <template v-slot:top>
-        <v-toolbar flat>
+      <div :class="smAndDown ? 'text-center' : ''">
+        <h3 :class="xs ? 'text-h6' : 'text-h5'">Events Management</h3>
+        <p :class="xs ? 'text-caption' : 'text-subtitle-1'" class="text-grey">
+          Manage all system events
+        </p>
+      </div>
+      <div :class="['d-flex', 'gap-2', smAndDown ? 'flex-column' : '']" :style="smAndDown ? 'width: 100%' : ''">
+        <v-btn
+          color="primary"
+          :prepend-icon="xs ? undefined : 'mdi-plus'"
+          @click="openCreateDialog"
+          :block="smAndDown"
+          :size="xs ? 'default' : 'large'"
+        >
+          <v-icon v-if="xs">mdi-plus</v-icon>
+          <span v-else>Add Event</span>
+        </v-btn>
+        <v-btn
+          color="primary"
+          :prepend-icon="smAndDown ? undefined : 'mdi-refresh'"
+          :icon="xs ? 'mdi-refresh' : undefined"
+          @click="refreshEvents"
+          :loading="loading"
+          :size="xs ? 'default' : 'large'"
+          :block="smAndDown && !xs"
+          :variant="xs ? 'elevated' : 'outlined'"
+        >
+          <v-icon v-if="xs" color="white">mdi-refresh</v-icon>
+          <span v-if="!xs">Refresh</span>
+        </v-btn>
+      </div>
+    </v-card-title>
+
+    <v-card-text>
+      <!-- Search Bar -->
+      <v-row class="mb-4">
+        <v-col cols="12" md="6">
           <v-text-field
             v-model="search"
-            append-icon="mdi-magnify"
+            prepend-inner-icon="mdi-magnify"
             label="Search events..."
             single-line
             hide-details
-            class="mr-4"
-          ></v-text-field>
-          <v-spacer></v-spacer>
-          <v-btn
-            color="primary"
-            @click="openCreateDialog"
-            class="mr-2"
-          >
-            <v-icon left>mdi-plus</v-icon>
-            Add Event
-          </v-btn>
-          <v-btn
-            color="primary"
+            clearable
             variant="outlined"
-            @click="refreshEvents"
-          >
-            <v-icon left>mdi-refresh</v-icon>
-            Refresh
-          </v-btn>
-        </v-toolbar>
-      </template>
+            density="comfortable"
+          />
+        </v-col>
+      </v-row>
 
-      <!-- Date Column -->
-      <template v-slot:item.date="{ item }">
-        <span v-if="item.date">
-          {{ formatDate(item.date) }}
-        </span>
-        <span v-else class="text-grey">
-          No date set
-        </span>
-      </template>
+      <!-- Loading State -->
+      <div v-if="loading" class="d-flex flex-column gap-4">
+        <v-skeleton-loader
+          v-for="i in 4"
+          :key="i"
+          type="card"
+          class="mb-4"
+        ></v-skeleton-loader>
+      </div>
 
-      <!-- Registration Count Column -->
-      <template v-slot:item.registration_count="{ item }">
-        <v-chip
-          :color="getRegistrationColor(item.registration_count || 0)"
-          small
+      <!-- No Data State -->
+      <div v-else-if="filteredEvents.length === 0" class="text-center pa-8">
+        <v-icon size="64" color="grey">mdi-calendar-blank</v-icon>
+        <p class="text-h6 mt-4">No events found</p>
+        <p class="text-body-2 text-grey">
+          {{ search ? 'No events match your search criteria.' : 'There are no events in the system yet.' }}
+        </p>
+      </div>
+
+      <!-- Event Cards Grid -->
+      <v-row v-else>
+        <v-col
+          v-for="event in paginatedEvents"
+          :key="event.id"
+          cols="12"
+          sm="6"
+          md="6"
+          lg="3"
         >
-          {{ item.registration_count || 0 }} registered
-        </v-chip>
-      </template>
+          <v-card class="event-card" elevation="2" hover>
+            <v-card-title class="d-flex align-center pb-2">
+              <v-avatar color="primary" size="40" class="mr-3">
+                <v-icon color="white">mdi-calendar-star</v-icon>
+              </v-avatar>
+              <div class="text-truncate flex-grow-1">
+                <div class="text-subtitle-1 font-weight-bold text-truncate">
+                  {{ event.title || 'N/A' }}
+                </div>
+                <div class="text-caption text-grey">
+                  ID: {{ event.id }}
+                </div>
+              </div>
+            </v-card-title>
 
-      <!-- Status Counts Column -->
-      <template v-slot:item.status_counts="{ item }">
-        <div class="d-flex flex-column ga-1">
-          <v-chip
-            v-if="(item.status_counts?.blocked || 0) > 0"
-            color="error"
-            size="x-small"
-          >
-            {{ item.status_counts?.blocked || 0 }} blocked
-          </v-chip>
-          <v-chip
-            v-if="(item.status_counts?.cleared || 0) > 0"
-            color="green"
-            size="x-small"
-          >
-            {{ item.status_counts?.cleared || 0 }} cleared
-          </v-chip>
-          <v-chip
-            v-if="(item.status_counts?.pending || 0) > 0"
-            color="warning"
-            size="x-small"
-          >
-            {{ item.status_counts?.pending || 0 }} pending
-          </v-chip>
-          <span v-if="!item.status_counts || ((item.status_counts.blocked || 0) === 0 && (item.status_counts.cleared || 0) === 0 && (item.status_counts.pending || 0) === 0)" class="text-grey text-caption">
-            No status data
+            <v-divider></v-divider>
+
+            <v-card-text>
+              <div class="event-info mb-3">
+                <div class="d-flex align-center mb-2">
+                  <v-icon size="small" class="mr-2">mdi-calendar</v-icon>
+                  <span class="text-body-2">
+                    {{ event.date ? formatDate(event.date) : 'No date set' }}
+                  </span>
+                </div>
+                <div class="d-flex align-center mb-2">
+                  <v-icon size="small" class="mr-2">mdi-clock-outline</v-icon>
+                  <span class="text-body-2">{{ formatDate(event.created_at) }}</span>
+                </div>
+              </div>
+
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <v-chip
+                  :color="getRegistrationColor(event.registration_count || 0)"
+                  variant="tonal"
+                  size="small"
+                  label
+                >
+                  <v-icon start size="small">mdi-account-group</v-icon>
+                  {{ event.registration_count || 0 }} registered
+                </v-chip>
+              </div>
+
+              <!-- Status Counts -->
+              <div v-if="event.status_counts && ((event.status_counts.blocked || 0) > 0 || (event.status_counts.cleared || 0) > 0 || (event.status_counts.pending || 0) > 0)" class="d-flex flex-wrap gap-1">
+                <v-chip
+                  v-if="(event.status_counts?.blocked || 0) > 0"
+                  color="error"
+                  size="x-small"
+                  label
+                >
+                  {{ event.status_counts?.blocked || 0 }} blocked
+                </v-chip>
+                <v-chip
+                  v-if="(event.status_counts?.cleared || 0) > 0"
+                  color="success"
+                  size="x-small"
+                  label
+                >
+                  {{ event.status_counts?.cleared || 0 }} cleared
+                </v-chip>
+                <v-chip
+                  v-if="(event.status_counts?.pending || 0) > 0"
+                  color="warning"
+                  size="x-small"
+                  label
+                >
+                  {{ event.status_counts?.pending || 0 }} pending
+                </v-chip>
+              </div>
+              <div v-else class="text-caption text-grey">
+                No status data
+              </div>
+            </v-card-text>
+
+            <v-divider></v-divider>
+
+            <v-card-actions class="justify-space-between px-4">
+              <v-btn
+                icon="mdi-pencil"
+                variant="text"
+                size="small"
+                @click="editEvent(event)"
+                color="primary"
+              >
+                <v-icon>mdi-pencil</v-icon>
+                <v-tooltip activator="parent" location="top">Edit Event</v-tooltip>
+              </v-btn>
+              <v-btn
+                icon="mdi-delete"
+                variant="text"
+                size="small"
+                @click="deleteEvent(event)"
+                color="error"
+              >
+                <v-icon>mdi-delete</v-icon>
+                <v-tooltip activator="parent" location="top">Delete Event</v-tooltip>
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- Pagination -->
+      <v-row v-if="!loading && filteredEvents.length > 0" class="mt-4">
+        <v-col cols="12" class="d-flex justify-center align-center">
+          <v-pagination
+            v-model="page"
+            :length="totalPages"
+            :total-visible="5"
+            rounded="circle"
+            show-first-last-page
+          ></v-pagination>
+        </v-col>
+        <v-col cols="12" class="text-center">
+          <span class="text-body-2 text-grey">
+            Showing {{ (page - 1) * itemsPerPage + 1 }} -
+            {{ Math.min(page * itemsPerPage, filteredEvents.length) }}
+            of {{ filteredEvents.length }} events
           </span>
-        </div>
-      </template>
-
-      <!-- Actions Column -->
-      <template v-slot:item.actions="{ item }">
-        <v-btn
-          icon
-          size="small"
-          @click="editEvent(item)"
-          class="mr-2"
-        >
-          <v-icon>mdi-pencil</v-icon>
-        </v-btn>
-        <v-btn
-          icon
-          size="small"
-          color="error"
-          @click="deleteEvent(item)"
-        >
-          <v-icon>mdi-delete</v-icon>
-        </v-btn>
-      </template>
-
-      <!-- No Data -->
-      <template v-slot:no-data>
-        <v-alert
-          type="info"
-          class="ma-4"
-        >
-          No events found. Click "Add Event" to create your first event.
-        </v-alert>
-      </template>
-    </v-data-table>
+        </v-col>
+      </v-row>
+    </v-card-text>
 
     <!-- Create/Edit Dialog -->
     <v-dialog v-model="dialog" max-width="600px">
@@ -222,11 +303,12 @@
         </v-btn>
       </template>
     </v-snackbar>
-  </v-card>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useDisplay } from 'vuetify'
 import {
   fetchEvents,
   createEvent,
@@ -236,7 +318,12 @@ import {
   fetchEventsWithStats,
   type Event,
   type CreateEventRequest
-} from '@/stores/eventsData'// Reactive state
+} from '@/stores/eventsData'
+
+// Composables
+const { xs, smAndDown, mdAndUp } = useDisplay()
+
+// Reactive state
 const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
@@ -253,6 +340,8 @@ const dialog = ref(false)
 const deleteDialog = ref(false)
 const formValid = ref(false)
 const form = ref()
+const page = ref(1)
+const itemsPerPage = ref(8)
 
 // Event editing
 const editedEvent = ref<CreateEventRequest & { id?: number }>({
@@ -274,17 +363,6 @@ const snackbar = ref({
   color: 'success'
 })
 
-// Table headers
-const headers = [
-  { title: 'ID', value: 'id', sortable: true },
-  { title: 'Title', value: 'title', sortable: true },
-  { title: 'Date', value: 'date', sortable: true },
-  { title: 'Created', value: 'created_at', sortable: true },
-  { title: 'Registrations', value: 'registration_count', sortable: true },
-  { title: 'Status', value: 'status_counts', sortable: false, width: '200px' },
-  { title: 'Actions', value: 'actions', sortable: false, width: '120px' }
-]
-
 // Form validation rules
 const rules = {
   required: (value: string) => !!value || 'This field is required'
@@ -293,6 +371,28 @@ const rules = {
 // Computed properties
 const dialogTitle = computed(() => {
   return editedEvent.value.id ? 'Edit Event' : 'Add Event'
+})
+
+// Computed filtered and paginated events
+const filteredEvents = computed(() => {
+  if (!search.value) {
+    return events.value
+  }
+  const searchLower = search.value.toLowerCase()
+  return events.value.filter(event =>
+    event.title?.toLowerCase().includes(searchLower) ||
+    event.id?.toString().includes(searchLower)
+  )
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredEvents.value.length / itemsPerPage.value)
+})
+
+const paginatedEvents = computed(() => {
+  const start = (page.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredEvents.value.slice(start, end)
 })
 
 // Methods
@@ -408,11 +508,38 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.v-data-table {
-  background: transparent;
+.v-card-title h3 {
+  margin-bottom: 4px;
 }
 
-.v-toolbar {
-  background: transparent !important;
+.event-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease-in-out;
+}
+
+.event-card:hover {
+  transform: translateY(-4px);
+}
+
+.event-info {
+  min-height: 60px;
+}
+
+.gap-1 {
+  gap: 4px;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.gap-3 {
+  gap: 12px;
+}
+
+.gap-4 {
+  gap: 16px;
 }
 </style>
