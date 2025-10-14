@@ -96,7 +96,7 @@
                         Explore Features
                       </v-btn>
 
-                    
+
                     </div>
                   </div>
                 </v-col>

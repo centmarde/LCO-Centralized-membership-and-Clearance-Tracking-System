@@ -8,12 +8,14 @@ import RegisterForm from "@/components/auth/RegisterForm.vue";
 import { useAuthUserStore } from "@/stores/authUser";
 import { createDynamicThemeConfigFromExternal } from "@/themes/index";
 import { useAuthPageController } from "@/controller/authPageController";
+import { useTheme as useThemeComposable } from "@/composables/useTheme";
 
 // Composables
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthUserStore();
 const theme = useTheme();
+const { isDarkTheme } = useThemeComposable();
 const { data: authPageData, loading: authPageLoading, error: authPageError, fetchAuthPageData } = useAuthPageController();
 
 // Reactive state
@@ -229,10 +231,14 @@ onMounted(async () => {
     <v-col
       cols="12"
       lg="7"
-      class="d-none d-lg-flex align-center justify-center fill-height"
+      class="d-none d-lg-flex align-center justify-center fill-height quote-section"
       :order="quoteSectionOrder"
     >
-      <v-card-text class="text-center">
+      <div
+        class="quote-background-overlay"
+        :class="{ 'dark-overlay': isDarkTheme, 'light-overlay': !isDarkTheme }"
+      ></div>
+      <v-card-text class="text-center quote-content">
         <v-icon size="48" color="primary" class="mb-4 d-flex justify-start">
           mdi-format-quote-open
         </v-icon>
@@ -256,3 +262,52 @@ onMounted(async () => {
     </v-col>
   </v-row>
 </template>
+
+<style scoped>
+.quote-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.quote-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('/images/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  transform: scale(1.1);
+  transition: transform 0.3s ease;
+}
+
+.quote-background-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  transition: background-color 0.3s ease;
+  pointer-events: none;
+}
+
+/* Light theme overlay */
+.quote-background-overlay.light-overlay {
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+/* Dark theme overlay */
+.quote-background-overlay.dark-overlay {
+  background-color: rgba(0, 0, 0, 0.70);
+}
+
+.quote-content {
+  position: relative;
+  z-index: 2;
+}
+</style>

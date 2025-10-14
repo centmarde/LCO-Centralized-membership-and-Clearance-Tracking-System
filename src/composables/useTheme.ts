@@ -5,18 +5,28 @@
  * for theme management with persistence across page reloads.
  */
 
+import { storeToRefs } from 'pinia'
 import { useThemeStore } from '@/stores/theme'
 
 export function useTheme() {
   const themeStore = useThemeStore()
 
+  // Use storeToRefs to maintain reactivity when destructuring
+  const {
+    currentTheme,
+    isDarkTheme,
+    isThemeLoaded,
+    themeLoadError,
+    isLoadingTheme
+  } = storeToRefs(themeStore)
+
   return {
-    // State (computed refs from store)
-    currentTheme: themeStore.currentTheme,
-    isDarkTheme: themeStore.isDarkTheme,
-    isThemeLoaded: themeStore.isThemeLoaded,
-    themeLoadError: themeStore.themeLoadError,
-    isLoadingTheme: themeStore.isLoadingTheme,
+    // State (reactive refs from store)
+    currentTheme,
+    isDarkTheme,
+    isThemeLoaded,
+    themeLoadError,
+    isLoadingTheme,
 
     // Actions
     initializeTheme: themeStore.initializeTheme,
