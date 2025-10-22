@@ -174,54 +174,74 @@ onMounted(async () => {
 
 <template>
   <div class="mt-5">
-    <v-card-title
-      :class="[
-        'd-flex',
-        'align-center',
-        smAndDown ? 'flex-column' : 'justify-space-between',
-        smAndDown ? 'gap-3' : ''
-      ]"
-    >
-      <div :class="smAndDown ? 'text-center' : ''">
-        <h3 :class="xs ? 'text-h6' : 'text-h5'">User Management</h3>
-        <p :class="xs ? 'text-caption' : 'text-subtitle-1'" class="text-grey">
-          Manage all system users
-        </p>
-      </div>
-      <v-btn
-        color="primary"
-        :prepend-icon="smAndDown ? undefined : 'mdi-refresh'"
-        :icon="xs ? 'mdi-refresh' : undefined"
-        @click="refreshData"
-        :loading="loading"
-        :size="xs ? 'default' : 'large'"
-        :block="smAndDown && !xs"
-        :variant="xs ? 'elevated' : undefined"
-      >
-        <v-icon v-if="xs" color="white">mdi-refresh</v-icon>
-        <span v-if="!xs">Refresh</span>
-      </v-btn>
-    </v-card-title>
+    <!-- Page Header to match OrganizationsView -->
+    <v-card class="mb-6" elevation="7" rounded="lg">
+      <v-card-title class="pa-4 bg-primary text-white">
+        <!-- Mobile Layout -->
+        <div class="d-block d-sm-none w-100">
+          <div class="d-flex align-center justify-space-between mb-3">
+            <div class="d-flex align-center">
+              <v-icon size="28" class="me-2">mdi-account-group</v-icon>
+              <h2 class="text-h6 font-weight-bold">User Management</h2>
+            </div>
+            <v-btn 
+              color="white" 
+              variant="elevated" 
+              size="small" 
+              @click="refreshData" 
+              :loading="loading" 
+              icon
+            >
+              <v-icon>mdi-refresh</v-icon>
+            </v-btn>
+          </div>
+          <p class="text-body-2 mb-0 opacity-90">Manage all system users</p>
+        </div>
+        
+        <!-- Desktop Layout -->
+        <div class="d-none d-sm-flex align-center justify-space-between w-100">
+          <div class="d-flex align-center">
+            <v-icon size="32" class="me-3">mdi-account-group</v-icon>
+            <div>
+              <h2 class="text-h5 font-weight-bold mb-1">User Management</h2>
+              <p class="text-body-2 mb-0 opacity-90">Manage all system users</p>
+            </div>
+          </div>
+          <v-btn 
+            color="white" 
+            variant="elevated" 
+            size="default" 
+            @click="refreshData" 
+            :loading="loading" 
+            prepend-icon="mdi-refresh"
+          >
+            Refresh
+          </v-btn>
+        </div>
+      </v-card-title>
+    </v-card>
+
+    <!-- Search Bar to match OrganizationsView -->
+    <v-card class="mb-4" elevation="2">
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="search"
+              prepend-inner-icon="mdi-magnify"
+              label="Search users..."
+              variant="outlined"
+              hide-details
+              clearable
+              density="compact"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
 
     <!-- Status Summary -->
     <StatusSummary :users="authStore.users" />
-
-    <v-card-text>
-      <!-- Search Bar -->
-      <v-row class="mb-4">
-        <v-col cols="12" md="6">
-          <v-text-field
-            v-model="search"
-            prepend-inner-icon="mdi-magnify"
-            label="Search users..."
-            single-line
-            hide-details
-            clearable
-            variant="outlined"
-            density="comfortable"
-          />
-        </v-col>
-      </v-row>
 
       <!-- Loading State -->
       <div v-if="loading" class="d-flex flex-column gap-4">
@@ -249,11 +269,17 @@ onMounted(async () => {
           :key="user.id"
           cols="12"
           sm="6"
-          md="6"
+          md="4"
           lg="3"
         >
-          <v-card class="user-card" elevation="2" hover>
-            <v-card-title class="d-flex align-center pb-2">
+          <v-card
+            class="organization-card user-card fill-height"
+            elevation="3"
+            rounded="lg"
+            hover
+          >
+            <v-card-title class="pa-4 pb-2">
+              <div class="d-flex align-center justify-space-between w-100">
               <v-avatar color="primary" size="40" class="mr-3">
                 <span class="text-h6">{{ user.full_name?.charAt(0).toUpperCase() || '?' }}</span>
               </v-avatar>
@@ -265,11 +291,12 @@ onMounted(async () => {
                   {{ user.student_number || 'No ID' }}
                 </div>
               </div>
+              </div>
             </v-card-title>
 
             <v-divider></v-divider>
 
-            <v-card-text>
+            <v-card-text class="pa-4 pt-3">
               <div class="user-info mb-3">
                 <div class="d-flex align-center mb-2">
                   <v-icon size="small" class="mr-2">mdi-email</v-icon>
@@ -360,7 +387,7 @@ onMounted(async () => {
           </span>
         </v-col>
       </v-row>
-    </v-card-text>
+    
 
     <!-- User Details Dialog -->
     <UserDetailsDialog
@@ -389,15 +416,27 @@ onMounted(async () => {
   margin-bottom: 4px;
 }
 
+/* Match OrganizationsView card look */
+.v-card {
+  border-radius: 12px !important;
+}
+
 .user-card {
   height: 100%;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease-in-out;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .user-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.user-card .v-card-title {
+  background: rgba(var(--v-theme-surface), 0.02);
+  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
 }
 
 .user-info {
