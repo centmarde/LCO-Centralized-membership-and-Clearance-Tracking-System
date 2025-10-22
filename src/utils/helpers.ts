@@ -173,6 +173,17 @@ export function getUserStatusDisplay(
   user: { id: string; role_id?: number; status?: string }, 
   userEvents: any[] = []
 ): UserStatusDisplay {
+  // Admins (role_id = 1) should never appear as Blocked in UI
+  if (user.role_id === 1) {
+    const isBlocked = user.status?.toLowerCase() === 'blocked'
+    return {
+      text: isBlocked ? 'Active' : getStatusText(user.status),
+      color: isBlocked ? getStatusColor('active') : getStatusColor(user.status),
+      showCount: false,
+      blockedCount: 0,
+    }
+  }
+
   if (user.role_id !== 2) {
     // For non-students, use the original status
     return {
