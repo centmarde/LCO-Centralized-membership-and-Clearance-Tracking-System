@@ -19,7 +19,8 @@ const clearedCount = computed(() =>
 )
 
 const blockedCount = computed(() =>
-  props.users.filter(user => user.status?.toLowerCase() === 'blocked').length
+  // Exclude admins from blocked count
+  props.users.filter(user => user.status?.toLowerCase() === 'blocked' && user.role_id !== 1).length
 )
 
 const totalCount = computed(() => props.users.length)

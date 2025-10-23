@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useUserRolesStore } from '@/stores/roles'
 import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
@@ -38,6 +39,9 @@ const isSaving = ref(false)
 const editingUser = ref<User | null>(null)
 const studentEventDetails = ref<any[]>([])
 const editedEventStatuses = ref<Record<number, string>>({})
+
+// Display helpers
+const { smAndDown } = useDisplay()
 
 // Computed property to count changes
 const changesCount = computed(() => {
@@ -162,19 +166,21 @@ const cancelEdit = () => {
   <v-dialog 
     :model-value="modelValue" 
     @update:model-value="emit('update:modelValue', $event)" 
-    max-width="800px" 
+    :max-width="smAndDown ?  '100%' : 800"
+    :fullscreen="smAndDown"
+    scrollable
     persistent
   >
-    <v-card v-if="editingUser">
-      <v-card-title class="d-flex flex-column align-center text-center mt-3">
-        <v-avatar color="primary" size="80" class="mb-4">
+    <v-card v-if="editingUser" class="edit-dialog-card">
+      <v-card-title class="d-flex flex-column align-center text-center mt-2 mt-sm-3">
+        <v-avatar color="primary" :size="smAndDown ? 64 : 80" class="mb-3 mb-sm-4">
           <v-icon size="50">mdi-account-edit</v-icon>
         </v-avatar>
-        <h2 class="text-h5 mb-1">{{ editingUser.full_name || 'User' }}</h2>
+        <h2 :class="smAndDown ? 'text-subtitle-1' : 'text-h5'" class="mb-1">{{ editingUser.full_name || 'User' }}</h2>
         <p class="text-body-2 text-grey">{{ editingUser.email }}</p>
       </v-card-title>
-      <v-card-text>
-        <v-container>
+      <v-card-text class="pt-2 pt-sm-4 pb-0">
+        <v-container fluid class="py-0">
           <v-row>
             <v-col cols="12">
               <v-select
@@ -184,6 +190,7 @@ const cancelEdit = () => {
                 item-value="id"
                 label="Role"
                 :loading="rolesStore.loading"
+                density="comfortable"
               />
             </v-col>
           </v-row>
@@ -191,16 +198,16 @@ const cancelEdit = () => {
           <!-- Student Event Statuses -->
           <template v-if="editingUser.role_id === 2">
             <v-divider class="my-4" />
-            <h3 class="text-h6 mb-2">Event Clearance Status</h3>
-            <v-progress-linear v-if="loading" indeterminate color="primary" />
-            <v-list v-else-if="studentEventDetails.length > 0">
+            <h3 :class="smAndDown ? 'text-subtitle-2' : 'text-h6'" class="mb-2">Event Clearance Status</h3>
+            <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-2" />
+            <v-list v-else-if="studentEventDetails.length > 0" density="compact">
               <v-list-item
                 v-for="(eventDetail, index) in studentEventDetails"
                 :key="eventDetail.event_id"
-                class="mb-2"
+                class="mb-1 mb-sm-2"
               >
                 <template #prepend>
-                  <v-avatar size="40" color="primary" class="mr-3">
+                  <v-avatar :size="smAndDown ? 36 : 40" color="primary" class="mr-3">
                     <v-icon>mdi-calendar-check</v-icon>
                   </v-avatar>
                 </template>
@@ -208,7 +215,7 @@ const cancelEdit = () => {
                 <v-list-item-title class="font-weight-medium">
                   {{ eventDetail.events?.title || 'Unknown Event' }}
                 </v-list-item-title>
-                <v-list-item-subtitle class="d-flex align-center mt-1">
+                <v-list-item-subtitle class="d-flex align-center mt-1 flex-wrap">
                   <v-icon size="16" class="mr-1">mdi-calendar</v-icon>
                   {{ eventDetail.events?.date ? new Date(eventDetail.events.date).toLocaleDateString() : 'No date' }}
                   <v-spacer />
@@ -216,8 +223,8 @@ const cancelEdit = () => {
                   <v-chip 
                     :color="getStatusColor(eventDetail.status)" 
                     variant="tonal" 
-                    size="small"
-                    class="mr-2"
+                    :size="smAndDown ? 'x-small' : 'small'"
+                    class="mr-2 mt-1 mt-sm-0"
                   >
                     {{ getStatusText(eventDetail.status) }}
                   </v-chip>
@@ -225,8 +232,8 @@ const cancelEdit = () => {
                 
                 <template #append>
                   <div class="d-flex flex-column align-end">
-                    <span class="text-caption mb-1">Update to:</span>
-                    <div class="d-flex align-center">
+                    <span class="text-caption mb-1 d-none d-sm-inline">Update to:</span>
+                    <div class="d-flex align-center" :class="smAndDown ? 'mt-1' : ''">
                       <v-select
                         v-model="editedEventStatuses[eventDetail.event_id]"
                         :items="[
@@ -235,15 +242,15 @@ const cancelEdit = () => {
                         ]"
                         item-title="title"
                         item-value="value"
-                        density="compact"
-                        style="min-width: 120px;"
+                        :density="smAndDown ? 'comfortable' : 'compact'"
+                        :style="{ minWidth: smAndDown ? '110px' : '140px' }"
                         hide-details
                         variant="outlined"
                       />
                       <v-icon
                         v-if="editedEventStatuses[eventDetail.event_id] !== eventDetail.status"
                         color="warning"
-                        size="20"
+                        :size="smAndDown ? 18 : 20"
                         class="ml-2"
                         title="Status will be changed"
                       >
@@ -281,9 +288,9 @@ const cancelEdit = () => {
           </template>
         </v-container>
       </v-card-text>
-      <v-card-actions>
+      <v-card-actions class="px-4 pb-4 pt-2">
         <v-spacer />
-        <v-btn color="grey" variant="text" @click="cancelEdit">
+        <v-btn color="grey" variant="text" @click="cancelEdit" :block="smAndDown">
           Cancel
         </v-btn>
         <v-btn
@@ -291,6 +298,7 @@ const cancelEdit = () => {
           variant="flat"
           @click="saveUser"
           :loading="isSaving"
+          :block="smAndDown"
         >
           Save
         </v-btn>
