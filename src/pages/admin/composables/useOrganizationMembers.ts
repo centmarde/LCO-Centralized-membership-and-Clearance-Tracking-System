@@ -41,5 +41,9 @@ export function useOrganizationMembers() {
     getOrganizationMemberStats: store.getOrganizationMemberStats,
     resetMemberForm: store.resetMemberForm,
     clearMembersData: store.clearMembersData
+    ,
+    // New helpers for member event management
+    fetchMemberEventsByUserId: store.fetchMemberEventsByUserId,
+    setMemberEventStatus: store.setMemberEventStatus
   }
 }

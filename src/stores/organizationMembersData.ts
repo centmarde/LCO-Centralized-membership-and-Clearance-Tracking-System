@@ -393,6 +393,58 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     resetMemberForm()
   }
 
+  // =============================
+  // Member event helpers (admin)
+  // =============================
+
+  /**
+   * Fetches event details for a member by the member's user_id
+   * Returns the same shape used by EditUserDialog (events joined with status)
+   */
+  const fetchMemberEventsByUserId = async (userId: string): Promise<any[]> => {
+    try {
+      // Reuse existing studentsData utility to keep logic consistent
+      const { fetchStudentEventDetailsByUserId } = await import('@/stores/studentsData')
+      const events = await fetchStudentEventDetailsByUserId(userId)
+      return events || []
+    } catch (error) {
+      console.error('Error fetching member events by userId:', error)
+      toast.error(getErrorMessage(error))
+      return []
+    }
+  }
+
+  /**
+   * Updates a single event status for a specific member (student)
+   * Accepts string or number studentId to accommodate schema differences
+   */
+  const setMemberEventStatus = async (
+    studentId: string | number,
+    eventId: number,
+    status: string
+  ): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('student_events')
+        .update({ status })
+        .eq('student_id', studentId)
+        .eq('event_id', eventId)
+
+      if (error) {
+        console.error('Error updating member event status:', error)
+        toast.error(getErrorMessage(error))
+        return false
+      }
+
+      toast.success('Status updated')
+      return true
+    } catch (error) {
+      console.error('Error updating member event status:', error)
+      toast.error(getErrorMessage(error))
+      return false
+    }
+  }
+
   return {
     // State
     loading,
@@ -413,5 +465,9 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     getOrganizationMemberStats,
     resetMemberForm,
     clearMembersData
+    ,
+    // Member event helpers
+    fetchMemberEventsByUserId,
+    setMemberEventStatus
   }
 })
