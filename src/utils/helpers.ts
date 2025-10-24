@@ -360,6 +360,20 @@ export const filterMembersBySearch = (members: any[], searchTerm: string): any[]
 }
 
 /**
+ * Filters students by search term (name, email, or student number)
+ */
+export const filterStudentsBySearch = (students: any[], searchTerm: string): any[] => {
+  if (!searchTerm) return students
+
+  const term = searchTerm.toLowerCase()
+  return students.filter(s =>
+    s.full_name?.toLowerCase().includes(term) ||
+    s.email?.toLowerCase().includes(term) ||
+    s.student_number?.toLowerCase().includes(term)
+  )
+}
+
+/**
  * Prepares organization data for card display
  * @param organization - Organization object
  * @returns Formatted organization data for UI display

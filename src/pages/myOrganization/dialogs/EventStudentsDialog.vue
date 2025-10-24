@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { fetchEventStudents } from '@/stores/studentsData'
+import { getEmailInitials, getStatusColor, getStatusText, filterStudentsBySearch } from '@/utils/helpers'
 
 const props = defineProps<{
   modelValue: boolean
@@ -12,6 +13,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
 }>()
 
+// v-model bridge for dialog
 const open = computed({
   get: () => props.modelValue,
   set: (v: boolean) => emit('update:modelValue', v)
@@ -19,6 +21,10 @@ const open = computed({
 
 const loading = ref(false)
 const students = ref<any[]>([])
+
+// Search state (to match OrganizationMembersStatusDialog UI)
+const search = ref('')
+const filteredStudents = computed(() => filterStudentsBySearch(students.value || [], search.value))
 
 async function load() {
   if (!props.event?.id) return
@@ -40,61 +46,94 @@ watch(() => props.event?.id, () => {
 watch(open, (v) => {
   if (v) load()
 })
+
+const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : 'No date'
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="800" :retain-focus="false">
+  <v-dialog v-model="open" max-width="1000px" scrollable :retain-focus="false">
     <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon class="me-2">mdi-account-school</v-icon>
-        <div>
-          <div class="text-h6">Event Students</div>
-          <div class="text-caption text-medium-emphasis" v-if="event">
-            {{ event.title }}
+      <v-card-title class="pa-6 bg-primary text-white">
+        <div class="d-flex align-center">
+          <v-icon size="28" class="me-3">mdi-account-group</v-icon>
+          <div>
+            <h2 class="text-h5 font-weight-bold mb-1">Event Students</h2>
+            <p class="text-body-2 mb-0 opacity-90" v-if="event">
+              {{ event.title }} • {{ formatDate(event?.date) }}
+            </p>
           </div>
         </div>
-        <v-spacer />
-        <v-btn icon="mdi-close" variant="text" @click="open = false" />
       </v-card-title>
 
-      <v-divider />
-
-      <v-card-text>
-        <div v-if="loading" class="text-center py-8">
-          <v-progress-circular indeterminate color="primary" />
-        </div>
-        <div v-else>
-          <div v-if="students.length === 0" class="text-center py-10">
-            <v-icon size="40" class="mb-2" color="warning">mdi-account-off</v-icon>
-            <div class="text-subtitle-1">No students from your organization are attached to this event.</div>
+      <v-card-text class="pa-0">
+        <v-container fluid class="pa-6 pt-4">
+          <div v-if="loading" class="text-center py-6">
+            <v-progress-circular indeterminate color="primary" />
           </div>
-          <v-data-table
-            v-else
-            :items="students"
-            :headers="[
-              { title: 'Name', value: 'full_name' },
-              { title: 'Student No.', value: 'student_number' },
-              { title: 'Email', value: 'email' },
-              { title: 'Org', value: 'organization' },
-              { title: 'Event Status', value: 'event_status' },
-            ]"
-            :items-per-page="10"
-          >
-            <template #item.event_status="{ item }">
-              <v-chip size="small" :color="item.event_status?.toLowerCase() === 'cleared' ? 'success' : item.event_status?.toLowerCase() === 'blocked' ? 'error' : 'default'" variant="tonal">
-                {{ item.event_status || '—' }}
-              </v-chip>
+
+          <template v-else>
+            <div v-if="!students || students.length === 0" class="text-center pa-8">
+              <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-account-group-outline</v-icon>
+              <div class="text-h6">No students from your organization are attached to this event.</div>
+            </div>
+
+            <template v-else>
+              <!-- Search bar -->
+              <v-row class="mb-4">
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="search"
+                    prepend-inner-icon="mdi-magnify"
+                    label="Search students..."
+                    variant="outlined"
+                    hide-details
+                    clearable
+                    density="compact"
+                  />
+                </v-col>
+              </v-row>
+
+              <div v-if="filteredStudents.length === 0" class="text-center pa-8">
+                <v-icon size="48" color="grey-lighten-1" class="mb-2">mdi-account-search</v-icon>
+                <div class="text-subtitle-1">No students match your search.</div>
+              </div>
+
+              <v-list v-else density="compact">
+                <v-list-item
+                  v-for="s in filteredStudents"
+                  :key="s.id"
+                  class="mb-1"
+                >
+                  <template #prepend>
+                    <v-avatar size="36" color="primary" class="mr-3">
+                      <span class="text-white">{{ getEmailInitials(s.email || '') }}</span>
+                    </v-avatar>
+                  </template>
+
+                  <v-list-item-title class="font-weight-medium">
+                    {{ s.full_name || s.email }}
+                  </v-list-item-title>
+                  <v-list-item-subtitle class="d-flex align-center mt-1 flex-wrap">
+                    <v-icon size="16" class="mr-1">mdi-card-account-details</v-icon>
+                    {{ s.student_number }} • {{ s.email }}
+                    <v-spacer />
+                    <span class="text-caption mr-2">Current:</span>
+                    <v-chip :color="getStatusColor(s.event_status)" variant="tonal" size="x-small">
+                      {{ getStatusText(s.event_status) }}
+                    </v-chip>
+                  </v-list-item-subtitle>
+                </v-list-item>
+              </v-list>
             </template>
-          </v-data-table>
-        </div>
+          </template>
+        </v-container>
       </v-card-text>
 
-      <v-divider />
-
-      <v-card-actions>
+      <v-card-actions class="pa-6 pt-0">
         <v-spacer />
-        <v-btn color="primary" variant="elevated" @click="open = false">Close</v-btn>
+        <v-btn variant="text" @click="open = false">Close</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
+  
 </template>
