@@ -8,7 +8,7 @@ export async function fetchBlockedEventsByUserId(userId: string): Promise<{ name
 
   const { data, error: seError } = await supabase
     .from('student_events')
-    .select('status, events(title, date)')
+    .select('status, events:events!student_events_event_id_fkey(title, date)')
     .eq('student_id', studentId)
     .ilike('status', 'blocked');
 
@@ -176,7 +176,7 @@ export async function fetchStudentsWithEvents(): Promise<StudentWithEvents[]> {
       status,
       organization_id,
       organizations(title),
-      student_events(
+      student_events:student_events!student_events_student_id_fkey(
         id,
         event_id,
         status,
@@ -232,10 +232,10 @@ export async function fetchEventsWithStudents(): Promise<EventWithStudents[]> {
       title,
       date,
       created_at,
-      student_events(
+      student_events:student_events!student_events_event_id_fkey(
         student_id,
         status,
-        students(
+        students:students!student_events_student_id_fkey(
           id,
           full_name,
           student_number,
@@ -292,7 +292,7 @@ export async function fetchStudentEvents(studentId: number): Promise<Event[]> {
     .from('student_events')
     .select(`
       status,
-      events(
+      events:events!student_events_event_id_fkey(
         id,
         title,
         date,
@@ -310,11 +310,12 @@ export async function fetchStudentEvents(studentId: number): Promise<Event[]> {
 }
 
 // Fetch students for a specific event
-export async function fetchEventStudents(eventId: number): Promise<StudentWithOrganization[]> {
+export async function fetchEventStudents(eventId: number): Promise<(StudentWithOrganization & { event_status?: string })[]> {
   const { data, error } = await supabase
     .from('student_events')
     .select(`
-      students(
+      status,
+      students:students!student_events_student_id_fkey(
         id,
         full_name,
         student_number,
@@ -351,6 +352,8 @@ export async function fetchEventStudents(eventId: number): Promise<StudentWithOr
     return {
       ...student,
       organization: orgTitle,
+      // include the event-specific registration status from student_events
+      event_status: se.status,
     }
   }).filter(Boolean)
 }
@@ -379,7 +382,7 @@ export async function fetchStudentEventDetailsByUserId(userId: string): Promise<
       id,
       event_id,
       status,
-      events (
+      events:events!student_events_event_id_fkey (
         id,
         title,
         date,

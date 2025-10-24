@@ -11,6 +11,7 @@ import { useAuthUserStore } from '@/stores/authUser'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
 import OrganizationMembersPanel from '../admin/components/OrganizationMembersPanel.vue'
 import { useOrganizationMembers } from '../admin/composables/useOrganizationMembers'
+import EventStudentsDialog from './dialogs/EventStudentsDialog.vue'
 import { useOrganizations } from '../admin/composables/useOrganizations'
 
 // Stores
@@ -33,9 +34,11 @@ const {
   members,
   availableStudents,
   memberForm,
+  organizationEvents,
   // Actions
   fetchOrganizationMembers,
   fetchAvailableStudents,
+  fetchOrganizationEvents,
   addMemberToOrganization,
   updateOrganizationMember,
   removeMemberFromOrganization,
@@ -47,6 +50,9 @@ const {
 const membersDialog = ref(false)
 const selectedOrganization = ref<any>(null)
 const search = ref('')
+const eventsDialog = ref(false)
+const selectedEvent = ref<any>(null)
+const memberStudentIds = computed(() => (members.value || []).map(m => m.student?.id || m.student_id).filter(Boolean))
 
 // Computed properties
 const userOrganizations = computed(() => {
@@ -56,6 +62,8 @@ const userOrganizations = computed(() => {
 const filteredMembers = computed(() => {
   return filterMembersBySearch(members.value, search.value)
 })
+
+// Organization events state is already provided via useOrganizationMembers above
 
 // Event handlers using helper factory
 const {
@@ -85,9 +93,16 @@ watch(organizations, (orgs) => {
   const myOrgs = filterOrganizationsByLeader(orgs, authStore.userData?.id)
   if (myOrgs.length > 0) {
     handleManageMembers(myOrgs[0])
+    // Also fetch organization events for the leader's org
+    fetchOrganizationEvents(myOrgs[0].id)
     autoOpened.value = true
   }
 }, { immediate: true })
+
+// When switching selected org explicitly, refresh events
+watch(selectedOrganization, (org) => {
+  if (org?.id) fetchOrganizationEvents(org.id)
+})
 
 // Lifecycle
 onMounted(async () => {
@@ -150,6 +165,43 @@ onMounted(async () => {
                 @add-member="handleAddMember"
                 @update-member="handleUpdateMember"
                 @remove-member="handleRemoveMember"
+              />
+
+              <!-- Organization Events List -->
+              <div v-if="selectedOrganization?.id" class="mt-8">
+                <v-card class="mb-4" elevation="4" rounded="lg">
+                  <v-card-title class="d-flex align-center">
+                    <v-icon class="me-2">mdi-calendar-multiselect</v-icon>
+                    <span>Organization Events</span>
+                    <v-spacer />
+                    <v-chip color="primary" variant="tonal" size="small">{{ organizationEvents?.length || 0 }} total</v-chip>
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text>
+                    <div v-if="!organizationEvents || organizationEvents.length === 0" class="text-medium-emphasis text-center py-8">
+                      No events are currently attached to your organization.
+                    </div>
+                    <v-row v-else>
+                      <v-col v-for="ev in organizationEvents" :key="ev.id" cols="12" sm="6" md="4">
+                        <v-card class="hoverable" @click="selectedEvent = ev; eventsDialog = true">
+                          <v-card-title class="text-subtitle-1">{{ ev.title }}</v-card-title>
+                          <v-card-subtitle>{{ formatDate(ev.date) }}</v-card-subtitle>
+                          <v-card-actions>
+                            <v-spacer />
+                            <v-btn color="primary" variant="text" append-icon="mdi-open-in-new">View Students</v-btn>
+                          </v-card-actions>
+                        </v-card>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </div>
+
+              <!-- Event Students Dialog -->
+              <EventStudentsDialog
+                v-model="eventsDialog"
+                :event="selectedEvent"
+                :member-student-ids="memberStudentIds as any"
               />
             </div>
           </v-col>

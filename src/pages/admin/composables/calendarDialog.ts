@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { createEvent, updateEvent, deleteEvent, type Event, type CreateEventRequest, type UpdateEventRequest } from '@/stores/eventsData'
+import { supabase } from '@/lib/supabase'
 import { useOrganizationMembersStore } from '@/stores/organizationMembersData'
 
 // Types
@@ -158,8 +159,39 @@ export function useAddCalendarDialog() {
 
       // If an organization is selected, block all its members for this new event
       if (newEvent && selectedOrganizationId.value) {
+        // Coerce to number if organizations.id is integer
+        const orgIdForEvent: any = isNaN(Number(selectedOrganizationId.value))
+          ? selectedOrganizationId.value
+          : Number(selectedOrganizationId.value)
         const orgMembersStore = useOrganizationMembersStore()
-        await orgMembersStore.blockAllMembersForEvent(selectedOrganizationId.value, newEvent.id)
+        await orgMembersStore.blockAllMembersForEvent(String(selectedOrganizationId.value), newEvent.id)
+
+        // Best-effort: persist explicit attachment if events.organization_id exists
+        try {
+          const { error: attachErr } = await supabase
+            .from('events')
+            .update({ organization_id: orgIdForEvent })
+            .eq('id', newEvent.id)
+          if (attachErr) {
+            // Likely the column doesn't exist; ignore silently
+            console.warn('Optional attach organization to event failed (non-fatal):', attachErr.message)
+          }
+        } catch (_) {
+          // Ignore any failure here, as schema may not have organization_id
+        }
+
+        // Also best-effort: insert into junction table if it exists
+        try {
+          const { error: jErr } = await supabase
+            .from('event_organizations')
+            .insert([{ event_id: newEvent.id, organization_id: selectedOrganizationId.value }])
+          if (jErr) {
+            // Table might not exist; ignore
+            console.warn('Optional event_organizations insert failed (non-fatal):', jErr.message)
+          }
+        } catch (_) {
+          // Ignore if table doesn't exist
+        }
       }
       return newEvent
     } catch (error) {

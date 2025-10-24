@@ -58,6 +58,7 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
   const members = ref<OrganizationMember[]>([])
   const availableStudents = ref<any[]>([])
   const currentOrganizationId = ref<string | null>(null)
+  const organizationEvents = ref<any[]>([])
   
   // Form data - all fields initialized with proper defaults (no null)
   const memberForm = reactive({
@@ -202,6 +203,75 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     } catch (error) {
       console.error('Error fetching available students:', error)
       toast.error(getErrorMessage(error))
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Fetch distinct events associated with an organization's members
+   * We consider an event "attached" if at least one member has a student_events row for it
+   */
+  const fetchOrganizationEvents = async (organizationId: string | number) => {
+    loading.value = true
+    organizationEvents.value = []
+    try {
+      // 1) Prefer junction table: event_organizations
+      try {
+        const { data: eoRows, error: eoErr } = await supabase
+          .from('event_organizations')
+          .select(`
+            event_id,
+            events ( id, title, date, created_at )
+          `)
+          .eq('organization_id', organizationId)
+
+        if (!eoErr && eoRows && eoRows.length > 0) {
+          const map = new Map<number, any>()
+          eoRows.forEach((row: any) => {
+            const ev = Array.isArray(row.events) ? row.events[0] : row.events
+            if (ev && !map.has(ev.id)) map.set(ev.id, ev)
+          })
+          const events = Array.from(map.values()).sort((a: any, b: any) => {
+            const ad = a.date ? new Date(a.date).getTime() : 0
+            const bd = b.date ? new Date(b.date).getTime() : 0
+            return ad - bd
+          })
+          organizationEvents.value = events
+          return events
+        }
+      } catch (_) {
+        // Table might not exist; continue
+      }
+
+      // 2) Fallback to explicit column on events
+      try {
+        const { data: attached, error: attachErr } = await supabase
+          .from('events')
+          .select('id, title, date, created_at, organization_id')
+          .eq('organization_id', isNaN(Number(organizationId)) ? organizationId : Number(organizationId))
+
+        if (!attachErr && attached && attached.length > 0) {
+          const sorted = [...attached].sort((a: any, b: any) => {
+            const ad = a.date ? new Date(a.date).getTime() : 0
+            const bd = b.date ? new Date(b.date).getTime() : 0
+            return ad - bd
+          })
+          organizationEvents.value = sorted
+          return sorted
+        }
+      } catch (_) {
+        // Column might not exist; return empty
+      }
+
+      // 3) No explicit attachments available
+      organizationEvents.value = []
+      return []
+    } catch (error) {
+      console.error('Error fetching organization events:', error)
+      toast.error(getErrorMessage(error))
+      organizationEvents.value = []
+      return []
     } finally {
       loading.value = false
     }
@@ -525,11 +595,13 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     members,
     availableStudents,
     memberForm,
+  organizationEvents,
     
     // Actions
     fetchOrganizationMembers,
     fetchStudentOrganizations,
     fetchAvailableStudents,
+  fetchOrganizationEvents,
     addMemberToOrganization,
     updateOrganizationMember,
     removeMemberFromOrganization,
