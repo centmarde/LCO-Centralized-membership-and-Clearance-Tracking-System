@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { fetchEventStudents } from '@/stores/studentsData'
+import { fetchEventStudents, setStudentEventPresence } from '@/stores/studentsData'
 import { getEmailInitials, getStatusColor, getStatusText, filterStudentsBySearch } from '@/utils/helpers'
+import { useToast } from 'vue-toastification'
 
 const props = defineProps<{
   modelValue: boolean
@@ -21,6 +22,7 @@ const open = computed({
 
 const loading = ref(false)
 const students = ref<any[]>([])
+const toast = useToast()
 
 // Search state (to match OrganizationMembersStatusDialog UI)
 const search = ref('')
@@ -48,6 +50,19 @@ watch(open, (v) => {
 })
 
 const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : 'No date'
+
+async function onTogglePresence(s: any, checked: boolean) {
+  if (!props.event?.id) return
+  const prev = !!s.event_present
+  s.event_present = checked
+  const ok = await setStudentEventPresence(s.id, props.event.id, checked)
+  if (!ok) {
+    s.event_present = prev
+    toast.error('Failed to update presence')
+  } else {
+    toast.success(checked ? 'Marked present' : 'Presence removed')
+  }
+}
 </script>
 
 <template>
@@ -117,6 +132,16 @@ const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : 'No da
                     <v-icon size="16" class="mr-1">mdi-card-account-details</v-icon>
                     {{ s.student_number }} • {{ s.email }}
                     <v-spacer />
+                    <div class="d-flex align-center mr-4">
+                      <v-checkbox
+                        v-model="s.event_present"
+                        density="compact"
+                        hide-details
+                        color="success"
+                        label="Present"
+                        @update:model-value="val => onTogglePresence(s, !!val)"
+                      />
+                    </div>
                     <span class="text-caption mr-2">Current:</span>
                     <v-chip :color="getStatusColor(s.event_status)" variant="tonal" size="x-small">
                       {{ getStatusText(s.event_status) }}

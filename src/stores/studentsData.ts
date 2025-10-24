@@ -71,6 +71,7 @@ export type StudentEvent = {
   student_id: number
   event_id: number
   status: string
+  present?: boolean
 }
 
 export type StudentWithEvents = StudentWithOrganization & {
@@ -310,29 +311,58 @@ export async function fetchStudentEvents(studentId: number): Promise<Event[]> {
 }
 
 // Fetch students for a specific event
-export async function fetchEventStudents(eventId: number): Promise<(StudentWithOrganization & { event_status?: string })[]> {
-  const { data, error } = await supabase
-    .from('student_events')
-    .select(`
-      status,
-      students:students!student_events_student_id_fkey(
-        id,
-        full_name,
-        student_number,
-        email,
+export async function fetchEventStudents(eventId: number): Promise<(StudentWithOrganization & { event_status?: string; event_present?: boolean })[]> {
+  // Try selecting presence; if the column doesn't exist, fall back gracefully
+  let data: any[] | null = null
+  let error: any = null
+  try {
+    const res = await supabase
+      .from('student_events')
+      .select(`
         status,
-        organization_id,
-        organizations(title)
-      )
-    `)
-    .eq('event_id', eventId)
-
-  if (error) {
-    console.error('Error fetching event students:', error)
-    throw error
+        present,
+        students:students!student_events_student_id_fkey(
+          id,
+          full_name,
+          student_number,
+          email,
+          status,
+          organization_id,
+          organizations(title)
+        )
+      `)
+      .eq('event_id', eventId)
+    data = res.data as any[]
+    error = res.error
+  } catch (e) {
+    error = e
   }
 
-  return data.map((se: any) => {
+  if (error) {
+    // Fall back without present
+    const { data: data2, error: error2 } = await supabase
+      .from('student_events')
+      .select(`
+        status,
+        students:students!student_events_student_id_fkey(
+          id,
+          full_name,
+          student_number,
+          email,
+          status,
+          organization_id,
+          organizations(title)
+        )
+      `)
+      .eq('event_id', eventId)
+    if (error2) {
+      console.error('Error fetching event students:', error2)
+      throw error2
+    }
+    data = data2 as any[]
+  }
+
+  return (data || []).map((se: any) => {
     const student = se.students
     let orgTitle = 'N/A'
     if (student.organizations) {
@@ -354,6 +384,7 @@ export async function fetchEventStudents(eventId: number): Promise<(StudentWithO
       organization: orgTitle,
       // include the event-specific registration status from student_events
       event_status: se.status,
+      event_present: (se as any).present ?? false,
     }
   }).filter(Boolean)
 }
@@ -376,26 +407,98 @@ export async function fetchStudentEventDetailsByUserId(userId: string): Promise<
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('student_events')
-    .select(`
-      id,
-      event_id,
-      status,
-      events:events!student_events_event_id_fkey (
+  // Try select with present; fall back without if needed
+  try {
+    const { data, error } = await supabase
+      .from('student_events')
+      .select(`
         id,
-        title,
-        date,
-        created_at
-      )
-    `)
-    .eq('student_id', studentData.id)
-    .order('created_at', { ascending: false });
+        event_id,
+        status,
+        present,
+        events:events!student_events_event_id_fkey (
+          id,
+          title,
+          date,
+          created_at
+        )
+      `)
+      .eq('student_id', studentData.id)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching student event details:', error);
-    return [];
+    if (error) throw error
+    return data || []
+  } catch (e) {
+    // Fallback without present
+    const { data, error } = await supabase
+      .from('student_events')
+      .select(`
+        id,
+        event_id,
+        status,
+        events:events!student_events_event_id_fkey (
+          id,
+          title,
+          date,
+          created_at
+        )
+      `)
+      .eq('student_id', studentData.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching student event details:', error)
+      return []
+    }
+    return data || []
   }
+}
 
-  return data || [];
+// Leader marks student presence for an event
+export async function setStudentEventPresence(
+  studentId: string | number,
+  eventId: number,
+  present: boolean
+): Promise<boolean> {
+  try {
+    // Check if a registration row exists
+    const { data: existing, error: selErr } = await supabase
+      .from('student_events')
+      .select('id')
+      .eq('student_id', studentId as any)
+      .eq('event_id', eventId)
+      .limit(1)
+      .maybeSingle()
+
+    if (selErr) {
+      console.error('Error checking presence row:', selErr)
+      return false
+    }
+
+    if (existing?.id) {
+      // Update presence on existing row
+      const { error: updErr } = await supabase
+        .from('student_events')
+        .update({ present })
+        .eq('id', existing.id)
+      if (updErr) {
+        console.error('Error updating presence:', updErr)
+        return false
+      }
+      return true
+    } else {
+      // Insert a new registration row (default to blocked) with presence
+      const { error: insErr } = await supabase
+        .from('student_events')
+        .insert([{ student_id: studentId as any, event_id: eventId, status: 'blocked', present }])
+      if (insErr) {
+        console.error('Error inserting presence row:', insErr)
+        return false
+      }
+      return true
+    }
+  } catch (e) {
+    console.error('Presence toggle failed:', e)
+    return false
+  }
 }

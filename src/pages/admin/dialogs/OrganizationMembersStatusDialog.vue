@@ -179,6 +179,11 @@ const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : 'No da
                         <v-icon size="16" class="mr-1">mdi-calendar</v-icon>
                         {{ formatDate(eventDetail.events?.date) }}
                         <v-spacer />
+                        <template v-if="eventDetail.present">
+                          <v-chip color="success" variant="tonal" size="x-small" class="mr-2">
+                            Present (leader)
+                          </v-chip>
+                        </template>
                         <span class="text-caption mr-2">Current:</span>
                         <v-chip :color="getStatusColor(eventDetail.status)" variant="tonal" size="x-small">
                           {{ getStatusText(eventDetail.status) }}
