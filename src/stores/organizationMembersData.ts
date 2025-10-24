@@ -445,6 +445,78 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     }
   }
 
+  /**
+   * Blocks all current members of an organization for a specific event.
+   * - Creates student_events entries for members without registrations
+   * - Updates existing registrations' status to 'blocked'
+   */
+  const blockAllMembersForEvent = async (
+    organizationId: string,
+    eventId: number
+  ): Promise<{ created: number; updated: number }> => {
+    try {
+      // Ensure we have latest members
+      const orgMembers = await fetchOrganizationMembers(organizationId)
+      const studentIds = orgMembers.map(m => m.student?.id || m.student_id).filter(Boolean) as (string | number)[]
+      if (studentIds.length === 0) return { created: 0, updated: 0 }
+
+      // Fetch existing registrations for these students for the event
+      const { data: existing, error: selErr } = await supabase
+        .from('student_events')
+        .select('id, student_id, status')
+        .eq('event_id', eventId)
+        .in('student_id', studentIds as any)
+
+      if (selErr) {
+        console.error('Error fetching existing registrations:', selErr)
+        toast.error(getErrorMessage(selErr))
+        return { created: 0, updated: 0 }
+      }
+
+      const existingIds = new Set((existing || []).map(r => String(r.student_id)))
+      const toInsert = studentIds
+        .filter(id => !existingIds.has(String(id)))
+        .map(id => ({ student_id: id, event_id: eventId, status: 'blocked' }))
+
+      let created = 0
+      let updated = 0
+
+      if (toInsert.length > 0) {
+        const { error: insErr } = await supabase
+          .from('student_events')
+          .insert(toInsert)
+        if (insErr) {
+          console.error('Error inserting registrations:', insErr)
+          toast.error(getErrorMessage(insErr))
+        } else {
+          created = toInsert.length
+        }
+      }
+
+      // Update all existing to blocked (including those already blocked, harmless)
+      if (existingIds.size > 0) {
+        const { error: updErr } = await supabase
+          .from('student_events')
+          .update({ status: 'blocked' })
+          .eq('event_id', eventId)
+          .in('student_id', Array.from(existingIds) as any)
+        if (updErr) {
+          console.error('Error updating existing registrations:', updErr)
+          toast.error(getErrorMessage(updErr))
+        } else {
+          updated = existingIds.size
+        }
+      }
+
+      toast.success(`Blocked ${studentIds.length} member(s) for the event`)
+      return { created, updated }
+    } catch (error) {
+      console.error('Error blocking all members for event:', error)
+      toast.error(getErrorMessage(error))
+      return { created: 0, updated: 0 }
+    }
+  }
+
   return {
     // State
     loading,
@@ -468,6 +540,7 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     ,
     // Member event helpers
     fetchMemberEventsByUserId,
-    setMemberEventStatus
+    setMemberEventStatus,
+    blockAllMembersForEvent
   }
 })

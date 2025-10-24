@@ -44,6 +44,7 @@ export function useOrganizationMembers() {
     ,
     // New helpers for member event management
     fetchMemberEventsByUserId: store.fetchMemberEventsByUserId,
-    setMemberEventStatus: store.setMemberEventStatus
+    setMemberEventStatus: store.setMemberEventStatus,
+    blockAllMembersForEvent: store.blockAllMembersForEvent
   }
 }

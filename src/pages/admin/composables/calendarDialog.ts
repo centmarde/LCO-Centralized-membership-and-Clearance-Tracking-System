@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { createEvent, updateEvent, deleteEvent, type Event, type CreateEventRequest, type UpdateEventRequest } from '@/stores/eventsData'
+import { useOrganizationMembersStore } from '@/stores/organizationMembersData'
 
 // Types
 export interface DialogState {
@@ -111,6 +112,9 @@ export function useAddCalendarDialog() {
     date: ''
   })
 
+  // Optional organization to attach for auto-blocking members
+  const selectedOrganizationId = ref<string | null>(null)
+
   const formRef = ref<any>(null)
   const isValid = ref(false)
   const loading = ref(false)
@@ -124,6 +128,7 @@ export function useAddCalendarDialog() {
       title: '',
       date: selectedDate ? formatters.selectedDate(selectedDate) : ''
     }
+    selectedOrganizationId.value = null
 
     // Reset validation
     if (formRef.value) {
@@ -150,6 +155,12 @@ export function useAddCalendarDialog() {
       loading.value = true
       const newEvent = await createEvent(formData.value)
       console.log('Event created successfully:', newEvent)
+
+      // If an organization is selected, block all its members for this new event
+      if (newEvent && selectedOrganizationId.value) {
+        const orgMembersStore = useOrganizationMembersStore()
+        await orgMembersStore.blockAllMembersForEvent(selectedOrganizationId.value, newEvent.id)
+      }
       return newEvent
     } catch (error) {
       console.error('Error creating event:', error)
@@ -173,6 +184,7 @@ export function useAddCalendarDialog() {
     resetForm,
     initializeForm,
     handleSubmit,
+  selectedOrganizationId,
 
     // Shared
     validationRules,
