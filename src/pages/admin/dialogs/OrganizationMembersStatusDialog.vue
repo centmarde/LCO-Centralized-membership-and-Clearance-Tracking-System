@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
 import { useToast } from 'vue-toastification'
-import { getStatusColor, getStatusText, getEmailInitials } from '@/utils/helpers'
+import { getStatusColor, getStatusText, getEmailInitials, filterMembersBySearch } from '@/utils/helpers'
 import type { OrganizationMember } from '@/stores/organizationMembersData'
 import { useOrganizationMembers } from '@/pages/admin/composables/useOrganizationMembers'
 
@@ -34,6 +34,10 @@ const editedStatuses = ref<Record<string, Record<number, string>>>({}) // user_i
 
 // Composable actions
 const { fetchMemberEventsByUserId, setMemberEventStatus } = useOrganizationMembers()
+
+// Search
+const search = ref('')
+const filteredMembers = computed(() => filterMembersBySearch(props.members || [], search.value))
 
 // Load events for a specific member on-demand
 const loadMemberEvents = async (member: OrganizationMember) => {
@@ -106,14 +110,35 @@ const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : 'No da
 
       <v-card-text class="pa-0">
         <v-container fluid class="pa-6 pt-4">
-          <div v-if="!members || members.length === 0" class="text-center pa-8">
+              <div v-if="!members || members.length === 0" class="text-center pa-8">
             <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-account-group-outline</v-icon>
             <div class="text-h6">No members for this organization.</div>
           </div>
 
-          <v-expansion-panels v-else variant="accordion">
-            <v-expansion-panel
-              v-for="member in members"
+              <template v-else>
+                <!-- Search bar -->
+                <v-row class="mb-4">
+                  <v-col cols="12" md="6">
+                    <v-text-field
+                      v-model="search"
+                      prepend-inner-icon="mdi-magnify"
+                      label="Search members..."
+                      variant="outlined"
+                      hide-details
+                      clearable
+                      density="compact"
+                    />
+                  </v-col>
+                </v-row>
+
+                <div v-if="filteredMembers.length === 0" class="text-center pa-8">
+                  <v-icon size="48" color="grey-lighten-1" class="mb-2">mdi-account-search</v-icon>
+                  <div class="text-subtitle-1">No members match your search.</div>
+                </div>
+
+                <v-expansion-panels v-else variant="accordion">
+                  <v-expansion-panel
+                  v-for="member in filteredMembers"
               :key="member.id"
               @group:selected="val => { if (val) loadMemberEvents(member) }"
             >
@@ -190,7 +215,8 @@ const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString() : 'No da
                 </div>
               </v-expansion-panel-text>
             </v-expansion-panel>
-          </v-expansion-panels>
+            </v-expansion-panels>
+          </template>
         </v-container>
       </v-card-text>
 
