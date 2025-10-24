@@ -248,6 +248,15 @@ export const memberRoleOptions = [
 export type MemberStatus = typeof memberStatusOptions[number]['value']
 export type MemberRole = typeof memberRoleOptions[number]['value']
 
+// Shared member form type used by dialogs/panels
+export type OrganizationMemberForm = {
+  student_id: string
+  organization_id: string
+  status: MemberStatus
+  member_role: MemberRole
+  notes: string
+}
+
 /**
  * Gets the color for a member status
  */
@@ -292,6 +301,30 @@ export const isValidMemberStatus = (status: string): status is MemberStatus => {
  */
 export const isValidMemberRole = (role: string): role is MemberRole => {
   return memberRoleOptions.some(opt => opt.value === role)
+}
+
+/**
+ * Member form mutation helpers (side-effectful, but centralized)
+ * These are used by OrganizationMembersDialog/Panel to directly mutate the reactive form
+ */
+export function updateMemberFormStudentId(form: OrganizationMemberForm, value: string | null) {
+  form.student_id = value || ''
+  console.log('Student ID updated to:', form.student_id)
+}
+
+export function updateMemberFormRole(form: OrganizationMemberForm, value: string) {
+  form.member_role = value as MemberRole
+  console.log('Member role updated to:', form.member_role)
+}
+
+export function updateMemberFormStatus(form: OrganizationMemberForm, value: string) {
+  form.status = value as MemberStatus
+  console.log('Status updated to:', form.status)
+}
+
+export function updateMemberFormNotes(form: OrganizationMemberForm, value: string | null) {
+  form.notes = value || ''
+  console.log('Notes updated to:', form.notes)
 }
 
 // ========================================
