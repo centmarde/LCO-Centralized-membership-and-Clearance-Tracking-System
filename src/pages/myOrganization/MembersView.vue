@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, watch } from 'vue'
 import {
   getEmailInitials,
   formatDate,
@@ -9,7 +9,7 @@ import {
 } from '@/utils/helpers'
 import { useAuthUserStore } from '@/stores/authUser'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
-import OrganizationMembersDialog from '../admin/dialogs/OrganizationMembersDialog.vue'
+import OrganizationMembersPanel from '../admin/components/OrganizationMembersPanel.vue'
 import { useOrganizationMembers } from '../admin/composables/useOrganizationMembers'
 import { useOrganizations } from '../admin/composables/useOrganizations'
 
@@ -77,9 +77,21 @@ const {
   getSelectedOrganization: () => selectedOrganization.value
 })
 
+// Auto-open members manager for the leader's single organization
+const autoOpened = ref(false)
+
+watch(organizations, (orgs) => {
+  if (autoOpened.value) return
+  const myOrgs = filterOrganizationsByLeader(orgs, authStore.userData?.id)
+  if (myOrgs.length > 0) {
+    handleManageMembers(myOrgs[0])
+    autoOpened.value = true
+  }
+}, { immediate: true })
+
 // Lifecycle
-onMounted(() => {
-  fetchOrganizations()
+onMounted(async () => {
+  await fetchOrganizations()
 })
 </script>
 
@@ -121,66 +133,12 @@ onMounted(() => {
                 </p>
               </div>
 
-              <!-- Organizations Grid -->
-              <div v-else>
-                <v-row>
-                  <v-col
-                    v-for="organization in userOrganizations"
-                    :key="organization.id"
-                    cols="12"
-                    md="6"
-                    lg="4"
-                  >
-                    <v-card
-                      elevation="3"
-                      rounded="lg"
-                      class="organization-card fill-height"
-                      hover
-                    >
-                      <!-- Card Header -->
-                      <v-card-title class="pa-4 pb-2 bg-gradient-primary text-white">
-                        <div class="d-flex align-center justify-space-between w-100">
-                          <div class="flex-grow-1">
-                            <v-icon color="white" size="24" class="mr-2">mdi-domain</v-icon>
-                            <span class="text-h6 font-weight-bold">{{ organization.title }}</span>
-                          </div>
-                          <v-chip color="white" variant="tonal" size="small">
-                            Leader
-                          </v-chip>
-                        </div>
-                      </v-card-title>
+              <!-- No grid/cards: leaders have a single organization. Members dialog opens automatically. -->
+              <div v-else></div>
 
-                      <!-- Card Content -->
-                      <v-card-text class="pa-4">
-                        <div class="mb-4">
-                          <div class="text-caption text-medium-emphasis mb-1">Created</div>
-                          <div class="d-flex align-center">
-                            <v-icon size="16" color="grey" class="mr-1">mdi-calendar</v-icon>
-                            <span class="text-body-2">{{ formatDate(organization.created_at) }}</span>
-                          </div>
-                        </div>
-
-                        <div class="d-flex justify-center">
-                          <v-btn
-                            color="primary"
-                            variant="elevated"
-                            prepend-icon="mdi-account-group"
-                            @click="handleManageMembers(organization)"
-                            block
-                          >
-                            Manage Members
-                          </v-btn>
-                        </div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
-                </v-row>
-              </div>
-
-              <!-- Organization Members Dialog (only show if organization is selected) -->
-              <OrganizationMembersDialog
+              <!-- Inline Members Management Panel -->
+              <OrganizationMembersPanel
                 v-if="selectedOrganization?.id"
-                v-model:dialog="membersDialog"
                 :loading="loadingMembers"
                 :saving="savingMembers"
                 :organization-id="selectedOrganization.id"
@@ -192,7 +150,6 @@ onMounted(() => {
                 @add-member="handleAddMember"
                 @update-member="handleUpdateMember"
                 @remove-member="handleRemoveMember"
-                @close="handleCloseMembersDialog"
               />
             </div>
           </v-col>
