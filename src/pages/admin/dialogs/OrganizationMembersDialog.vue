@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
-import { getEmailInitials, memberStatusOptions, memberRoleOptions, getMemberStatusColor, getMemberRoleTitle } from '@/utils/helpers'
+import {
+  getEmailInitials,
+  memberStatusOptions,
+  memberRoleOptions,
+  getMemberStatusColor,
+  getMemberRoleTitle,
+  updateMemberFormStudentId,
+  updateMemberFormRole,
+  updateMemberFormStatus,
+  updateMemberFormNotes
+} from '@/utils/helpers'
 import type { OrganizationMember } from '@/stores/organizationMembersData'
 
 interface Props {
@@ -53,27 +63,7 @@ const dialogValue = computed({
 const statusOptions = memberStatusOptions
 const roleOptions = memberRoleOptions
 
-// Helper methods to update individual form fields
-// These directly mutate the reactive memberForm from the store
-const updateStudentId = (value: string | null) => {
-  props.memberForm.student_id = value || ''
-  console.log('Student ID updated to:', props.memberForm.student_id)
-}
-
-const updateMemberRole = (value: string) => {
-  props.memberForm.member_role = value as any
-  console.log('Member role updated to:', props.memberForm.member_role)
-}
-
-const updateStatus = (value: string) => {
-  props.memberForm.status = value as any
-  console.log('Status updated to:', props.memberForm.status)
-}
-
-const updateNotes = (value: string | null) => {
-  props.memberForm.notes = value || ''
-  console.log('Notes updated to:', props.memberForm.notes)
-}
+// Updates are now centralized in helpers.ts; we call them inline from the template
 
 // Methods
 const handleAddMember = () => {
@@ -157,7 +147,7 @@ watch(() => props.dialog, (newVal) => {
                 <v-col cols="12" md="6">
                   <v-select
                     :model-value="memberForm.student_id"
-                    @update:model-value="updateStudentId"
+                    @update:model-value="(v) => updateMemberFormStudentId(memberForm as any, v)"
                     :items="availableStudents"
                     item-value="id"
                     item-title="display_name"
@@ -183,7 +173,7 @@ watch(() => props.dialog, (newVal) => {
                 <v-col cols="12" md="3">
                   <v-select
                     :model-value="memberForm.member_role"
-                    @update:model-value="updateMemberRole"
+                    @update:model-value="(v) => updateMemberFormRole(memberForm as any, v as string)"
                     :items="roleOptions"
                     label="Member Role"
                     variant="outlined"
@@ -193,7 +183,7 @@ watch(() => props.dialog, (newVal) => {
                 <v-col cols="12" md="3">
                   <v-select
                     :model-value="memberForm.status"
-                    @update:model-value="updateStatus"
+                    @update:model-value="(v) => updateMemberFormStatus(memberForm as any, v as string)"
                     :items="statusOptions"
                     label="Status"
                     variant="outlined"
@@ -203,7 +193,7 @@ watch(() => props.dialog, (newVal) => {
                 <v-col cols="12">
                   <v-textarea
                     :model-value="memberForm.notes"
-                    @update:model-value="updateNotes"
+                    @update:model-value="(v) => updateMemberFormNotes(memberForm as any, v)"
                     label="Notes (Optional)"
                     variant="outlined"
                     density="compact"

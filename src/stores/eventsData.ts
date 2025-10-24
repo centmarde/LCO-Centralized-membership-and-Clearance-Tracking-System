@@ -124,7 +124,7 @@ export async function fetchEventStats(): Promise<EventStats> {
     .select(`
       id,
       date,
-      student_events(status)
+      student_events:student_events!student_events_event_id_fkey(status)
     `)
 
   if (error) {
@@ -293,7 +293,7 @@ export async function fetchEventsWithRegistrationCounts(): Promise<(Event & { re
     .from('events')
     .select(`
       *,
-      student_events(count)
+      student_events:student_events!student_events_event_id_fkey(count)
     `)
     .order('created_at', { ascending: false })
 
@@ -321,7 +321,7 @@ export async function fetchEventsWithStats(): Promise<(Event & {
     .from('events')
     .select(`
       *,
-      student_events(status)
+      student_events:student_events!student_events_event_id_fkey(status)
     `)
     .order('created_at', { ascending: false })
 

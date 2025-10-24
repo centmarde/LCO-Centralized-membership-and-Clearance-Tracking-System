@@ -9,7 +9,7 @@ import {
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
 import OrganizationFormDialog from './dialogs/OrganizationFormDialog.vue'
 import OrganizationDeleteDialog from './dialogs/OrganizationDeleteDialog.vue'
-import OrganizationMembersDialog from './dialogs/OrganizationMembersDialog.vue'
+import OrganizationMembersStatusDialog from './dialogs/OrganizationMembersStatusDialog.vue'
 import { useOrganizations } from './composables/useOrganizations'
 import { useDialogs } from './composables/useDialogs'
 import { useOrganizationMembers } from './composables/useOrganizationMembers'
@@ -125,33 +125,16 @@ const handleConfirmDelete = async () => {
   }
 }
 
-// Member viewing handler (admin view) with debug logging
-const baseHandleViewMembers = createViewMembersHandler({
-  setSelectedOrganization: (org) => { selectedOrganization.value = org },
-  setMembersDialog: (open) => { membersDialog.value = open },
-  fetchOrganizationMembers,
-  viewOnly: true // Admin view is read-only
-})
-
-const handleViewMembers = async (organization: any) => {
-  console.log('OrganizationsView - Opening members dialog for organization:', organization.id)
-  console.log('OrganizationsView - Current members before fetch:', members.value?.length || 0)
-  
-  // Use the helper for core functionality
-  await baseHandleViewMembers(organization)
-  
-  console.log('OrganizationsView - Members after fetch:', members.value?.length || 0)
+// Open dialog to manage member event statuses (Blocked/Cleared)
+const handleOpenMembersStatusDialog = async (organization: any) => {
+  selectedOrganization.value = organization
+  membersDialog.value = true
+  await fetchOrganizationMembers(organization.id)
 }
-
-// These handlers are not needed in admin view-only mode
-const handleAddMember = () => {} // No-op for admin view
-const handleUpdateMember = () => {} // No-op for admin view  
-const handleRemoveMember = () => {} // No-op for admin view
 
 const handleCloseMembersDialog = () => {
   membersDialog.value = false
   selectedOrganization.value = null
-  // Clear members data to prevent showing stale data
   clearMembersData()
 }
 
@@ -274,6 +257,7 @@ onMounted(() => {
             rounded="lg"
             class="organization-card fill-height"
             hover
+            @click="handleOpenMembersStatusDialog(organization)"
           >
             <!-- Card Header with Organization Info -->
             <v-card-title class="pa-4 pb-2">
@@ -290,11 +274,12 @@ onMounted(() => {
                       variant="text"
                       size="small"
                       v-bind="props"
+                      @click.stop
                     />
                   </template>
                   <v-list density="compact">
                     <v-list-item
-                      @click="handleViewMembers(organization)"
+                      @click.stop="handleOpenMembersStatusDialog(organization)"
                       prepend-icon="mdi-eye"
                     >
                       <v-list-item-title>View Members</v-list-item-title>
@@ -383,21 +368,13 @@ onMounted(() => {
       @close="closeDeleteDialog"
     />
 
-    <!-- Organization Members Dialog (only show if organization is selected) -->
-    <OrganizationMembersDialog
+    <!-- Admin: Manage Members' Event Statuses (Blocked/Cleared) -->
+    <OrganizationMembersStatusDialog
       v-if="selectedOrganization?.id"
       v-model:dialog="membersDialog"
-      :loading="loadingMembers"
-      :saving="savingMembers"
       :organization-id="selectedOrganization.id"
       :organization-title="selectedOrganization.title || 'Unknown Organization'"
       :members="members"
-      :available-students="availableStudents"
-      :member-form="memberForm"
-      :view-only="true"
-      @add-member="handleAddMember"
-      @update-member="handleUpdateMember"
-      @remove-member="handleRemoveMember"
       @close="handleCloseMembersDialog"
     />
             </div>

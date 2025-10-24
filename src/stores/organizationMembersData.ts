@@ -58,6 +58,7 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
   const members = ref<OrganizationMember[]>([])
   const availableStudents = ref<any[]>([])
   const currentOrganizationId = ref<string | null>(null)
+  const organizationEvents = ref<any[]>([])
   
   // Form data - all fields initialized with proper defaults (no null)
   const memberForm = reactive({
@@ -202,6 +203,75 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     } catch (error) {
       console.error('Error fetching available students:', error)
       toast.error(getErrorMessage(error))
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Fetch distinct events associated with an organization's members
+   * We consider an event "attached" if at least one member has a student_events row for it
+   */
+  const fetchOrganizationEvents = async (organizationId: string | number) => {
+    loading.value = true
+    organizationEvents.value = []
+    try {
+      // 1) Prefer junction table: event_organizations
+      try {
+        const { data: eoRows, error: eoErr } = await supabase
+          .from('event_organizations')
+          .select(`
+            event_id,
+            events ( id, title, date, created_at )
+          `)
+          .eq('organization_id', organizationId)
+
+        if (!eoErr && eoRows && eoRows.length > 0) {
+          const map = new Map<number, any>()
+          eoRows.forEach((row: any) => {
+            const ev = Array.isArray(row.events) ? row.events[0] : row.events
+            if (ev && !map.has(ev.id)) map.set(ev.id, ev)
+          })
+          const events = Array.from(map.values()).sort((a: any, b: any) => {
+            const ad = a.date ? new Date(a.date).getTime() : 0
+            const bd = b.date ? new Date(b.date).getTime() : 0
+            return ad - bd
+          })
+          organizationEvents.value = events
+          return events
+        }
+      } catch (_) {
+        // Table might not exist; continue
+      }
+
+      // 2) Fallback to explicit column on events
+      try {
+        const { data: attached, error: attachErr } = await supabase
+          .from('events')
+          .select('id, title, date, created_at, organization_id')
+          .eq('organization_id', isNaN(Number(organizationId)) ? organizationId : Number(organizationId))
+
+        if (!attachErr && attached && attached.length > 0) {
+          const sorted = [...attached].sort((a: any, b: any) => {
+            const ad = a.date ? new Date(a.date).getTime() : 0
+            const bd = b.date ? new Date(b.date).getTime() : 0
+            return ad - bd
+          })
+          organizationEvents.value = sorted
+          return sorted
+        }
+      } catch (_) {
+        // Column might not exist; return empty
+      }
+
+      // 3) No explicit attachments available
+      organizationEvents.value = []
+      return []
+    } catch (error) {
+      console.error('Error fetching organization events:', error)
+      toast.error(getErrorMessage(error))
+      organizationEvents.value = []
+      return []
     } finally {
       loading.value = false
     }
@@ -393,6 +463,130 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     resetMemberForm()
   }
 
+  // =============================
+  // Member event helpers (admin)
+  // =============================
+
+  /**
+   * Fetches event details for a member by the member's user_id
+   * Returns the same shape used by EditUserDialog (events joined with status)
+   */
+  const fetchMemberEventsByUserId = async (userId: string): Promise<any[]> => {
+    try {
+      // Reuse existing studentsData utility to keep logic consistent
+      const { fetchStudentEventDetailsByUserId } = await import('@/stores/studentsData')
+      const events = await fetchStudentEventDetailsByUserId(userId)
+      return events || []
+    } catch (error) {
+      console.error('Error fetching member events by userId:', error)
+      toast.error(getErrorMessage(error))
+      return []
+    }
+  }
+
+  /**
+   * Updates a single event status for a specific member (student)
+   * Accepts string or number studentId to accommodate schema differences
+   */
+  const setMemberEventStatus = async (
+    studentId: string | number,
+    eventId: number,
+    status: string
+  ): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('student_events')
+        .update({ status })
+        .eq('student_id', studentId)
+        .eq('event_id', eventId)
+
+      if (error) {
+        console.error('Error updating member event status:', error)
+        toast.error(getErrorMessage(error))
+        return false
+      }
+
+      toast.success('Status updated')
+      return true
+    } catch (error) {
+      console.error('Error updating member event status:', error)
+      toast.error(getErrorMessage(error))
+      return false
+    }
+  }
+
+  /**
+   * Blocks all current members of an organization for a specific event.
+   * - Creates student_events entries for members without registrations
+   * - Updates existing registrations' status to 'blocked'
+   */
+  const blockAllMembersForEvent = async (
+    organizationId: string,
+    eventId: number
+  ): Promise<{ created: number; updated: number }> => {
+    try {
+      // Ensure we have latest members
+      const orgMembers = await fetchOrganizationMembers(organizationId)
+      const studentIds = orgMembers.map(m => m.student?.id || m.student_id).filter(Boolean) as (string | number)[]
+      if (studentIds.length === 0) return { created: 0, updated: 0 }
+
+      // Fetch existing registrations for these students for the event
+      const { data: existing, error: selErr } = await supabase
+        .from('student_events')
+        .select('id, student_id, status')
+        .eq('event_id', eventId)
+        .in('student_id', studentIds as any)
+
+      if (selErr) {
+        console.error('Error fetching existing registrations:', selErr)
+        toast.error(getErrorMessage(selErr))
+        return { created: 0, updated: 0 }
+      }
+
+      const existingIds = new Set((existing || []).map(r => String(r.student_id)))
+      const toInsert = studentIds
+        .filter(id => !existingIds.has(String(id)))
+        .map(id => ({ student_id: id, event_id: eventId, status: 'blocked' }))
+
+      let created = 0
+      let updated = 0
+
+      if (toInsert.length > 0) {
+        const { error: insErr } = await supabase
+          .from('student_events')
+          .insert(toInsert)
+        if (insErr) {
+          console.error('Error inserting registrations:', insErr)
+          toast.error(getErrorMessage(insErr))
+        } else {
+          created = toInsert.length
+        }
+      }
+
+      // Update all existing to blocked (including those already blocked, harmless)
+      if (existingIds.size > 0) {
+        const { error: updErr } = await supabase
+          .from('student_events')
+          .update({ status: 'blocked' })
+          .eq('event_id', eventId)
+          .in('student_id', Array.from(existingIds) as any)
+        if (updErr) {
+          console.error('Error updating existing registrations:', updErr)
+          toast.error(getErrorMessage(updErr))
+        } else {
+          updated = existingIds.size
+        }
+      }
+
+      toast.success(`Blocked ${studentIds.length} member(s) for the event`)
+      return { created, updated }
+    } catch (error) {
+      console.error('Error blocking all members for event:', error)
+      toast.error(getErrorMessage(error))
+      return { created: 0, updated: 0 }
+    }
+  }
+
   return {
     // State
     loading,
@@ -401,11 +595,13 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     members,
     availableStudents,
     memberForm,
+  organizationEvents,
     
     // Actions
     fetchOrganizationMembers,
     fetchStudentOrganizations,
     fetchAvailableStudents,
+  fetchOrganizationEvents,
     addMemberToOrganization,
     updateOrganizationMember,
     removeMemberFromOrganization,
@@ -413,5 +609,10 @@ export const useOrganizationMembersStore = defineStore('organizationMembers', ()
     getOrganizationMemberStats,
     resetMemberForm,
     clearMembersData
+    ,
+    // Member event helpers
+    fetchMemberEventsByUserId,
+    setMemberEventStatus,
+    blockAllMembersForEvent
   }
 })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, defineEmits, defineProps, defineOptions, watch } from 'vue'
+import { computed, defineEmits, defineProps, defineOptions, watch, onMounted } from 'vue'
 import { useAddCalendarDialog } from '@/pages/admin/composables/calendarDialog'
+import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
 
 // Component name for ESLint multi-word rule
 defineOptions({
@@ -33,8 +34,15 @@ const {
   initializeForm,
   handleSubmit,
   validationRules,
-  formatters
+  formatters,
+  selectedOrganizationId
 } = useAddCalendarDialog()
+
+// Organizations for attachment
+const {
+  organizations,
+  fetchOrganizations
+} = useOrganizations()
 
 // Dialog state
 const dialog = computed({
@@ -56,6 +64,7 @@ watch(() => props.selectedDate, (newDate) => {
 watch(dialog, (isOpen) => {
   if (isOpen) {
     initializeForm(props.selectedDate)
+    fetchOrganizations()
   }
 })
 
@@ -151,6 +160,23 @@ const handleCancel = () => {
                   hint="Select the date when the event will take place"
                   persistent-hint
                 ></v-text-field>
+              </v-col>
+
+              <!-- Attach Organization (optional) -->
+              <v-col cols="12">
+                <v-select
+                  v-model="selectedOrganizationId"
+                  :items="organizations"
+                  item-title="title"
+                  item-value="id"
+                  label="Attach Organization (optional)"
+                  variant="outlined"
+                  :disabled="loading"
+                  prepend-inner-icon="mdi-domain"
+                  hint="If selected, all current members will be blocked for this event upon creation"
+                  persistent-hint
+                  clearable
+                />
               </v-col>
 
               <!-- Selected Date Info (if provided) -->
