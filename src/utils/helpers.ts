@@ -173,6 +173,17 @@ export function getUserStatusDisplay(
   user: { id: string; role_id?: number; status?: string }, 
   userEvents: any[] = []
 ): UserStatusDisplay {
+  // Admins (role_id = 1) should never appear as Blocked in UI
+  if (user.role_id === 1) {
+    const isBlocked = user.status?.toLowerCase() === 'blocked'
+    return {
+      text: isBlocked ? 'Active' : getStatusText(user.status),
+      color: isBlocked ? getStatusColor('active') : getStatusColor(user.status),
+      showCount: false,
+      blockedCount: 0,
+    }
+  }
+
   if (user.role_id !== 2) {
     // For non-students, use the original status
     return {
@@ -237,6 +248,15 @@ export const memberRoleOptions = [
 export type MemberStatus = typeof memberStatusOptions[number]['value']
 export type MemberRole = typeof memberRoleOptions[number]['value']
 
+// Shared member form type used by dialogs/panels
+export type OrganizationMemberForm = {
+  student_id: string
+  organization_id: string
+  status: MemberStatus
+  member_role: MemberRole
+  notes: string
+}
+
 /**
  * Gets the color for a member status
  */
@@ -283,6 +303,30 @@ export const isValidMemberRole = (role: string): role is MemberRole => {
   return memberRoleOptions.some(opt => opt.value === role)
 }
 
+/**
+ * Member form mutation helpers (side-effectful, but centralized)
+ * These are used by OrganizationMembersDialog/Panel to directly mutate the reactive form
+ */
+export function updateMemberFormStudentId(form: OrganizationMemberForm, value: string | null) {
+  form.student_id = value || ''
+  console.log('Student ID updated to:', form.student_id)
+}
+
+export function updateMemberFormRole(form: OrganizationMemberForm, value: string) {
+  form.member_role = value as MemberRole
+  console.log('Member role updated to:', form.member_role)
+}
+
+export function updateMemberFormStatus(form: OrganizationMemberForm, value: string) {
+  form.status = value as MemberStatus
+  console.log('Status updated to:', form.status)
+}
+
+export function updateMemberFormNotes(form: OrganizationMemberForm, value: string | null) {
+  form.notes = value || ''
+  console.log('Notes updated to:', form.notes)
+}
+
 // ========================================
 // ORGANIZATION VIEW HELPERS
 // ========================================
@@ -312,6 +356,20 @@ export const filterMembersBySearch = (members: any[], searchTerm: string): any[]
     member.student?.full_name?.toLowerCase().includes(term) ||
     member.student?.email?.toLowerCase().includes(term) ||
     member.student?.student_number?.toLowerCase().includes(term)
+  )
+}
+
+/**
+ * Filters students by search term (name, email, or student number)
+ */
+export const filterStudentsBySearch = (students: any[], searchTerm: string): any[] => {
+  if (!searchTerm) return students
+
+  const term = searchTerm.toLowerCase()
+  return students.filter(s =>
+    s.full_name?.toLowerCase().includes(term) ||
+    s.email?.toLowerCase().includes(term) ||
+    s.student_number?.toLowerCase().includes(term)
   )
 }
 

@@ -5,7 +5,7 @@
   "subtitle": "Efficiently Manage Students Clearance and Compliance",
 
   "backgroundImage": {
-    "src": "/images/markup.png",
+    "src": "/images/background.jpg",
     "alt": "Abstract academic background with geometric patterns",
     "overlay": {
       "enabled": true,
@@ -41,7 +41,7 @@
   "lastUpdated": "2025-09-03",
 
   "theme": {
-    "primaryColor": "#96A78D",
+    "primaryColor": "#0F4E15",
     "secondaryColor": "#F0F0F0"
   },
   "ui": {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { 
   getRoleColor, 
   getRoleText, 
@@ -7,6 +7,7 @@ import {
   getStatusText, 
   formatDate 
 } from '@/utils/helpers'
+import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
 
 interface User {
   id: string
@@ -33,6 +34,35 @@ const emit = defineEmits<Emits>()
 const closeDialog = () => {
   emit('update:modelValue', false)
 }
+
+// Local state for blocked events (read-only view)
+const loadingEvents = ref(false)
+const blockedEvents = ref<any[]>([])
+
+const loadBlockedEvents = async () => {
+  blockedEvents.value = []
+  if (!props.user || props.user.role_id !== 2) return
+  loadingEvents.value = true
+  try {
+    const details = await fetchStudentEventDetailsByUserId(props.user.id)
+    blockedEvents.value = (details || []).filter(
+      (e: any) => e.status?.toLowerCase?.() === 'blocked'
+    )
+  } catch (e) {
+    // Silent fail in details dialog; nothing critical to act on
+    blockedEvents.value = []
+  } finally {
+    loadingEvents.value = false
+  }
+}
+
+// Fetch whenever dialog opens or user changes
+watch(() => props.modelValue, async (open) => {
+  if (open) await loadBlockedEvents()
+})
+watch(() => props.user?.id, async () => {
+  if (props.modelValue) await loadBlockedEvents()
+})
 </script>
 
 <template>
@@ -87,6 +117,44 @@ const closeDialog = () => {
             <v-list-item-subtitle>{{ formatDate(user.created_at) }}</v-list-item-subtitle>
           </v-list-item>
         </v-list>
+
+        <!-- Blocked Events (Students only) -->
+        <template v-if="user.role_id === 2">
+          <v-divider class="my-4" />
+          <div class="d-flex align-center mb-2">
+            <v-icon class="mr-2">mdi-block-helper</v-icon>
+            <h3 class="text-subtitle-1 mb-0">Blocked Events</h3>
+          </div>
+
+          <v-progress-linear v-if="loadingEvents" indeterminate color="primary" class="mb-2" />
+
+          <v-alert v-else-if="blockedEvents.length === 0" type="success" variant="tonal">
+            No blocked events
+          </v-alert>
+
+          <v-list v-else density="compact">
+            <v-list-item
+              v-for="ev in blockedEvents"
+              :key="ev.id"
+            >
+              <template #prepend>
+                <v-avatar size="36" color="error" class="mr-3">
+                  <v-icon>mdi-alert-circle</v-icon>
+                </v-avatar>
+              </template>
+
+              <v-list-item-title class="font-weight-medium">
+                {{ ev.events?.title || 'Unknown Event' }}
+              </v-list-item-title>
+              <v-list-item-subtitle class="d-flex align-center mt-1">
+                <v-icon size="16" class="mr-1">mdi-calendar</v-icon>
+                {{ ev.events?.date ? new Date(ev.events.date).toLocaleDateString() : 'No date' }}
+                <v-spacer />
+                <v-chip color="error" variant="tonal" size="x-small">Blocked</v-chip>
+              </v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </template>
       </v-card-text>
 
       <v-card-actions class="mt-4">

@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
-import { 
-  getEmailInitials, 
-  formatDate, 
-  filterOrganizationsByLeader, 
-  filterMembersBySearch, 
-  createMemberManagementHandlers 
+import { onMounted, computed, ref, watch } from 'vue'
+import {
+  getEmailInitials,
+  formatDate,
+  filterOrganizationsByLeader,
+  filterMembersBySearch,
+  createMemberManagementHandlers
 } from '@/utils/helpers'
 import { useAuthUserStore } from '@/stores/authUser'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
-import OrganizationMembersDialog from '../admin/dialogs/OrganizationMembersDialog.vue'
+import OrganizationMembersPanel from '../admin/components/OrganizationMembersPanel.vue'
 import { useOrganizationMembers } from '../admin/composables/useOrganizationMembers'
+import EventStudentsDialog from './dialogs/EventStudentsDialog.vue'
 import { useOrganizations } from '../admin/composables/useOrganizations'
 
 // Stores
@@ -33,9 +34,11 @@ const {
   members,
   availableStudents,
   memberForm,
+  organizationEvents,
   // Actions
   fetchOrganizationMembers,
   fetchAvailableStudents,
+  fetchOrganizationEvents,
   addMemberToOrganization,
   updateOrganizationMember,
   removeMemberFromOrganization,
@@ -47,6 +50,9 @@ const {
 const membersDialog = ref(false)
 const selectedOrganization = ref<any>(null)
 const search = ref('')
+const eventsDialog = ref(false)
+const selectedEvent = ref<any>(null)
+const memberStudentIds = computed(() => (members.value || []).map(m => m.student?.id || m.student_id).filter(Boolean))
 
 // Computed properties
 const userOrganizations = computed(() => {
@@ -56,6 +62,8 @@ const userOrganizations = computed(() => {
 const filteredMembers = computed(() => {
   return filterMembersBySearch(members.value, search.value)
 })
+
+// Organization events state is already provided via useOrganizationMembers above
 
 // Event handlers using helper factory
 const {
@@ -77,9 +85,28 @@ const {
   getSelectedOrganization: () => selectedOrganization.value
 })
 
+// Auto-open members manager for the leader's single organization
+const autoOpened = ref(false)
+
+watch(organizations, (orgs) => {
+  if (autoOpened.value) return
+  const myOrgs = filterOrganizationsByLeader(orgs, authStore.userData?.id)
+  if (myOrgs.length > 0) {
+    handleManageMembers(myOrgs[0])
+    // Also fetch organization events for the leader's org
+    fetchOrganizationEvents(myOrgs[0].id)
+    autoOpened.value = true
+  }
+}, { immediate: true })
+
+// When switching selected org explicitly, refresh events
+watch(selectedOrganization, (org) => {
+  if (org?.id) fetchOrganizationEvents(org.id)
+})
+
 // Lifecycle
-onMounted(() => {
-  fetchOrganizations()
+onMounted(async () => {
+  await fetchOrganizations()
 })
 </script>
 
@@ -89,9 +116,9 @@ onMounted(() => {
       <v-container fluid class="pa-6">
         <v-row>
           <v-col cols="12">
-            <div class="members-container">
+            <div >
               <!-- Page Header -->
-              <v-card class="mb-6" elevation="7" rounded="lg">
+              <v-card class="my-6" elevation="7" rounded="lg">
                 <v-card-title class="pa-4 bg-primary text-white">
                   <div class="d-flex align-center">
                     <v-icon size="32" class="me-3">mdi-account-group</v-icon>
@@ -110,79 +137,23 @@ onMounted(() => {
               </div>
 
               <!-- No Organizations -->
-              <div v-else-if="userOrganizations.length === 0">
-                <v-card elevation="2" class="text-center pa-8">
-                  <v-icon size="80" color="grey-lighten-1" class="mb-4">mdi-domain-off</v-icon>
-                  <h3 class="text-h5 mb-2">No Organizations Found</h3>
-                  <p class="text-body-1 text-medium-emphasis mb-4">
-                    You are not currently assigned as a leader of any organization.
-                  </p>
-                  <p class="text-body-2 text-medium-emphasis">
-                    Contact an administrator to be assigned as an organization leader.
-                  </p>
-                </v-card>
+              <div v-else-if="userOrganizations.length === 0" class="text-center pa-8">
+                <img src="/images/fail.png" alt="No organizations" class="mb-4" style="width: 400px; height: auto;" />
+                <h3 class="text-h5 mb-2">No Organizations Found</h3>
+                <p class="text-body-1 text-medium-emphasis mb-4">
+                  You are not currently assigned as a leader of any organization.
+                </p>
+                <p class="text-body-2 text-medium-emphasis">
+                  Contact an administrator to be assigned as an organization leader.
+                </p>
               </div>
 
-              <!-- Organizations Grid -->
-              <div v-else>
-                <v-row>
-                  <v-col
-                    v-for="organization in userOrganizations"
-                    :key="organization.id"
-                    cols="12"
-                    md="6"
-                    lg="4"
-                  >
-                    <v-card
-                      elevation="3"
-                      rounded="lg"
-                      class="organization-card fill-height"
-                      hover
-                    >
-                      <!-- Card Header -->
-                      <v-card-title class="pa-4 pb-2 bg-gradient-primary text-white">
-                        <div class="d-flex align-center justify-space-between w-100">
-                          <div class="flex-grow-1">
-                            <v-icon color="white" size="24" class="mr-2">mdi-domain</v-icon>
-                            <span class="text-h6 font-weight-bold">{{ organization.title }}</span>
-                          </div>
-                          <v-chip color="white" variant="tonal" size="small">
-                            Leader
-                          </v-chip>
-                        </div>
-                      </v-card-title>
+              <!-- No grid/cards: leaders have a single organization. Members dialog opens automatically. -->
+              <div v-else></div>
 
-                      <!-- Card Content -->
-                      <v-card-text class="pa-4">
-                        <div class="mb-4">
-                          <div class="text-caption text-medium-emphasis mb-1">Created</div>
-                          <div class="d-flex align-center">
-                            <v-icon size="16" color="grey" class="mr-1">mdi-calendar</v-icon>
-                            <span class="text-body-2">{{ formatDate(organization.created_at) }}</span>
-                          </div>
-                        </div>
-
-                        <div class="d-flex justify-center">
-                          <v-btn
-                            color="primary"
-                            variant="elevated"
-                            prepend-icon="mdi-account-group"
-                            @click="handleManageMembers(organization)"
-                            block
-                          >
-                            Manage Members
-                          </v-btn>
-                        </div>
-                      </v-card-text>
-                    </v-card>
-                  </v-col>
-                </v-row>
-              </div>
-
-              <!-- Organization Members Dialog (only show if organization is selected) -->
-              <OrganizationMembersDialog
+              <!-- Inline Members Management Panel -->
+              <OrganizationMembersPanel
                 v-if="selectedOrganization?.id"
-                v-model:dialog="membersDialog"
                 :loading="loadingMembers"
                 :saving="savingMembers"
                 :organization-id="selectedOrganization.id"
@@ -194,7 +165,43 @@ onMounted(() => {
                 @add-member="handleAddMember"
                 @update-member="handleUpdateMember"
                 @remove-member="handleRemoveMember"
-                @close="handleCloseMembersDialog"
+              />
+
+              <!-- Organization Events List -->
+              <div v-if="selectedOrganization?.id" class="mt-8">
+                <v-card class="mb-4" elevation="4" rounded="lg">
+                  <v-card-title class="d-flex align-center">
+                    <v-icon class="me-2">mdi-calendar-multiselect</v-icon>
+                    <span>Organization Events</span>
+                    <v-spacer />
+                    <v-chip color="primary" variant="tonal" size="small">{{ organizationEvents?.length || 0 }} total</v-chip>
+                  </v-card-title>
+                  <v-divider />
+                  <v-card-text>
+                    <div v-if="!organizationEvents || organizationEvents.length === 0" class="text-medium-emphasis text-center py-8">
+                      No events are currently attached to your organization.
+                    </div>
+                    <v-row v-else>
+                      <v-col v-for="ev in organizationEvents" :key="ev.id" cols="12" sm="6" md="4">
+                        <v-card class="hoverable" @click="selectedEvent = ev; eventsDialog = true">
+                          <v-card-title class="text-subtitle-1">{{ ev.title }}</v-card-title>
+                          <v-card-subtitle>{{ formatDate(ev.date) }}</v-card-subtitle>
+                          <v-card-actions>
+                            <v-spacer />
+                            <v-btn color="primary" variant="text" append-icon="mdi-open-in-new">View Students</v-btn>
+                          </v-card-actions>
+                        </v-card>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </div>
+
+              <!-- Event Students Dialog -->
+              <EventStudentsDialog
+                v-model="eventsDialog"
+                :event="selectedEvent"
+                :member-student-ids="memberStudentIds as any"
               />
             </div>
           </v-col>
@@ -205,11 +212,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.members-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
+
 
 .organization-card {
   transition: all 0.3s ease;

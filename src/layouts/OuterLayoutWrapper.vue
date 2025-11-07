@@ -18,8 +18,14 @@
       :config="data?.ui"
     />
 
-    <v-main>
-      <slot name="content"></slot>
+    <v-main class="main-content">
+      <div
+        class="background-overlay"
+        :class="{ 'dark-overlay': isDarkTheme, 'light-overlay': !isDarkTheme }"
+      ></div>
+      <div class="content-wrapper">
+        <slot name="content"></slot>
+      </div>
     </v-main>
 
     <!-- Dynamic Footer Selection -->
@@ -43,8 +49,10 @@
   import OuterNavbar3 from '@/components/common/outerNavbars/OuterNavbar3.vue'
   import OuterNavbar4 from '@/components/common/outerNavbars/OuterNavbar4.vue'
   import { useLandingController } from '@/controller/landingController'
+  import { useTheme } from '@/composables/useTheme'
 
   const { data, fetchLandingData } = useLandingController()
+  const { isDarkTheme } = useTheme()
 
   onMounted(async () => {
     await fetchLandingData()
@@ -52,5 +60,50 @@
 </script>
 
 <style scoped>
-  /* Layout-specific styles can be added here */
+  .main-content {
+    position: relative;
+    min-height: 100vh;
+  }
+
+  .main-content::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('/images/background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    z-index: 0;
+  }
+
+  .background-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    transition: background-color 0.3s ease;
+    pointer-events: none;
+  }
+
+  /* Light theme overlay - subtle white overlay */
+  .background-overlay.light-overlay {
+    background-color:  rgba(227, 255, 230, 0.664);
+  }
+
+  /* Dark theme overlay - darker overlay for better readability */
+  .background-overlay.dark-overlay {
+    background-color: rgba(2, 27, 5, 0.685);
+  }
+
+  .content-wrapper {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+  }
 </style>

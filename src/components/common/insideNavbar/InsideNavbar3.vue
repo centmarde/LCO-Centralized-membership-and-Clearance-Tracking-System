@@ -389,11 +389,11 @@
               <v-divider />
 
               <v-list density="compact">
-                <v-list-item
+               <!--  <v-list-item
                   prepend-icon="mdi-account"
                   title="My Account"
                   subtitle="View your account"
-                />
+                /> -->
                <!--  <v-list-item
                   prepend-icon="mdi-cog"
                   title="Settings"
