@@ -22,3 +22,7 @@ pnpm-debug.log*
 *.sln
 *.sw?
 .github
+.eslintrc-auto-import.json
+src/auto-imports.d.ts
+src/components.d.ts
+src/typed-router.d.ts

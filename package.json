@@ -11,6 +11,13 @@
     "type-check": "vue-tsc --build --force"
   },
   "dependencies": {
+    "@capacitor/android": "7.4.4",
+    "@capacitor/app": "7.1.0",
+    "@capacitor/cli": "7.4.4",
+    "@capacitor/core": "7.4.4",
+    "@capacitor/haptics": "7.0.2",
+    "@capacitor/keyboard": "7.0.3",
+    "@capacitor/status-bar": "7.0.3",
     "@fontsource/roboto": "5.2.6",
     "@mdi/font": "7.4.47",
     "@supabase/supabase-js": "^2.57.2",

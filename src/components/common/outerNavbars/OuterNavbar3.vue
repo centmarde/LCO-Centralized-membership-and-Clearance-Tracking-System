@@ -136,7 +136,7 @@
   position="fixed"
   class="mx-auto px-2 glass-nav"
   :style="{
-    top: isScrolled ? (xs ? '4px' : '10px') : (xs ? '8px' : '20px'),
+    top: isScrolled ? (xs ? '28px' : '40px') : (xs ? '36px' : '56px'),
     left: '50%',
     transform: `translateX(-50%) ${isScrolled ? 'scale(0.98)' : 'scale(1)'}`,
     width: isScrolled ? (xs ? '96%' : '90%') : (xs ? '98%' : '95%'),
