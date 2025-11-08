@@ -47,24 +47,24 @@ function openLink(url: string) {
           </div>
         </v-col>
 
-        <!-- Thesis Team Section -->
+        <!-- System Team Section -->
         <v-col
-          v-if="footerConfig.thesisTeam?.enabled"
+          v-if="footerConfig.systemTeam?.enabled"
           cols="12"
           md="6"
           class="mt-6"
         >
           <div class="mb-6">
             <div class="text-h6 font-weight-bold mb-2">
-              {{ footerConfig.thesisTeam.title }}
+              {{ footerConfig.systemTeam.title }}
             </div>
             <div class="text-body-2 text-grey-lighten-1 mb-4">
-              {{ footerConfig.thesisTeam.subtitle }}
+              {{ footerConfig.systemTeam.subtitle }}
             </div>
 
             <v-row justify="center" class="no-gutters">
               <v-col
-                v-for="member in footerConfig.thesisTeam.members"
+                v-for="member in footerConfig.systemTeam.members"
                 :key="member.name"
                 cols="12"
                 sm="3"
