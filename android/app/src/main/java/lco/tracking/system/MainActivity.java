@@ -1,4 +1,4 @@
-package thesis.template.reusable;
+package lco.tracking.system;
 
 import com.getcapacitor.BridgeActivity;
 
