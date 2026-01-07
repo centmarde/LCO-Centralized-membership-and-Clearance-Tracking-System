@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "thesis.template.reusable"
+    namespace "lco.tracking.system"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "thesis.template.reusable"
+        applicationId "lco.tracking.system"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

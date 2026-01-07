@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'thesis.template.reusable',
-  appName: 'thesis-template-reusable',
+  appId: 'lco.tracking.system',
+  appName: 'lco-tracking-system',
   webDir: 'dist'
 };
 
