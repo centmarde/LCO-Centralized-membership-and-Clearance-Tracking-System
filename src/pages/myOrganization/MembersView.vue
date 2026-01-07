@@ -138,7 +138,7 @@ onMounted(async () => {
 
               <!-- No Organizations -->
               <div v-else-if="userOrganizations.length === 0" class="text-center pa-8">
-                <img src="/images/fail.png" alt="No organizations" class="mb-4" style="width: 400px; height: auto;" />
+                <img src="/images/fail.png" alt="No organizations" class="mb-4 responsive-image" />
                 <h3 class="text-h5 mb-2">No Organizations Found</h3>
                 <p class="text-body-1 text-medium-emphasis mb-4">
                   You are not currently assigned as a leader of any organization.
@@ -213,6 +213,11 @@ onMounted(async () => {
 
 <style scoped>
 
+.responsive-image {
+  max-width: 100%;
+  height: auto;
+  width: 400px;
+}
 
 .organization-card {
   transition: all 0.3s ease;
@@ -232,6 +237,11 @@ onMounted(async () => {
 @media (max-width: 600px) {
   .members-container {
     padding: 10px;
+  }
+
+  .responsive-image {
+    width: 90%;
+    max-width: 300px;
   }
 }
 </style>
