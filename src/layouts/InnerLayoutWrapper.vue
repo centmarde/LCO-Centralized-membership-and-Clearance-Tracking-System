@@ -2,7 +2,7 @@
   <v-app>
     <!-- Left Sidebar - Takes full left side -->
     <Sidebar1 />
-
+    <br>
     <!-- Dynamic Navbar Selection - Positioned to the right of sidebar -->
     <InsideNavbar1
       v-if="data?.ui?.navbarComponent === '1'"

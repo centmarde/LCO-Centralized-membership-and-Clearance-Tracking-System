@@ -1,5 +1,6 @@
 <template>
   <v-app>
+		<br>
     <!-- Dynamic Navbar Selection -->
     <OuterNavbar
       v-if="data?.ui?.navbarComponent === '1'"

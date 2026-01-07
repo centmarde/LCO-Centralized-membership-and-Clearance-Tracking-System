@@ -119,31 +119,32 @@ onMounted(async () => {
             <div >
               <!-- Page Header -->
               <v-card class="my-6" elevation="7" rounded="lg">
-                <v-card-title class="pa-4 bg-primary text-white">
+                <v-card-title class="pa-4 pa-sm-6 bg-primary text-white">
                   <div class="d-flex align-center">
-                    <v-icon size="32" class="me-3">mdi-account-group</v-icon>
+                    <v-icon :size="$vuetify.display.xs ? '24' : '32'" class="me-2 me-sm-3">mdi-account-group</v-icon>
                     <div>
-                      <h2 class="text-h5 font-weight-bold mb-1">Organization Members</h2>
-                      <p class="text-body-2 mb-0 opacity-90">Manage your organization's membership</p>
+                      <h2 class="text-h6 text-sm-h5 font-weight-bold mb-1">Organization Members</h2>
+                      <p class="text-caption text-sm-body-2 mb-0 opacity-90 d-none d-sm-block">Manage your organization's membership</p>
+                      <p class="text-caption mb-0 opacity-90 d-block d-sm-none">Manage membership</p>
                     </div>
                   </div>
                 </v-card-title>
               </v-card>
 
               <!-- Loading State -->
-              <div v-if="loading" class="text-center pa-8">
-                <v-progress-circular indeterminate color="primary" size="60" class="mb-4" />
-                <div class="text-h6">Loading organizations...</div>
+              <div v-if="loading" class="text-center pa-6 pa-sm-8">
+                <v-progress-circular indeterminate color="primary" :size="$vuetify.display.xs ? '48' : '60'" class="mb-3 mb-sm-4" />
+                <div class="text-body-1 text-sm-h6">Loading organizations...</div>
               </div>
 
               <!-- No Organizations -->
-              <div v-else-if="userOrganizations.length === 0" class="text-center pa-8">
-                <img src="/images/fail.png" alt="No organizations" class="mb-4" style="width: 400px; height: auto;" />
-                <h3 class="text-h5 mb-2">No Organizations Found</h3>
-                <p class="text-body-1 text-medium-emphasis mb-4">
+              <div v-else-if="userOrganizations.length === 0" class="text-center pa-6 pa-sm-8">
+                <img src="/images/fail.png" alt="No organizations" class="mb-3 mb-sm-4 responsive-image" />
+                <h3 class="text-h6 text-sm-h5 mb-2">No Organizations Found</h3>
+                <p class="text-body-2 text-sm-body-1 text-medium-emphasis mb-3 mb-sm-4">
                   You are not currently assigned as a leader of any organization.
                 </p>
-                <p class="text-body-2 text-medium-emphasis">
+                <p class="text-caption text-sm-body-2 text-medium-emphasis">
                   Contact an administrator to be assigned as an organization leader.
                 </p>
               </div>
@@ -168,27 +169,30 @@ onMounted(async () => {
               />
 
               <!-- Organization Events List -->
-              <div v-if="selectedOrganization?.id" class="mt-8">
+              <div v-if="selectedOrganization?.id" class="mt-6 mt-sm-8">
                 <v-card class="mb-4" elevation="4" rounded="lg">
-                  <v-card-title class="d-flex align-center">
-                    <v-icon class="me-2">mdi-calendar-multiselect</v-icon>
-                    <span>Organization Events</span>
+                  <v-card-title class="d-flex align-center pa-4 pa-sm-6">
+                    <v-icon :size="$vuetify.display.xs ? '20' : '24'" class="me-2">mdi-calendar-multiselect</v-icon>
+                    <span class="text-body-1 text-sm-h6">Organization Events</span>
                     <v-spacer />
-                    <v-chip color="primary" variant="tonal" size="small">{{ organizationEvents?.length || 0 }} total</v-chip>
+                    <v-chip color="primary" variant="tonal" :size="$vuetify.display.xs ? 'x-small' : 'small'">{{ organizationEvents?.length || 0 }} total</v-chip>
                   </v-card-title>
                   <v-divider />
-                  <v-card-text>
-                    <div v-if="!organizationEvents || organizationEvents.length === 0" class="text-medium-emphasis text-center py-8">
-                      No events are currently attached to your organization.
+                  <v-card-text class="pa-4 pa-sm-6">
+                    <div v-if="!organizationEvents || organizationEvents.length === 0" class="text-medium-emphasis text-center py-6 py-sm-8">
+                      <div class="text-body-2 text-sm-body-1">No events are currently attached to your organization.</div>
                     </div>
                     <v-row v-else>
                       <v-col v-for="ev in organizationEvents" :key="ev.id" cols="12" sm="6" md="4">
                         <v-card class="hoverable" @click="selectedEvent = ev; eventsDialog = true">
-                          <v-card-title class="text-subtitle-1">{{ ev.title }}</v-card-title>
-                          <v-card-subtitle>{{ formatDate(ev.date) }}</v-card-subtitle>
-                          <v-card-actions>
+                          <v-card-title class="text-body-1 text-sm-subtitle-1 pa-3 pa-sm-4">{{ ev.title }}</v-card-title>
+                          <v-card-subtitle class="pa-3 pa-sm-4 pt-0">{{ formatDate(ev.date) }}</v-card-subtitle>
+                          <v-card-actions class="pa-3 pa-sm-4 pt-0">
                             <v-spacer />
-                            <v-btn color="primary" variant="text" append-icon="mdi-open-in-new">View Students</v-btn>
+                            <v-btn color="primary" variant="text" :size="$vuetify.display.xs ? 'small' : 'default'" append-icon="mdi-open-in-new">
+                              <span class="d-none d-sm-inline">View Students</span>
+                              <span class="d-inline d-sm-none">View</span>
+                            </v-btn>
                           </v-card-actions>
                         </v-card>
                       </v-col>
@@ -213,6 +217,11 @@ onMounted(async () => {
 
 <style scoped>
 
+.responsive-image {
+  max-width: 100%;
+  height: auto;
+  width: 400px;
+}
 
 .organization-card {
   transition: all 0.3s ease;
@@ -232,6 +241,11 @@ onMounted(async () => {
 @media (max-width: 600px) {
   .members-container {
     padding: 10px;
+  }
+
+  .responsive-image {
+    width: 90%;
+    max-width: 300px;
   }
 }
 </style>

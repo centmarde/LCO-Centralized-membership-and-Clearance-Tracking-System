@@ -94,7 +94,7 @@
       const desktopLeft = sidebarWidth + 16;
       return {
         ...base,
-        top: isScrolled.value ? '10px' : '20px',
+        top: isScrolled.value ? '40px' : '56px',
         left: `${desktopLeft}px`,
         right: 'auto',
         width: `calc(100vw - ${desktopLeft + containerPadding * 2}px)`,
@@ -105,7 +105,7 @@
       // On mobile/tablet, add margin to both sides
       return {
         ...base,
-        top: isScrolled.value ? (xs.value ? '4px' : '10px') : (xs.value ? '8px' : '20px'),
+        top: isScrolled.value ? (xs.value ? '28px' : '40px') : (xs.value ? '36px' : '56px'),
         left: '50%',
         right: 'auto',
         transform: `translateX(-50%) ${isScrolled.value ? 'scale(0.98)' : 'scale(1)'}`,
@@ -185,7 +185,7 @@
   position="fixed"
   class="mx-auto px-2 glass-nav"
   :style="{
-    top: isScrolled ? (xs ? '4px' : '10px') : (xs ? '8px' : '20px'),
+    top: isScrolled ? (xs ? '28px' : '40px') : (xs ? '36px' : '56px'),
     left: lgAndUp ? '59%' : '50%',
     transform: `translateX(-50%) ${isScrolled ? 'scale(0.98)' : 'scale(1)'}`,
     width: isScrolled ? (xs ? '96%' : (isNavigationRoute && mdAndUp ? '95%' : '90%')) : (xs ? '98%' : (isNavigationRoute && mdAndUp ? '98%' : '95%')),

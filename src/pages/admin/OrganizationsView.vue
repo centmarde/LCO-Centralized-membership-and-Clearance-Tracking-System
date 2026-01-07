@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
-import { 
-  getEmailInitials, 
-  formatDate, 
+import {
+  getEmailInitials,
+  formatDate,
   createViewMembersHandler,
-  organizationsTableHeaders 
+  organizationsTableHeaders
 } from '@/utils/helpers'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
 import OrganizationFormDialog from './dialogs/OrganizationFormDialog.vue'
@@ -78,9 +78,9 @@ const selectedOrganization = ref<any>(null)
 // Computed properties
 const filteredOrganizations = computed(() => {
   if (!search.value) return organizations.value
-  
+
   const searchTerm = search.value.toLowerCase()
-  return organizations.value.filter(org => 
+  return organizations.value.filter(org =>
     org.title.toLowerCase().includes(searchTerm) ||
     org.leader?.full_name?.toLowerCase().includes(searchTerm) ||
     org.leader?.email?.toLowerCase().includes(searchTerm)
@@ -118,7 +118,7 @@ const handleCloseDialog = () => {
 
 const handleConfirmDelete = async () => {
   if (!organizationToDelete.value) return
-  
+
   const success = await deleteOrganization(organizationToDelete.value)
   if (success) {
     closeDeleteDialog()
@@ -153,28 +153,28 @@ onMounted(() => {
             <div class="organizations-container">
     <!-- Page Header -->
     <v-card class="mb-6" elevation="7" rounded="lg">
-      <v-card-title class="pa-4 bg-primary text-white">
+      <v-card-title class="pa-4 pa-sm-6 bg-primary text-white">
         <!-- Mobile Layout -->
         <div class="d-block d-sm-none w-100">
-          <div class="d-flex align-center justify-space-between mb-3">
+          <div class="d-flex align-center justify-space-between mb-2">
             <div class="d-flex align-center">
-              <v-icon size="28" class="me-2">mdi-domain</v-icon>
-              <h2 class="text-h6 font-weight-bold">Manage Organizations</h2>
+              <v-icon size="24" class="me-2">mdi-domain</v-icon>
+              <h2 class="text-body-1 font-weight-bold">Manage Organizations</h2>
             </div>
-            <v-btn 
-              color="white" 
-              variant="elevated" 
-              size="small" 
-              @click="handleCreateOrganization" 
-              :loading="loading" 
+            <v-btn
+              color="white"
+              variant="elevated"
+              size="x-small"
+              @click="handleCreateOrganization"
+              :loading="loading"
               icon
             >
-              <v-icon>mdi-plus</v-icon>
+              <v-icon size="18">mdi-plus</v-icon>
             </v-btn>
           </div>
-          <p class="text-body-2 mb-0 opacity-90">Manage organizations and leaders</p>
+          <p class="text-caption mb-0 opacity-90">Organizations & leaders</p>
         </div>
-        
+
         <!-- Desktop Layout -->
         <div class="d-none d-sm-flex align-center justify-space-between w-100">
           <div class="d-flex align-center">
@@ -184,12 +184,12 @@ onMounted(() => {
               <p class="text-body-2 mb-0 opacity-90">Manage organizations and their leaders</p>
             </div>
           </div>
-          <v-btn 
-            color="white" 
-            variant="elevated" 
-            size="default" 
-            @click="handleCreateOrganization" 
-            :loading="loading" 
+          <v-btn
+            color="white"
+            variant="elevated"
+            size="default"
+            @click="handleCreateOrganization"
+            :loading="loading"
             prepend-icon="mdi-plus"
           >
             Create Organization
@@ -200,7 +200,7 @@ onMounted(() => {
 
     <!-- Search Bar -->
     <v-card class="mb-4" elevation="2">
-      <v-card-text>
+      <v-card-text class="pa-3 pa-sm-4">
         <v-row>
           <v-col cols="12" md="6">
             <v-text-field
@@ -218,16 +218,16 @@ onMounted(() => {
     </v-card>
 
     <!-- Organizations Cards Grid -->
-    <div v-if="loading" class="text-center pa-8">
-      <v-progress-circular indeterminate color="primary" size="60" class="mb-4" />
-      <div class="text-h6">Loading organizations...</div>
+    <div v-if="loading" class="text-center pa-6 pa-sm-8">
+      <v-progress-circular indeterminate color="primary" :size="$vuetify.display.xs ? '48' : '60'" class="mb-3 mb-sm-4" />
+      <div class="text-body-1 text-sm-h6">Loading organizations...</div>
     </div>
 
     <div v-else-if="filteredOrganizations.length === 0 && !loading">
-      <v-card elevation="2" class="text-center pa-8">
-        <v-icon size="80" color="grey-lighten-1" class="mb-4">mdi-domain-off</v-icon>
-        <h3 class="text-h5 mb-2">No organizations found</h3>
-        <p class="text-body-1 text-medium-emphasis mb-4">
+      <v-card elevation="2" class="text-center pa-6 pa-sm-8">
+        <v-icon :size="$vuetify.display.xs ? '64' : '80'" color="grey-lighten-1" class="mb-3 mb-sm-4">mdi-domain-off</v-icon>
+        <h3 class="text-h6 text-sm-h5 mb-2">No organizations found</h3>
+        <p class="text-body-2 text-sm-body-1 text-medium-emphasis mb-3 mb-sm-4">
           {{ search ? `No organizations match "${search}"` : 'Create your first organization to get started.' }}
         </p>
         <v-btn
@@ -235,9 +235,10 @@ onMounted(() => {
           color="primary"
           prepend-icon="mdi-plus"
           @click="handleCreateOrganization"
-          size="large"
+          :size="$vuetify.display.xs ? 'default' : 'large'"
         >
-          Create First Organization
+          <span class="d-none d-sm-inline">Create First Organization</span>
+          <span class="d-inline d-sm-none">Create Organization</span>
         </v-btn>
       </v-card>
     </div>
@@ -260,11 +261,11 @@ onMounted(() => {
             @click="handleOpenMembersStatusDialog(organization)"
           >
             <!-- Card Header with Organization Info -->
-            <v-card-title class="pa-4 pb-2">
+            <v-card-title class="pa-3 pa-sm-4 pb-2">
               <div class="d-flex align-center justify-space-between w-100">
                 <div class="flex-grow-1">
-                  <v-icon color="primary" size="24" class="mr-2">mdi-domain</v-icon>
-                  <span class="text-h6 font-weight-bold">{{ organization.title }}</span>
+                  <v-icon color="primary" :size="$vuetify.display.xs ? '20' : '24'" class="mr-2">mdi-domain</v-icon>
+                  <span class="text-body-1 text-sm-h6 font-weight-bold">{{ organization.title }}</span>
                 </div>
                 <!-- Action Menu -->
                 <v-menu location="bottom end">
@@ -272,7 +273,7 @@ onMounted(() => {
                     <v-btn
                       icon="mdi-dots-vertical"
                       variant="text"
-                      size="small"
+                      :size="$vuetify.display.xs ? 'x-small' : 'small'"
                       v-bind="props"
                       @click.stop
                     />
@@ -304,31 +305,32 @@ onMounted(() => {
             </v-card-title>
 
             <!-- Card Content -->
-            <v-card-text class="pa-4 pt-0">
+            <v-card-text class="pa-3 pa-sm-4 pt-0">
               <!-- Leader Information -->
-              <div class="mb-3">
+              <div class="mb-2 mb-sm-3">
                 <div class="text-caption text-medium-emphasis mb-1">Organization Leader</div>
                 <div v-if="organization.leader" class="d-flex align-center">
-                  <v-avatar size="28" color="primary" class="mr-2">
+                  <v-avatar :size="$vuetify.display.xs ? '24' : '28'" color="primary" class="mr-2">
                     <span class="text-white text-caption">
                       {{ getEmailInitials(organization.leader.email) }}
                     </span>
                   </v-avatar>
                   <div class="flex-grow-1">
-                    <div class="text-body-2 font-weight-medium">
+                    <div class="text-caption text-sm-body-2 font-weight-medium">
                       {{ organization.leader.full_name || organization.leader.email }}
                     </div>
-                    <div class="text-caption text-medium-emphasis">
+                    <div class="text-caption text-medium-emphasis d-none d-sm-block">
                       {{ organization.leader.email }}
                     </div>
                   </div>
                 </div>
                 <div v-else class="d-flex align-center">
-                  <v-avatar size="28" color="grey-lighten-2" class="mr-2">
-                    <v-icon size="16" color="grey">mdi-account-off</v-icon>
+                  <v-avatar :size="$vuetify.display.xs ? '24' : '28'" color="grey-lighten-2" class="mr-2">
+                    <v-icon :size="$vuetify.display.xs ? '12' : '16'" color="grey">mdi-account-off</v-icon>
                   </v-avatar>
-                  <v-chip color="warning" variant="tonal" size="small">
-                    No Leader Assigned
+                  <v-chip color="warning" variant="tonal" :size="$vuetify.display.xs ? 'x-small' : 'small'">
+                    <span class="d-none d-sm-inline">No Leader Assigned</span>
+                    <span class="d-inline d-sm-none">No Leader</span>
                   </v-chip>
                 </div>
               </div>
@@ -337,8 +339,8 @@ onMounted(() => {
               <div class="mb-0">
                 <div class="text-caption text-medium-emphasis mb-1">Created</div>
                 <div class="d-flex align-center">
-                  <v-icon size="16" color="grey" class="mr-1">mdi-calendar</v-icon>
-                  <span class="text-body-2">{{ formatDate(organization.created_at) }}</span>
+                  <v-icon :size="$vuetify.display.xs ? '14' : '16'" color="grey" class="mr-1">mdi-calendar</v-icon>
+                  <span class="text-caption text-sm-body-2">{{ formatDate(organization.created_at) }}</span>
                 </div>
               </div>
             </v-card-text>
