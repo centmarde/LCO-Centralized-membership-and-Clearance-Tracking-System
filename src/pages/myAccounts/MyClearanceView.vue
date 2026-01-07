@@ -35,12 +35,13 @@ onMounted(() => {
         <v-row>
           <v-col cols="12">
 
-              <v-card-title class="d-flex align-center justify-space-between pa-6 bg-primary text-white">
+              <v-card-title class="d-flex align-center justify-space-between pa-4 pa-sm-6 bg-primary text-white">
                 <div class="d-flex align-center">
-                  <v-icon size="32" class="me-3">mdi-shield-check</v-icon>
+                  <v-icon :size="$vuetify.display.xs ? '24' : '32'" class="me-2 me-sm-3">mdi-shield-check</v-icon>
                   <div>
-                    <h2 class="text-h5 font-weight-bold mb-1">My Clearance</h2>
-                    <p class="text-body-2 mb-0 opacity-90">Blocked Events & Clearance Status</p>
+                    <h2 class="text-h6 text-sm-h5 font-weight-bold mb-1">My Clearance</h2>
+                    <p class="text-caption text-sm-body-2 mb-0 opacity-90 d-none d-sm-block">Blocked Events & Clearance Status</p>
+                    <p class="text-caption mb-0 opacity-90 d-block d-sm-none">Status</p>
                   </div>
                 </div>
                 <div class="d-none d-sm-block">
@@ -55,10 +56,10 @@ onMounted(() => {
                 </div>
               </v-card-title>
               <v-divider></v-divider>
-              <div class="pa-6">
+              <div class="pa-4 pa-sm-6">
                 <div v-if="loading" class="text-center">
-                  <v-progress-circular indeterminate color="primary" size="40" class="mb-4" />
-                  <div>Loading clearance data...</div>
+                  <v-progress-circular indeterminate color="primary" :size="$vuetify.display.xs ? '32' : '40'" class="mb-3 mb-sm-4" />
+                  <div class="text-body-2 text-sm-body-1">Loading clearance data...</div>
                 </div>
                <!--  <div v-else-if="error" class="text-center text-error">
                   {{ error }}
@@ -67,11 +68,11 @@ onMounted(() => {
                   <v-img
                     src="/images/cleared.png"
                     alt="Cleared"
-                    max-width="300"
-                    class="mx-auto mb-4"
+                    :max-width="$vuetify.display.xs ? '200' : '300'"
+                    class="mx-auto mb-3 mb-sm-4"
                   />
-                  <v-icon color="success" size="48" class="mb-2">mdi-check-circle</v-icon>
-                  <div class="text-h6">You have no blocked events. You are clear!</div>
+                  <v-icon color="success" :size="$vuetify.display.xs ? '36' : '48'" class="mb-2">mdi-check-circle</v-icon>
+                  <div class="text-body-1 text-sm-h6">You have no blocked events. You are clear!</div>
                 </div>
                 <div v-else>
                   <v-row>
@@ -83,13 +84,13 @@ onMounted(() => {
                       md="4"
                     >
                       <v-card elevation="2" rounded="lg" class="fill-height">
-                        <v-card-text class="d-flex align-center justify-space-between pa-4">
+                        <v-card-text class="d-flex align-center justify-space-between pa-3 pa-sm-4">
                           <div class="flex-grow-1">
-                            <h3 class="text-h6 font-weight-bold">{{ event.name }}</h3>
-                            <p class="text-body-2 text-medium-emphasis mb-0">{{ event.date }}</p>
+                            <h3 class="text-body-1 text-sm-h6 font-weight-bold">{{ event.name }}</h3>
+                            <p class="text-caption text-sm-body-2 text-medium-emphasis mb-0">{{ event.date }}</p>
                           </div>
-                          <v-chip color="error" variant="elevated" size="small" class="mx-4">{{ event.status }}</v-chip>
-                          <v-icon color="error" size="40">mdi-alert-circle-outline</v-icon>
+                          <v-chip color="error" variant="elevated" :size="$vuetify.display.xs ? 'x-small' : 'small'" class="mx-2 mx-sm-4">{{ event.status }}</v-chip>
+                          <v-icon color="error" :size="$vuetify.display.xs ? '32' : '40'">mdi-alert-circle-outline</v-icon>
                         </v-card-text>
                       </v-card>
                     </v-col>

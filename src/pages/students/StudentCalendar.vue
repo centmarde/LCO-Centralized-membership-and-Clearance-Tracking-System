@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { ref, computed, onMounted, defineOptions } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useTheme } from 'vuetify';
 import { CalendarView, CalendarViewHeader } from 'vue-simple-calendar';
 import { fetchStudentEvents, fetchStudents } from '@/stores/studentsData';
@@ -141,12 +141,13 @@ onMounted(() => {
 
 <template>
   <v-card class="calendar-container mt-5" elevation="7" rounded="lg">
-    <v-card-title class="d-flex align-center justify-space-between pa-6 bg-primary text-white">
+    <v-card-title class="d-flex align-center justify-space-between pa-4 pa-sm-6 bg-primary text-white">
       <div class="d-flex align-center">
-        <v-icon size="32" class="me-3">mdi-calendar-multiple</v-icon>
+        <v-icon :size="$vuetify.display.xs ? '24' : '32'" class="me-2 me-sm-3">mdi-calendar-multiple</v-icon>
         <div>
-          <h2 class="text-h5 font-weight-bold mb-1">My Events Calendar</h2>
-          <p class="text-body-2 mb-0 opacity-90">Registered and Upcoming Events</p>
+          <h2 class="text-h6 text-sm-h5 font-weight-bold mb-1">My Events Calendar</h2>
+          <p class="text-caption text-sm-body-2 mb-0 opacity-90 d-none d-sm-block">Registered and Upcoming Events</p>
+          <p class="text-caption mb-0 opacity-90 d-block d-sm-none">Events</p>
         </div>
       </div>
       <div class="d-none d-sm-block">
@@ -175,31 +176,31 @@ onMounted(() => {
       </div>
     </v-card-title>
     <v-divider></v-divider>
-    <v-card-text class="pa-6 pb-0">
-      <div class="d-flex flex-column flex-sm-row align-center justify-space-between gap-4 mb-6">
-        <div class="d-flex align-center gap-2">
-          <v-btn icon="mdi-chevron-left" variant="outlined" size="small" @click="goToPreviousPeriod"></v-btn>
-          <v-btn color="primary" variant="elevated" class="mx-2" @click="goToToday">Today</v-btn>
-          <v-btn icon="mdi-chevron-right" variant="outlined" size="small" @click="goToNextPeriod"></v-btn>
-          <div class="ms-4">
-            <h3 class="text-h6 font-weight-medium">{{ displayPeriodLabel }}</h3>
+    <v-card-text class="pa-4 pa-sm-6 pb-0">
+      <div class="d-flex flex-column flex-sm-row align-center justify-space-between gap-3 gap-sm-4 mb-4 mb-sm-6">
+        <div class="d-flex align-center gap-1 gap-sm-2">
+          <v-btn icon="mdi-chevron-left" variant="outlined" :size="$vuetify.display.xs ? 'x-small' : 'small'" @click="goToPreviousPeriod"></v-btn>
+          <v-btn color="primary" variant="elevated" :size="$vuetify.display.xs ? 'small' : 'default'" class="mx-1 mx-sm-2" @click="goToToday">Today</v-btn>
+          <v-btn icon="mdi-chevron-right" variant="outlined" :size="$vuetify.display.xs ? 'x-small' : 'small'" @click="goToNextPeriod"></v-btn>
+          <div class="ms-2 ms-sm-4">
+            <h3 class="text-body-1 text-sm-h6 font-weight-medium">{{ displayPeriodLabel }}</h3>
           </div>
         </div>
-        <div class="d-flex align-center gap-2">
+        <div class="d-flex align-center gap-1 gap-sm-2">
           <v-btn-toggle v-model="currentView" color="primary" variant="outlined" divided mandatory>
-            <v-btn v-for="view in calendarViews" :key="view.value" :value="view.value" size="small" @click="changeView(view.value)">
-              <v-icon :icon="view.icon" class="me-1"></v-icon>
+            <v-btn v-for="view in calendarViews" :key="view.value" :value="view.value" :size="$vuetify.display.xs ? 'x-small' : 'small'" @click="changeView(view.value)">
+              <v-icon :icon="view.icon" :class="$vuetify.display.xs ? '' : 'me-1'"></v-icon>
               <span class="d-none d-sm-inline">{{ view.title }}</span>
             </v-btn>
           </v-btn-toggle>
         </div>
       </div>
     </v-card-text>
-    <div v-if="loading" class="d-flex justify-center align-center pa-8">
-      <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
-      <span class="ms-4 text-subtitle-1">Loading calendar events...</span>
+    <div v-if="loading" class="d-flex justify-center align-center pa-6 pa-sm-8">
+      <v-progress-circular indeterminate color="primary" :size="$vuetify.display.xs ? '36' : '48'"></v-progress-circular>
+      <span class="ms-3 ms-sm-4 text-body-2 text-sm-subtitle-1">Loading calendar events...</span>
     </div>
-    <div v-else class="calendar-wrapper pa-6 pt-0">
+    <div v-else class="calendar-wrapper pa-4 pa-sm-6 pt-0">
       <CalendarView
         ref="calendarRef"
         :show-date="currentPeriodStart"
@@ -214,21 +215,23 @@ onMounted(() => {
         item-content-height="2.5rem"
       />
     </div>
-    <div v-if="!loading && calendarEvents.length === 0" class="text-center pa-8">
-      <v-icon color="grey-lighten-1" size="64" class="mb-4">mdi-calendar-blank</v-icon>
-      <h3 class="text-h6 text-grey-darken-1 mb-2">No Events Scheduled</h3>
-      <p class="text-body-2 text-grey mb-4">No events are currently scheduled. Check back later for updates.</p>
-      <v-btn color="primary" variant="elevated" @click="loadEvents">Refresh Calendar</v-btn>
+    <div v-if="!loading && calendarEvents.length === 0" class="text-center pa-6 pa-sm-8">
+      <v-icon color="grey-lighten-1" :size="$vuetify.display.xs ? '48' : '64'" class="mb-3 mb-sm-4">mdi-calendar-blank</v-icon>
+      <h3 class="text-body-1 text-sm-h6 text-grey-darken-1 mb-2">No Events Scheduled</h3>
+      <p class="text-caption text-sm-body-2 text-grey mb-3 mb-sm-4">No events are currently scheduled. Check back later for updates.</p>
+      <v-btn color="primary" variant="elevated" :size="$vuetify.display.xs ? 'small' : 'default'" @click="loadEvents">Refresh Calendar</v-btn>
     </div>
-    <v-card-text v-if="!loading && calendarEvents.length > 0" class="pt-0">
+    <v-card-text v-if="!loading && calendarEvents.length > 0" class="pt-0 pa-4 pa-sm-6">
       <v-row class="events-summary">
         <v-col cols="12">
-          <div class="d-flex flex-wrap ga-3 align-center">
-            <v-chip color="primary" variant="elevated" size="default" prepend-icon="mdi-calendar-check">
-              Registered Events
+          <div class="d-flex flex-wrap ga-2 ga-sm-3 align-center">
+            <v-chip color="primary" variant="elevated" :size="$vuetify.display.xs ? 'small' : 'default'" prepend-icon="mdi-calendar-check">
+              <span class="d-none d-sm-inline">Registered Events</span>
+              <span class="d-inline d-sm-none">Registered</span>
             </v-chip>
-            <v-chip color="accent" variant="elevated" size="default" prepend-icon="mdi-calendar-clock">
-              Upcoming Events
+            <v-chip color="accent" variant="elevated" :size="$vuetify.display.xs ? 'small' : 'default'" prepend-icon="mdi-calendar-clock">
+              <span class="d-none d-sm-inline">Upcoming Events</span>
+              <span class="d-inline d-sm-none">Upcoming</span>
             </v-chip>
           </div>
         </v-col>

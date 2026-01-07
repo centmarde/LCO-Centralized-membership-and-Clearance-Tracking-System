@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, defineOptions } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { CalendarView, CalendarViewHeader } from 'vue-simple-calendar'
 import { fetchEvents, fetchEventsWithStats } from '@/stores/eventsData'
 import type { Event } from '@/stores/eventsData'
@@ -149,54 +149,58 @@ onMounted(() => {
 <template>
   <v-card class="calendar-container" elevation="2" rounded="lg">
     <!-- Calendar Header -->
-    <v-card-title class="d-flex align-center justify-space-between pa-6 bg-primary text-white">
-      <div class="d-flex align-center">
-        <v-icon size="32" class="me-3">mdi-calendar-multiple</v-icon>
+    <v-card-title class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between pa-4 pa-sm-6 bg-primary text-white">
+      <div class="d-flex align-center mb-3 mb-sm-0">
+        <v-icon :size="$vuetify.display.xs ? '24' : '32'" class="me-2 me-sm-3">mdi-calendar-multiple</v-icon>
         <div>
-          <h2 class="text-h5 font-weight-bold mb-1">Events Calendar</h2>
-          <p class="text-body-2 mb-0 opacity-90">View and manage organizational events</p>
+          <h2 class="text-h6 text-sm-h5 font-weight-bold mb-1">Events Calendar</h2>
+          <p class="text-caption text-sm-body-2 mb-0 opacity-90 d-none d-sm-block">View and manage organizational events</p>
+          <p class="text-caption mb-0 opacity-90 d-block d-sm-none">Manage events</p>
         </div>
       </div>
-      <div class="d-flex align-center ga-2">
+      <div class="d-flex align-center ga-1 ga-sm-2 align-self-stretch align-self-sm-center">
         <v-btn
           color="white"
           variant="outlined"
-          size="default"
+          :size="$vuetify.display.xs ? 'small' : 'default'"
           @click="openAddEventDialog"
           prepend-icon="mdi-calendar-plus"
-          class="me-2"
+          class="me-1 me-sm-2"
         >
-          Add Event
+          <span class="d-none d-sm-inline">Add Event</span>
+          <span class="d-inline d-sm-none">Add</span>
         </v-btn>
         <v-btn
           color="white"
           variant="elevated"
-          size="default"
+          :size="$vuetify.display.xs ? 'small' : 'default'"
           @click="loadEvents"
           :loading="loading"
           prepend-icon="mdi-refresh"
         >
-          Refresh
+          <span class="d-none d-sm-inline">Refresh</span>
+          <span class="d-inline d-sm-none">Refresh</span>
         </v-btn>
       </div>
     </v-card-title>
 
     <v-divider></v-divider>    <!-- Calendar Controls -->
-    <v-card-text class="pa-6 pb-0">
-      <div class="d-flex flex-column flex-sm-row align-center justify-space-between gap-4 mb-6">
+    <v-card-text class="pa-4 pa-sm-6 pb-0">
+      <div class="d-flex flex-column flex-sm-row align-center justify-space-between gap-3 gap-sm-4 mb-4 mb-sm-6">
         <!-- Navigation Controls -->
-        <div class="d-flex align-center gap-2">
+        <div class="d-flex align-center gap-1 gap-sm-2">
           <v-btn
             icon="mdi-chevron-left"
             variant="outlined"
-            size="small"
+            :size="$vuetify.display.xs ? 'x-small' : 'small'"
             @click="goToPreviousPeriod"
           ></v-btn>
 
           <v-btn
             color="primary"
             variant="elevated"
-            class="mx-2"
+            :size="$vuetify.display.xs ? 'small' : 'default'"
+            class="mx-1 mx-sm-2"
             @click="goToToday"
           >
             Today
@@ -205,17 +209,17 @@ onMounted(() => {
           <v-btn
             icon="mdi-chevron-right"
             variant="outlined"
-            size="small"
+            :size="$vuetify.display.xs ? 'x-small' : 'small'"
             @click="goToNextPeriod"
           ></v-btn>
 
-          <div class="ms-4">
-            <h3 class="text-h6 font-weight-medium">{{ displayPeriodLabel }}</h3>
+          <div class="ms-2 ms-sm-4">
+            <h3 class="text-body-1 text-sm-h6 font-weight-medium">{{ displayPeriodLabel }}</h3>
           </div>
         </div>
 
         <!-- View Toggle -->
-        <div class="d-flex align-center gap-2">
+        <div class="d-flex align-center gap-1 gap-sm-2">
           <v-btn-toggle
             v-model="currentView"
             color="primary"
@@ -227,10 +231,10 @@ onMounted(() => {
               v-for="view in calendarViews"
               :key="view.value"
               :value="view.value"
-              size="small"
+              :size="$vuetify.display.xs ? 'x-small' : 'small'"
               @click="changeView(view.value)"
             >
-              <v-icon :icon="view.icon" class="me-1"></v-icon>
+              <v-icon :icon="view.icon" :class="$vuetify.display.xs ? '' : 'me-1'"></v-icon>
               <span class="d-none d-sm-inline">{{ view.title }}</span>
             </v-btn>
           </v-btn-toggle>
@@ -239,17 +243,17 @@ onMounted(() => {
     </v-card-text>
 
     <!-- Loading State -->
-    <div v-if="loading" class="d-flex justify-center align-center pa-8">
+    <div v-if="loading" class="d-flex justify-center align-center pa-6 pa-sm-8">
       <v-progress-circular
         indeterminate
         color="primary"
-        size="48"
+        :size="$vuetify.display.xs ? '36' : '48'"
       ></v-progress-circular>
-      <span class="ms-4 text-subtitle-1">Loading calendar events...</span>
+      <span class="ms-3 ms-sm-4 text-body-2 text-sm-subtitle-1">Loading calendar events...</span>
     </div>
 
     <!-- Calendar View -->
-    <div v-else class="calendar-wrapper pa-6 pt-0">
+    <div v-else class="calendar-wrapper pa-4 pa-sm-6 pt-0">
       <CalendarView
         ref="calendarRef"
         :show-date="currentPeriodStart"
@@ -271,63 +275,67 @@ onMounted(() => {
     <!-- Empty State -->
     <div
       v-if="!loading && calendarEvents.length === 0"
-      class="text-center pa-8"
+      class="text-center pa-6 pa-sm-8"
     >
-      <v-icon color="grey-lighten-1" size="64" class="mb-4">
+      <v-icon color="grey-lighten-1" :size="$vuetify.display.xs ? '48' : '64'" class="mb-3 mb-sm-4">
         mdi-calendar-blank
       </v-icon>
-      <h3 class="text-h6 text-grey-darken-1 mb-2">No Events Scheduled</h3>
-      <p class="text-body-2 text-grey mb-4">
+      <h3 class="text-body-1 text-sm-h6 text-grey-darken-1 mb-2">No Events Scheduled</h3>
+      <p class="text-caption text-sm-body-2 text-grey mb-3 mb-sm-4">
         No events are currently scheduled. Check back later for updates.
       </p>
-      <v-btn color="primary" variant="elevated" @click="loadEvents">
+      <v-btn color="primary" variant="elevated" :size="$vuetify.display.xs ? 'small' : 'default'" @click="loadEvents">
         Refresh Calendar
       </v-btn>
     </div>
 
     <!-- Enhanced Events Summary -->
-    <v-card-text v-if="!loading && calendarEvents.length > 0" class="pt-0">
+    <v-card-text v-if="!loading && calendarEvents.length > 0" class="pt-0 pa-4 pa-sm-6">
       <v-row class="events-summary">
         <v-col cols="12">
-          <div class="d-flex flex-wrap ga-3 align-center">
+          <div class="d-flex flex-wrap ga-2 ga-sm-3 align-center">
             <v-chip
               v-if="eventsCounts.total > 0"
               color="primary"
               variant="elevated"
-              size="default"
+              :size="$vuetify.display.xs ? 'small' : 'default'"
               prepend-icon="mdi-calendar-check"
             >
-              Total: {{ eventsCounts.total }}
+              <span class="d-none d-sm-inline">Total: {{ eventsCounts.total }}</span>
+              <span class="d-inline d-sm-none">{{ eventsCounts.total }}</span>
             </v-chip>
 
             <v-chip
               v-if="eventsCounts.today > 0"
               color="secondary"
               variant="elevated"
-              size="default"
+              :size="$vuetify.display.xs ? 'small' : 'default'"
               prepend-icon="mdi-calendar-today"
             >
-              Today: {{ eventsCounts.today }}
+              <span class="d-none d-sm-inline">Today: {{ eventsCounts.today }}</span>
+              <span class="d-inline d-sm-none">{{ eventsCounts.today }}</span>
             </v-chip>
 
             <v-chip
               v-if="eventsCounts.upcoming > 0"
               color="accent"
               variant="elevated"
-              size="default"
+              :size="$vuetify.display.xs ? 'small' : 'default'"
               prepend-icon="mdi-calendar-clock"
             >
-              Upcoming: {{ eventsCounts.upcoming }}
+              <span class="d-none d-sm-inline">Upcoming: {{ eventsCounts.upcoming }}</span>
+              <span class="d-inline d-sm-none">{{ eventsCounts.upcoming }}</span>
             </v-chip>
 
             <v-chip
               v-if="eventsCounts.past > 0"
               color="surface-variant"
               variant="outlined"
-              size="default"
+              :size="$vuetify.display.xs ? 'small' : 'default'"
               prepend-icon="mdi-calendar-check-outline"
             >
-              Past: {{ eventsCounts.past }}
+              <span class="d-none d-sm-inline">Past: {{ eventsCounts.past }}</span>
+              <span class="d-inline d-sm-none">{{ eventsCounts.past }}</span>
             </v-chip>
           </div>
         </v-col>
