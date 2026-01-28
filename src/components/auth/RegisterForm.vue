@@ -202,12 +202,14 @@ const registerForm = reactive({
   confirmPassword: "",
 });
 
-// Computed properties for role options
+// Computed properties for role options - Only show Student role
 const roleOptions = computed(() => {
-  return rolesStore.roles.map(role => ({
-    title: role.title || 'Untitled Role',
-    value: role.id
-  }));
+  return rolesStore.roles
+    .filter(role => role.title?.toLowerCase() === 'student')
+    .map(role => ({
+      title: role.title || 'Untitled Role',
+      value: role.id
+    }));
 });
 
 // Check if student role is selected (role ID 2 is Student)
