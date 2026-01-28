@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthUserStore } from '@/stores/authUser'
-import { navigationConfig } from '@/utils/navigation'
+import { useUserPagesStore } from '@/stores/pages'
+import { navigationConfig, type NavigationGroup } from '@/utils/navigation'
 
 // Vuetify display composable for responsive design
 const { smAndDown } = useDisplay()
@@ -15,8 +16,15 @@ const route = useRoute()
 // Auth store
 const authStore = useAuthUserStore()
 
+// Pages store for permission checking
+const pagesStore = useUserPagesStore()
+
 // Reactive state for sidebar
 const isExpanded = ref(true)
+
+// User's accessible pages
+const userAccessiblePages = ref<string[]>([])
+const permissionsLoaded = ref(false)
 
 // Control admin group expansion - make it persistent
 const adminGroupExpanded = ref(true)
@@ -47,8 +55,31 @@ watch(
 // Hide sidebar on small screens
 const showSidebar = computed(() => !smAndDown.value)
 
-// Get navigation groups from shared config
-const navigationGroups = computed(() => navigationConfig)
+// Filter navigation groups based on user's accessible pages
+const navigationGroups = computed(() => {
+  if (!permissionsLoaded.value) {
+    return [] // Don't show any navigation until permissions are loaded
+  }
+
+  return navigationConfig
+    .map((group: NavigationGroup) => {
+      // Filter children based on user's accessible pages
+      const filteredChildren = group.children.filter(child => {
+        return userAccessiblePages.value.includes(child.route)
+      })
+
+      // Only return the group if it has accessible children
+      if (filteredChildren.length > 0) {
+        return {
+          ...group,
+          children: filteredChildren
+        }
+      }
+
+      return null
+    })
+    .filter((group): group is NavigationGroup => group !== null)
+})
 
 // Helper function to get group expansion state
 const getGroupExpansion = (groupTitle: string) => {
@@ -67,6 +98,49 @@ const navigateTo = (route: string) => {
 const isRouteActive = (routePath: string) => {
   return route.path === routePath
 }
+
+// Load user permissions on mount
+const loadUserPermissions = async () => {
+  try {
+    const currentUserResult = await authStore.getCurrentUser()
+
+    if (currentUserResult.user) {
+      const userRoleId = currentUserResult.user.user_metadata?.role
+
+      if (userRoleId) {
+        console.log('Loading permissions for role ID:', userRoleId)
+
+        // Fetch pages accessible by this role
+        const rolePages = await pagesStore.fetchRolePagesByRoleId(userRoleId)
+
+        if (rolePages && rolePages.length > 0) {
+          // Extract the page routes from role pages
+          userAccessiblePages.value = rolePages
+            .map(rolePage => rolePage.pages)
+            .filter((page): page is string => page !== null)
+
+          console.log('User accessible pages:', userAccessiblePages.value)
+        } else {
+          console.log('No accessible pages found for role ID:', userRoleId)
+          userAccessiblePages.value = []
+        }
+      } else {
+        console.log('No role ID found in user metadata')
+        userAccessiblePages.value = []
+      }
+    }
+  } catch (error) {
+    console.error('Error loading user permissions:', error)
+    userAccessiblePages.value = []
+  } finally {
+    permissionsLoaded.value = true
+  }
+}
+
+// Mount hook to load permissions
+onMounted(() => {
+  loadUserPermissions()
+})
 
 // Logout function
 const handleLogout = async () => {
@@ -102,6 +176,16 @@ const handleLogout = async () => {
 
     <!-- Navigation Menu -->
     <v-list nav class="pa-2">
+      <!-- Loading state while permissions are being loaded -->
+      <div v-if="!permissionsLoaded" class="text-center pa-4">
+        <v-progress-circular
+          indeterminate
+          color="primary"
+          size="24"
+        ></v-progress-circular>
+        <p class="text-caption mt-2 text-medium-emphasis">Loading menu...</p>
+      </div>
+
       <!-- Dynamic Navigation Groups -->
       <div
         v-for="group in navigationGroups"

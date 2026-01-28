@@ -5,6 +5,7 @@
   import { useDisplay } from 'vuetify'
   import { useTheme } from '@/composables/useTheme'
   import { useAuthUserStore } from '@/stores/authUser'
+  import { useUserRolesStore } from '@/stores/roles'
   import { navigationConfig, type NavigationGroup, type NavigationItem } from '@/utils/navigation'
   import { getEmailInitials, getUserDisplayName } from '@/utils/helpers'
 
@@ -15,6 +16,7 @@
   const props = defineProps<Props>()
   const router = useRouter()
   const authStore = useAuthUserStore()
+  const rolesStore = useUserRolesStore()
 
   // Vuetify display composable for responsiveness
   const { mobile, mdAndUp, lgAndUp, xs, sm, md } = useDisplay()
@@ -69,6 +71,24 @@
   // User avatar computed properties
   const userInitials = computed(() => getEmailInitials(authStore.userEmail))
   const userDisplayName = computed(() => getUserDisplayName(authStore.userData))
+
+  // User role name
+  const userRoleName = ref<string>('User')
+
+  // Load user role name
+  const loadUserRoleName = async () => {
+    try {
+      const userRoleId = authStore.userRole
+      if (userRoleId) {
+        const roleData = await rolesStore.fetchRoleById(userRoleId)
+        if (roleData?.title) {
+          userRoleName.value = roleData.title
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user role name:', error)
+    }
+  }
 
   // Dynamic navbar color to match dashboard cards in both light and dark mode
   // Vuetify v3: 'surface' is the default card color in both themes
@@ -148,6 +168,7 @@
 
   onMounted(() => {
     window.addEventListener('scroll', handleScroll)
+    loadUserRoleName()
   })
 
   onUnmounted(() => {
@@ -184,14 +205,7 @@
   rounded="pill"
   position="fixed"
   class="mx-auto px-2 glass-nav"
-  :style="{
-    top: isScrolled ? (xs ? '28px' : '40px') : (xs ? '36px' : '56px'),
-    left: lgAndUp ? '59%' : '50%',
-    transform: `translateX(-50%) ${isScrolled ? 'scale(0.98)' : 'scale(1)'}`,
-    width: isScrolled ? (xs ? '96%' : (isNavigationRoute && mdAndUp ? '95%' : '90%')) : (xs ? '98%' : (isNavigationRoute && mdAndUp ? '98%' : '95%')),
-    maxWidth: isNavigationRoute && mdAndUp ? '1400px' : '1200px',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-  }"
+  :style="navbarStyle"
 >
 
       <!-- Logo Section with Badge -->
@@ -246,7 +260,7 @@
 
           <!-- Hide title on mobile to minimize navbar -->
           <div class="d-flex flex-column ms-2 d-none d-md-flex">
-            <span class="text-subtitle-1 font-weight-bold text-primary">
+            <span class="text-subtitle-2 font-weight-bold text-primary">
               {{ navbarConfig.title }}
             </span>
             <span class="text-caption text-medium-emphasis">
@@ -358,6 +372,7 @@
                   <span class="text-caption text-medium-emphasis">
                     {{ authStore.userEmail }}
                   </span>
+
                 </div>
                 <v-icon icon="mdi-chevron-down" class="ml-2" />
               </v-btn>
@@ -381,6 +396,9 @@
                     </span>
                     <span class="text-caption text-medium-emphasis">
                       {{ authStore.userEmail }}
+                    </span>
+                    <span class="text-caption text-primary font-weight-medium">
+                      {{ userRoleName }}
                     </span>
                   </div>
                 </div>
@@ -597,6 +615,9 @@
               </v-list-item-title>
               <v-list-item-subtitle class="text-caption">
                 {{ authStore.userEmail }}
+              </v-list-item-subtitle>
+              <v-list-item-subtitle class="text-caption text-primary font-weight-medium">
+                {{ userRoleName }}
               </v-list-item-subtitle>
             </v-list-item>
           </template>
