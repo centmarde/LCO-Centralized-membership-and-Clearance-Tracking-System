@@ -184,14 +184,7 @@
   rounded="pill"
   position="fixed"
   class="mx-auto px-2 glass-nav"
-  :style="{
-    top: isScrolled ? (xs ? '28px' : '40px') : (xs ? '36px' : '56px'),
-    left: lgAndUp ? '59%' : '50%',
-    transform: `translateX(-50%) ${isScrolled ? 'scale(0.98)' : 'scale(1)'}`,
-    width: isScrolled ? (xs ? '96%' : (isNavigationRoute && mdAndUp ? '95%' : '90%')) : (xs ? '98%' : (isNavigationRoute && mdAndUp ? '98%' : '95%')),
-    maxWidth: isNavigationRoute && mdAndUp ? '1400px' : '1200px',
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-  }"
+  :style="navbarStyle"
 >
 
       <!-- Logo Section with Badge -->
