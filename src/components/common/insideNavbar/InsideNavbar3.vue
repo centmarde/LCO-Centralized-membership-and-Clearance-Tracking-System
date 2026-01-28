@@ -5,6 +5,7 @@
   import { useDisplay } from 'vuetify'
   import { useTheme } from '@/composables/useTheme'
   import { useAuthUserStore } from '@/stores/authUser'
+  import { useUserRolesStore } from '@/stores/roles'
   import { navigationConfig, type NavigationGroup, type NavigationItem } from '@/utils/navigation'
   import { getEmailInitials, getUserDisplayName } from '@/utils/helpers'
 
@@ -15,6 +16,7 @@
   const props = defineProps<Props>()
   const router = useRouter()
   const authStore = useAuthUserStore()
+  const rolesStore = useUserRolesStore()
 
   // Vuetify display composable for responsiveness
   const { mobile, mdAndUp, lgAndUp, xs, sm, md } = useDisplay()
@@ -69,6 +71,24 @@
   // User avatar computed properties
   const userInitials = computed(() => getEmailInitials(authStore.userEmail))
   const userDisplayName = computed(() => getUserDisplayName(authStore.userData))
+
+  // User role name
+  const userRoleName = ref<string>('User')
+
+  // Load user role name
+  const loadUserRoleName = async () => {
+    try {
+      const userRoleId = authStore.userRole
+      if (userRoleId) {
+        const roleData = await rolesStore.fetchRoleById(userRoleId)
+        if (roleData?.title) {
+          userRoleName.value = roleData.title
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user role name:', error)
+    }
+  }
 
   // Dynamic navbar color to match dashboard cards in both light and dark mode
   // Vuetify v3: 'surface' is the default card color in both themes
@@ -148,6 +168,7 @@
 
   onMounted(() => {
     window.addEventListener('scroll', handleScroll)
+    loadUserRoleName()
   })
 
   onUnmounted(() => {
@@ -239,7 +260,7 @@
 
           <!-- Hide title on mobile to minimize navbar -->
           <div class="d-flex flex-column ms-2 d-none d-md-flex">
-            <span class="text-subtitle-1 font-weight-bold text-primary">
+            <span class="text-subtitle-2 font-weight-bold text-primary">
               {{ navbarConfig.title }}
             </span>
             <span class="text-caption text-medium-emphasis">
@@ -351,6 +372,7 @@
                   <span class="text-caption text-medium-emphasis">
                     {{ authStore.userEmail }}
                   </span>
+
                 </div>
                 <v-icon icon="mdi-chevron-down" class="ml-2" />
               </v-btn>
@@ -374,6 +396,9 @@
                     </span>
                     <span class="text-caption text-medium-emphasis">
                       {{ authStore.userEmail }}
+                    </span>
+                    <span class="text-caption text-primary font-weight-medium">
+                      {{ userRoleName }}
                     </span>
                   </div>
                 </div>
@@ -590,6 +615,9 @@
               </v-list-item-title>
               <v-list-item-subtitle class="text-caption">
                 {{ authStore.userEmail }}
+              </v-list-item-subtitle>
+              <v-list-item-subtitle class="text-caption text-primary font-weight-medium">
+                {{ userRoleName }}
               </v-list-item-subtitle>
             </v-list-item>
           </template>
