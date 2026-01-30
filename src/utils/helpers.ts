@@ -154,6 +154,26 @@ export function formatDate(dateString: string | undefined): string {
 }
 
 /**
+ * Formats a date string into a short format (e.g., JAN 1, 2026)
+ * @param dateString - The date string to format
+ * @returns A formatted date string in uppercase month format or 'N/A' if no date provided
+ */
+export function formatDateShort(dateString: string | undefined): string {
+  if (!dateString) return 'N/A'
+
+  const date = new Date(dateString)
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  }
+
+  return date.toLocaleDateString('en-US', options)
+    .replace(/(\w{3}) (\d{1,2}), (\d{4})/, '$1 $2, $3')
+    .toUpperCase()
+}
+
+/**
  * Interface for user status display information
  */
 export interface UserStatusDisplay {
@@ -170,7 +190,7 @@ export interface UserStatusDisplay {
  * @returns UserStatusDisplay object with text, color, and count information
  */
 export function getUserStatusDisplay(
-  user: { id: string; role_id?: number; status?: string }, 
+  user: { id: string; role_id?: number; status?: string },
   userEvents: any[] = []
 ): UserStatusDisplay {
   // Admins (role_id = 1) should never appear as Blocked in UI
@@ -193,11 +213,11 @@ export function getUserStatusDisplay(
       blockedCount: 0
     }
   }
-  
+
   // For students, check their event statuses
   const blockedEvents = userEvents.filter(event => event.status?.toLowerCase() === 'blocked')
   const clearedEvents = userEvents.filter(event => event.status?.toLowerCase() === 'cleared')
-  
+
   if (blockedEvents.length > 0) {
     return {
       text: blockedEvents.length === 1 ? 'Blocked (1 event)' : `Blocked (${blockedEvents.length} events)`,
@@ -350,9 +370,9 @@ export const filterOrganizationsByLeader = (organizations: any[], leaderId: stri
  */
 export const filterMembersBySearch = (members: any[], searchTerm: string): any[] => {
   if (!searchTerm) return members
-  
+
   const term = searchTerm.toLowerCase()
-  return members.filter(member => 
+  return members.filter(member =>
     member.student?.full_name?.toLowerCase().includes(term) ||
     member.student?.email?.toLowerCase().includes(term) ||
     member.student?.student_number?.toLowerCase().includes(term)
@@ -406,11 +426,11 @@ export const createMemberManagementHandlers = (config: {
   clearMembersData: () => void
   getSelectedOrganization: () => any
 }) => {
-  
+
   const handleManageMembers = async (organization: any) => {
     config.setSelectedOrganization(organization)
     config.setMembersDialog(true)
-    
+
     // Fetch members and available students
     await Promise.all([
       config.fetchOrganizationMembers(organization.id),
@@ -483,11 +503,11 @@ export const createViewMembersHandler = (config: {
   fetchAvailableStudents?: (orgId: string) => Promise<any> // Optional for view-only mode
   viewOnly?: boolean // If true, won't fetch available students
 }) => {
-  
+
   return async (organization: any) => {
     config.setSelectedOrganization(organization)
     config.setMembersDialog(true)
-    
+
     // Fetch members, and optionally available students based on mode
     if (config.viewOnly || !config.fetchAvailableStudents) {
       // View-only mode: fetch members only

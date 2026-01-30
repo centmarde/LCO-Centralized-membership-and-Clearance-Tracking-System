@@ -5,8 +5,9 @@ import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
 import { useAuthUserStore } from '@/stores/authUser';
 import { loadBlockedEvents } from '@/stores/eventsData';
 import { supabase } from '@/lib/supabase';
+import { formatDateShort } from '@/utils/helpers';
 
-const blockedEvents = ref<{ name: string; date: string; status: string }[]>([]);
+const blockedEvents = ref<{ name: string; date: string; status: string; showMore?: boolean; showDateMore?: boolean }[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -14,13 +15,27 @@ const loadBlockedEventsUI = async () => {
   loading.value = true;
   error.value = null;
   try {
-    blockedEvents.value = await loadBlockedEvents();
+    const events = await loadBlockedEvents();
+    // Initialize showMore and showDateMore properties
+    blockedEvents.value = events.map(event => ({
+      ...event,
+      showMore: false,
+      showDateMore: false
+    }));
   } catch (err: any) {
     error.value = err.message || 'Failed to load clearance data.';
     blockedEvents.value = [];
   } finally {
     loading.value = false;
   }
+};
+
+const toggleShowMore = (event: any) => {
+  event.showMore = !event.showMore;
+};
+
+const toggleShowDateMore = (event: any) => {
+  event.showDateMore = !event.showDateMore;
 };
 
 onMounted(() => {
@@ -84,13 +99,49 @@ onMounted(() => {
                       md="4"
                     >
                       <v-card elevation="2" rounded="lg" class="fill-height">
-                        <v-card-text class="d-flex align-center justify-space-between pa-3 pa-sm-4">
-                          <div class="flex-grow-1">
-                            <h3 class="text-body-1 text-sm-h6 font-weight-bold">{{ event.name }}</h3>
-                            <p class="text-caption text-sm-body-2 text-medium-emphasis mb-0">{{ event.date }}</p>
+                        <v-card-text class="pa-3 pa-sm-4">
+                          <div class="d-flex align-center justify-space-between mb-2">
+                            <v-chip color="error" variant="elevated" :size="$vuetify.display.xs ? 'x-small' : 'small'">{{ event.status }}</v-chip>
+                            <v-icon color="error" :size="$vuetify.display.xs ? '24' : '32'">mdi-alert-circle-outline</v-icon>
                           </div>
-                          <v-chip color="error" variant="elevated" :size="$vuetify.display.xs ? 'x-small' : 'small'" class="mx-2 mx-sm-4">{{ event.status }}</v-chip>
-                          <v-icon color="error" :size="$vuetify.display.xs ? '32' : '40'">mdi-alert-circle-outline</v-icon>
+                          <div class="flex-grow-1">
+                            <h3 class="text-body-1 text-sm-h6 font-weight-bold mb-1" style="line-height: 1.3;">
+                              <span v-if="event.name.length <= 40">{{ event.name }}</span>
+                              <span v-else>
+                                <span v-if="!event.showMore">{{ event.name.substring(0, 40) }}...</span>
+                                <span v-else>{{ event.name }}</span>
+                                <br>
+                                <v-btn
+                                  variant="text"
+                                  size="x-small"
+                                  color="primary"
+                                  @click="toggleShowMore(event)"
+                                  class="pa-0 mt-1"
+                                  style="height: auto; min-height: auto;"
+                                >
+                                  {{ event.showMore ? 'Show less' : 'See more' }}
+                                </v-btn>
+                              </span>
+                            </h3>
+                            <p class="text-caption text-sm-body-2 text-medium-emphasis mb-0" style="line-height: 1.2;">
+                              <span v-if="formatDateShort(event.date).length <= 30">{{ formatDateShort(event.date) }}</span>
+                              <span v-else>
+                                <span v-if="!event.showDateMore">{{ formatDateShort(event.date).substring(0, 30) }}...</span>
+                                <span v-else>{{ formatDateShort(event.date) }}</span>
+                                <br>
+                                <v-btn
+                                  variant="text"
+                                  size="x-small"
+                                  color="primary"
+                                  @click="toggleShowDateMore(event)"
+                                  class="pa-0 mt-1"
+                                  style="height: auto; min-height: auto;"
+                                >
+                                  {{ event.showDateMore ? 'Show less' : 'See more' }}
+                                </v-btn>
+                              </span>
+                            </p>
+                          </div>
                         </v-card-text>
                       </v-card>
                     </v-col>
