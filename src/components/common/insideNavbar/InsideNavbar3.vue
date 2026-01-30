@@ -6,6 +6,7 @@
   import { useTheme } from '@/composables/useTheme'
   import { useAuthUserStore } from '@/stores/authUser'
   import { useUserRolesStore } from '@/stores/roles'
+  import { useUserPagesStore } from '@/stores/pages'
   import { navigationConfig, type NavigationGroup, type NavigationItem } from '@/utils/navigation'
   import { getEmailInitials, getUserDisplayName } from '@/utils/helpers'
 
@@ -17,6 +18,7 @@
   const router = useRouter()
   const authStore = useAuthUserStore()
   const rolesStore = useUserRolesStore()
+  const pagesStore = useUserPagesStore()
 
   // Vuetify display composable for responsiveness
   const { mobile, mdAndUp, lgAndUp, xs, sm, md } = useDisplay()
@@ -25,6 +27,10 @@
   const drawer = ref(false)
   const isScrolled = ref(false)
   const lastScrollY = ref(0)
+
+  // User permissions state
+  const userAccessiblePages = ref<string[]>([])
+  const permissionsLoaded = ref(false)
 
   // Theme management
   const { toggleTheme: handleToggleTheme, getCurrentTheme, isLoadingTheme } = useTheme()
@@ -45,11 +51,30 @@
     return items
   })
 
-  // Filter navigation based on user permissions (for now, show all - you can implement permission checking)
+  // Filter navigation based on user permissions
   const filteredNavigation = computed(() => {
-    // For now, return all navigation items
-    // You can implement permission checking here based on authStore.userData
+    if (!permissionsLoaded.value) {
+      return [] // Don't show any navigation until permissions are loaded
+    }
+
     return navigationConfig
+      .map((group: NavigationGroup) => {
+        // Filter children based on user's accessible pages
+        const filteredChildren = group.children.filter(child => {
+          return userAccessiblePages.value.includes(child.route)
+        })
+
+        // Only return the group if it has accessible children
+        if (filteredChildren.length > 0) {
+          return {
+            ...group,
+            children: filteredChildren
+          }
+        }
+
+        return null
+      })
+      .filter((group): group is NavigationGroup => group !== null)
   })
 
   // Check if current route matches any navigation item
@@ -87,6 +112,44 @@
       }
     } catch (error) {
       console.error('Error loading user role name:', error)
+    }
+  }
+
+  // Load user permissions
+  const loadUserPermissions = async () => {
+    try {
+      const currentUserResult = await authStore.getCurrentUser()
+
+      if (currentUserResult.user) {
+        const userRoleId = currentUserResult.user.user_metadata?.role
+
+        if (userRoleId) {
+          console.log('Loading permissions for role ID (navbar):', userRoleId)
+
+          // Fetch pages accessible by this role
+          const rolePages = await pagesStore.fetchRolePagesByRoleId(userRoleId)
+
+          if (rolePages && rolePages.length > 0) {
+            // Extract the page routes from role pages
+            userAccessiblePages.value = rolePages
+              .map(rolePage => rolePage.pages)
+              .filter((page): page is string => page !== null)
+
+            console.log('User accessible pages (navbar):', userAccessiblePages.value)
+          } else {
+            console.log('No accessible pages found for role ID (navbar):', userRoleId)
+            userAccessiblePages.value = []
+          }
+        } else {
+          console.log('No role ID found in user metadata (navbar)')
+          userAccessiblePages.value = []
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user permissions (navbar):', error)
+      userAccessiblePages.value = []
+    } finally {
+      permissionsLoaded.value = true
     }
   }
 
@@ -169,6 +232,7 @@
   onMounted(() => {
     window.addEventListener('scroll', handleScroll)
     loadUserRoleName()
+    loadUserPermissions()
   })
 
   onUnmounted(() => {
@@ -272,6 +336,18 @@
 
       <!-- Navigation Tabs (Desktop and Tablet) -->
       <div v-if="mdAndUp && isNavigationRoute" class="d-flex align-center mx-4">
+        <!-- Loading state while permissions are being loaded -->
+        <div v-if="!permissionsLoaded" class="d-flex align-center">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="20"
+            width="2"
+          ></v-progress-circular>
+          <span class="text-caption text-medium-emphasis ml-2">Loading menu...</span>
+        </div>
+
+        <!-- Navigation tabs once permissions are loaded -->
         <v-menu
           v-for="group in filteredNavigation"
           :key="group.title"
@@ -531,6 +607,16 @@
 
       <!-- Navigation List -->
       <v-list nav class="py-0">
+        <!-- Loading state while permissions are being loaded -->
+        <div v-if="!permissionsLoaded" class="text-center pa-4">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="24"
+          ></v-progress-circular>
+          <p class="text-caption mt-2 text-medium-emphasis">Loading menu...</p>
+        </div>
+
         <!-- Navigation Groups -->
         <template v-for="group in filteredNavigation" :key="group.title">
           <v-list-group :value="group.title">

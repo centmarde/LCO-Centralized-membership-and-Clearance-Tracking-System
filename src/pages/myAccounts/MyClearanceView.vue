@@ -1,15 +1,26 @@
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
 import { useAuthUserStore } from '@/stores/authUser';
+import { useOrganizationMembersStore } from '@/stores/organizationMembersData';
 import { loadBlockedEvents } from '@/stores/eventsData';
 import { supabase } from '@/lib/supabase';
 import { formatDateShort } from '@/utils/helpers';
 
+const authStore = useAuthUserStore();
+const organizationMembersStore = useOrganizationMembersStore();
+
 const blockedEvents = ref<{ name: string; date: string; status: string; showMore?: boolean; showDateMore?: boolean }[]>([]);
+const studentOrganizations = ref<any[]>([]);
 const loading = ref(false);
+const loadingOrganizations = ref(false);
 const error = ref<string | null>(null);
+
+// Computed property to check if user has any organization
+const hasOrganization = computed(() => {
+  return studentOrganizations.value.length > 0;
+});
 
 const loadBlockedEventsUI = async () => {
   loading.value = true;
@@ -30,6 +41,43 @@ const loadBlockedEventsUI = async () => {
   }
 };
 
+const checkStudentOrganizations = async () => {
+  loadingOrganizations.value = true;
+  try {
+    const currentUserResult = await authStore.getCurrentUser();
+    if (currentUserResult.user?.id) {
+      // Get student record first
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .select('id')
+        .eq('user_id', currentUserResult.user.id)
+        .single();
+
+      if (studentError || !studentData) {
+        console.log('No student record found for current user');
+        studentOrganizations.value = [];
+        return;
+      }
+
+      // Fetch student's organizations using the store
+      const organizations = await organizationMembersStore.fetchStudentOrganizations(studentData.id);
+      studentOrganizations.value = organizations;
+    }
+  } catch (err: any) {
+    console.error('Error checking student organizations:', err);
+    studentOrganizations.value = [];
+  } finally {
+    loadingOrganizations.value = false;
+  }
+};
+
+const refreshAll = async () => {
+  await Promise.all([
+    loadBlockedEventsUI(),
+    checkStudentOrganizations()
+  ]);
+};
+
 const toggleShowMore = (event: any) => {
   event.showMore = !event.showMore;
 };
@@ -38,8 +86,11 @@ const toggleShowDateMore = (event: any) => {
   event.showDateMore = !event.showDateMore;
 };
 
-onMounted(() => {
-  loadBlockedEventsUI();
+onMounted(async () => {
+  await Promise.all([
+    loadBlockedEventsUI(),
+    checkStudentOrganizations()
+  ]);
 });
 </script>
 
@@ -60,16 +111,38 @@ onMounted(() => {
                   </div>
                 </div>
                 <div class="d-none d-sm-block">
-                  <v-btn color="white" variant="elevated" size="default" @click="loadBlockedEventsUI" :loading="loading" prepend-icon="mdi-refresh">
+                  <v-btn color="white" variant="elevated" size="default" @click="refreshAll" :loading="loading || loadingOrganizations" prepend-icon="mdi-refresh">
                     Refresh
                   </v-btn>
                 </div>
                 <div class="d-block d-sm-none">
-                  <v-btn color="white" variant="elevated" size="small" @click="loadBlockedEventsUI" :loading="loading" icon>
+                  <v-btn color="white" variant="elevated" size="small" @click="refreshAll" :loading="loading || loadingOrganizations" icon>
                     <v-icon>mdi-refresh</v-icon>
                   </v-btn>
                 </div>
               </v-card-title>
+
+              <!-- Organization Membership Banner -->
+              <v-alert
+                v-if="!loadingOrganizations && !hasOrganization"
+                type="warning"
+                variant="tonal"
+                class="ma-0 rounded-0 my-2"
+                border="start"
+              >
+                <template #prepend>
+                  <v-icon size="24">mdi-account-group-outline</v-icon>
+                </template>
+                <div class="d-flex flex-column flex-sm-row align-start align-sm-center">
+                  <div class="flex-grow-1 mb-2 mb-sm-0">
+                    <div class="text-body-2 font-weight-bold mb-1">No Organization Membership</div>
+                    <div class="text-caption text-sm-body-2">
+                      You are not a member of any organization yet. Contact your organizational leader to request membership and access event clearances.
+                    </div>
+                  </div>
+                </div>
+              </v-alert>
+
               <v-divider></v-divider>
               <div class="pa-4 pa-sm-6">
                 <div v-if="loading" class="text-center">

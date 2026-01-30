@@ -37,25 +37,7 @@
           </v-col>
         </v-row>
 
-        <v-row no-gutters>
-          <v-col cols="12">
-            <v-select
-              v-model="registerForm.role"
-              label="Role"
-              variant="outlined"
-              density="comfortable"
-              :items="roleOptions"
-              :rules="[requiredValidator]"
-              :error-messages="errors.role"
-              prepend-inner-icon="mdi-account-group"
-              class="mb-4"
-              hint="Select your role in the organization"
-              persistent-hint
-              :loading="rolesStore.loading"
-              :disabled="rolesStore.loading"
-            />
-          </v-col>
-        </v-row>
+
 
         <!-- Student Number Field - Only show if Student role is selected -->
         <v-row no-gutters v-if="isStudentRole">
@@ -157,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed } from "vue";
 import {
   requiredValidator,
   emailValidator,
@@ -167,7 +149,6 @@ import {
   getErrorMessage,
 } from "@/lib/validator";
 import { useAuthUserStore } from "@/stores/authUser";
-import { useUserRolesStore } from "@/stores/roles";
 import { useToast } from "vue-toastification";
 import { useRouter } from "vue-router";
 
@@ -178,7 +159,6 @@ const emit = defineEmits<{
 
 // Composables
 const authStore = useAuthUserStore();
-const rolesStore = useUserRolesStore();
 const toast = useToast();
 const router = useRouter();
 
@@ -196,32 +176,19 @@ const isLoading = computed(() => loading.value || authStore.loading);
 const registerForm = reactive({
   username: "",
   email: "",
-  role: undefined as number | undefined,
+  role: 2, // Default to student role (ID 2)
   studentNumber: "",
   password: "",
   confirmPassword: "",
 });
 
-// Computed properties for role options - Only show Student role
-const roleOptions = computed(() => {
-  return rolesStore.roles
-    .filter(role => role.title?.toLowerCase() === 'student')
-    .map(role => ({
-      title: role.title || 'Untitled Role',
-      value: role.id
-    }));
-});
-
-// Check if student role is selected (role ID 2 is Student)
-const isStudentRole = computed(() => {
-  return registerForm.role === 2;
-});
+// Always student role since it's the default and only option
+const isStudentRole = computed(() => true);
 
 // Error handling
 const errors = reactive({
   username: "",
   email: "",
-  role: "",
   studentNumber: "",
   password: "",
   confirmPassword: "",
@@ -231,7 +198,6 @@ const errors = reactive({
 const clearErrors = () => {
   errors.username = "";
   errors.email = "";
-  errors.role = "";
   errors.studentNumber = "";
   errors.password = "";
   errors.confirmPassword = "";
@@ -243,10 +209,7 @@ const handleRegister = async () => {
     return;
   }
 
-  if (!registerForm.role) {
-    toast.error("Please select a role");
-    return;
-  }
+
 
   // Validate student number if student role is selected
   if (isStudentRole.value && !registerForm.studentNumber.trim()) {
@@ -283,8 +246,6 @@ const handleRegister = async () => {
         errors.username = errorMessage;
       } else if (errorMessage.toLowerCase().includes("password")) {
         errors.password = errorMessage;
-      } else if (errorMessage.toLowerCase().includes("role")) {
-        errors.role = errorMessage;
       } else if (errorMessage.toLowerCase().includes("student")) {
         errors.studentNumber = errorMessage;
       }
@@ -307,7 +268,7 @@ const handleRegister = async () => {
 const resetForm = () => {
   registerForm.username = "";
   registerForm.email = "";
-  registerForm.role = undefined;
+  registerForm.role = 2; // Reset to default student role
   registerForm.studentNumber = "";
   registerForm.password = "";
   registerForm.confirmPassword = "";
@@ -315,10 +276,7 @@ const resetForm = () => {
   formRef.value?.resetValidation();
 };
 
-// Load roles on component mount
-onMounted(async () => {
-  await rolesStore.fetchRoles();
-});
+
 
 // Expose methods for parent component
 defineExpose({
