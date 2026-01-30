@@ -45,6 +45,7 @@ declare module 'vue-router/auto-routes' {
     '/HomeView': RouteRecordInfo<'/HomeView', '/HomeView', Record<never, never>, Record<never, never>>,
     '/myAccounts/MyClearanceView': RouteRecordInfo<'/myAccounts/MyClearanceView', '/myAccounts/MyClearanceView', Record<never, never>, Record<never, never>>,
     '/myAccounts/MyEventsView': RouteRecordInfo<'/myAccounts/MyEventsView', '/myAccounts/MyEventsView', Record<never, never>, Record<never, never>>,
+    '/myAccounts/MyOrganizationWidget': RouteRecordInfo<'/myAccounts/MyOrganizationWidget', '/myAccounts/MyOrganizationWidget', Record<never, never>, Record<never, never>>,
     '/myOrganization/dialogs/EventStudentsDialog': RouteRecordInfo<'/myOrganization/dialogs/EventStudentsDialog', '/myOrganization/dialogs/EventStudentsDialog', Record<never, never>, Record<never, never>>,
     '/myOrganization/MembersView': RouteRecordInfo<'/myOrganization/MembersView', '/myOrganization/MembersView', Record<never, never>, Record<never, never>>,
     '/NotFound': RouteRecordInfo<'/NotFound', '/NotFound', Record<never, never>, Record<never, never>>,
