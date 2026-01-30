@@ -92,7 +92,7 @@ watch(() => props.organizationId, (newId) => {
                   @update:model-value="updateStudentId"
                   :items="availableStudents"
                   item-value="id"
-                  item-title="display_name"
+                  item-title="email"
                   label="Select Student"
                   variant="outlined"
                   density="compact"
@@ -107,7 +107,7 @@ watch(() => props.organizationId, (newId) => {
                           {{ getEmailInitials(item.raw.email || '') }}
                         </span>
                       </v-avatar>
-                      {{ item.raw.display_name }}
+                      {{ item.raw.email }}
                     </div>
                   </template>
                 </v-select>
