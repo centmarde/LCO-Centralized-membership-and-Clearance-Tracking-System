@@ -310,6 +310,36 @@ export const getMemberRoleDescription = (role: string): string => {
 }
 
 /**
+ * Gets the color for a member role (different from user role ID colors)
+ */
+export const getMemberRoleColor = (role: string): string => {
+  switch (role) {
+    case 'vice_president':
+      return 'purple';
+    case 'secretary':
+      return 'indigo';
+    case 'treasurer':
+      return 'teal';
+    case 'officer':
+      return 'blue';
+    case 'member':
+      return 'primary';
+    default:
+      return 'primary';
+  }
+}
+
+/**
+ * Formats a member role name by replacing underscores with spaces and capitalizing each word
+ */
+export const formatMemberRoleName = (role: string): string => {
+  return role.replace(/_/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
  * Validates if a member status is valid
  */
 export const isValidMemberStatus = (status: string): status is MemberStatus => {

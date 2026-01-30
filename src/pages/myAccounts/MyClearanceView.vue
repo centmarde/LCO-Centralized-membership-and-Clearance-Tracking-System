@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
+import MyOrganizationWidget from './MyOrganizationWidget.vue';
 import { useAuthUserStore } from '@/stores/authUser';
 import { useOrganizationMembersStore } from '@/stores/organizationMembersData';
 import { loadBlockedEvents } from '@/stores/eventsData';
@@ -10,6 +11,9 @@ import { formatDateShort } from '@/utils/helpers';
 
 const authStore = useAuthUserStore();
 const organizationMembersStore = useOrganizationMembersStore();
+
+// Reference to the organization widget component
+const organizationWidget = ref<InstanceType<typeof MyOrganizationWidget> | null>(null);
 
 const blockedEvents = ref<{ name: string; date: string; status: string; showMore?: boolean; showDateMore?: boolean }[]>([]);
 const studentOrganizations = ref<any[]>([]);
@@ -74,7 +78,8 @@ const checkStudentOrganizations = async () => {
 const refreshAll = async () => {
   await Promise.all([
     loadBlockedEventsUI(),
-    checkStudentOrganizations()
+    checkStudentOrganizations(),
+    organizationWidget.value?.refresh()
   ]);
 };
 
@@ -100,7 +105,11 @@ onMounted(async () => {
       <v-container fluid class="pa-6 mt-5" >
         <v-row>
           <v-col cols="12">
+            <!-- My Organizations Widget -->
+            <MyOrganizationWidget ref="organizationWidget" />
 
+            <!-- My Clearance Card -->
+            <v-card elevation="2" rounded="lg">
               <v-card-title class="d-flex align-center justify-space-between pa-4 pa-sm-6 bg-primary text-white">
                 <div class="d-flex align-center">
                   <v-icon :size="$vuetify.display.xs ? '24' : '32'" class="me-2 me-sm-3">mdi-shield-check</v-icon>
@@ -221,6 +230,7 @@ onMounted(async () => {
                   </v-row>
                 </div>
               </div>
+            </v-card>
 
           </v-col>
         </v-row>
