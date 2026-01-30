@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useAuthUserStore } from '@/stores/authUser';
 import { useOrganizationMembersStore, type OrganizationMember } from '@/stores/organizationMembersData';
-import { supabase } from '@/lib/supabase';
+import { fetchStudents } from '@/stores/studentsData';
 import { getMemberStatusColor, getMemberRoleColor, formatMemberRoleName } from '@/utils/helpers';
 
 const authStore = useAuthUserStore();
@@ -24,14 +24,11 @@ const loadStudentOrganizations = async () => {
   try {
     const currentUserResult = await authStore.getCurrentUser();
     if (currentUserResult.user?.id) {
-      // Get student record first
-      const { data: studentData, error: studentError } = await supabase
-        .from('students')
-        .select('id')
-        .eq('user_id', currentUserResult.user.id)
-        .single();
+      // Get student record using studentsData.ts function
+      const students = await fetchStudents();
+      const studentData = students.find(s => s.user_id === currentUserResult.user.id);
 
-      if (studentError || !studentData) {
+      if (!studentData) {
         console.log('No student record found for current user');
         studentOrganizations.value = [];
         return;
