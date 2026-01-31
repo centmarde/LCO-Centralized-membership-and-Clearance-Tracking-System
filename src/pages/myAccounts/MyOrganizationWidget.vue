@@ -17,6 +17,10 @@ const hasOrganization = computed(() => {
   return studentOrganizations.value.length > 0;
 });
 
+const activeCount = computed(() => studentOrganizations.value.filter(m => m.status === 'active').length);
+const pendingCount = computed(() => studentOrganizations.value.filter(m => m.status === 'pending').length);
+const totalCount = computed(() => studentOrganizations.value.length);
+
 const loadStudentOrganizations = async () => {
   loading.value = true;
   error.value = null;
@@ -62,74 +66,104 @@ onMounted(() => {
   <v-alert
     v-if="!loading && hasOrganization"
     variant="tonal"
-    :color="studentOrganizations.some(m => m.status === 'active') ? 'success' : 'warning'"
-    rounded="lg"
+    color="success"
+    rounded="xl"
     class="mb-4"
     border="start"
   >
-    <template #prepend>
-      <v-icon size="24">mdi-office-building</v-icon>
-    </template>
-
-    <div class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between">
-      <div class="flex-grow-1">
-        <div class="text-body-2 font-weight-bold mb-1">
-          Organization Member
-        </div>
-        <div class="text-caption text-sm-body-2 d-flex flex-wrap ga-2">
-          <span v-for="(membership, index) in studentOrganizations.slice(0, 2)" :key="membership.id" class="d-flex align-center ga-1 mb-1">
-            <v-chip
-              :color="getMemberStatusColor(membership.status)"
-              variant="elevated"
-              size="x-small"
-              class="text-capitalize"
-            >
-              {{ membership.organization?.title || 'Unknown' }}
+    <div class="pa-4 pb-2">
+      <v-row class="g-4" align="center">
+        <v-col cols="12" md="7">
+          <div class="d-flex align-center ga-3">
+            <v-avatar color="success" variant="elevated" size="44">
+              <v-icon size="22">mdi-office-building</v-icon>
+            </v-avatar>
+            <div>
+              <div class="text-subtitle-1 font-weight-bold">Organization Member</div>
+              <div class="text-body-2 text-medium-emphasis">Your active memberships and roles</div>
+            </div>
+          </div>
+        </v-col>
+        <v-col cols="12" md="5">
+          <div class="d-flex flex-wrap align-center ga-3 justify-start justify-md-end">
+            <v-chip color="success" variant="elevated" size="large" class="font-weight-bold">
+              <v-icon start size="18">mdi-check-circle</v-icon>
+              {{ activeCount }} Active
             </v-chip>
-            <v-chip
-              :color="getMemberRoleColor(membership.member_role)"
-              variant="tonal"
-              size="x-small"
-              class="text-capitalize"
-            >
-              <v-icon start size="12">mdi-account-star</v-icon>
-              {{ formatMemberRoleName(membership.member_role) }}
+            <v-chip v-if="pendingCount" :color="getMemberStatusColor('pending')" variant="tonal" size="large">
+              <v-icon start size="18">mdi-clock-outline</v-icon>
+              {{ pendingCount }} Pending
             </v-chip>
-          </span>
-          <span v-if="studentOrganizations.length > 2" class="text-caption text-medium-emphasis align-self-center">
-            +{{ studentOrganizations.length - 2 }} more
-          </span>
-        </div>
-      </div>
+            <v-chip color="primary" variant="tonal" size="large">
+              <v-icon start size="18">mdi-format-list-bulleted</v-icon>
+              {{ totalCount }} Total
+            </v-chip>
+            <v-btn
+              icon="mdi-refresh"
+              variant="text"
+              size="small"
+              :loading="loading"
+              @click="loadStudentOrganizations"
+            />
+          </div>
+        </v-col>
+      </v-row>
 
-      <div class="d-flex align-center ga-2 mt-2 mt-sm-0">
-        <v-chip
-          :color="studentOrganizations.filter(m => m.status === 'active').length > 0 ? 'success' : 'warning'"
-          size="small"
-          variant="elevated"
+      <v-divider class="my-2" />
+
+      <v-row class="g-3">
+        <v-col
+          v-for="membership in studentOrganizations.slice(0, 3)"
+          :key="membership.id"
+          cols="12"
+          md="4"
         >
-          {{ studentOrganizations.filter(m => m.status === 'active').length }} Active
-        </v-chip>
-
-        <v-btn
-          v-if="studentOrganizations.filter(m => m.status === 'pending').length > 0"
-          :color="getMemberStatusColor('pending')"
-          size="small"
-          variant="outlined"
-          disabled
-        >
-          {{ studentOrganizations.filter(m => m.status === 'pending').length }} Pending
-        </v-btn>
-
-        <v-btn
-          icon="mdi-refresh"
-          variant="text"
-          size="small"
-          :loading="loading"
-          @click="loadStudentOrganizations"
-          class="d-none d-sm-flex"
-        />
-      </div>
+          <v-sheet
+            :color="membership.status === 'active' ? 'success-lighten-4' : 'surface-variant'"
+            variant="flat"
+            rounded="lg"
+            elevation="1"
+            class="pa-4 h-100"
+          >
+            <div class="d-flex align-center justify-space-between ga-3">
+              <div class="d-flex align-center ga-2 flex-wrap">
+                <v-chip
+                  :color="getMemberStatusColor(membership.status)"
+                  variant="elevated"
+                  size="small"
+                  class="text-capitalize font-weight-bold"
+                >
+                  {{ membership.organization?.title || 'Unknown' }}
+                </v-chip>
+                <v-chip
+                  :color="getMemberRoleColor(membership.member_role)"
+                  variant="tonal"
+                  size="small"
+                  class="text-capitalize"
+                >
+                  <v-icon start size="16">mdi-account-star</v-icon>
+                  {{ formatMemberRoleName(membership.member_role) }}
+                </v-chip>
+              </div>
+              <v-chip
+                size="x-small"
+                :color="membership.status === 'active' ? 'success-darken-1' : 'grey-lighten-3'"
+                variant="tonal"
+                class="text-uppercase"
+              >
+                {{ membership.status }}
+              </v-chip>
+            </div>
+          </v-sheet>
+        </v-col>
+        <v-col v-if="studentOrganizations.length > 3" cols="12" md="4">
+          <v-sheet color="surface-variant" variant="tonal" rounded="lg" elevation="1" class="pa-4 h-100">
+            <div class="text-body-2 font-weight-medium text-medium-emphasis">
+              +{{ studentOrganizations.length - 3 }} more organizations
+            </div>
+          </v-sheet>
+        </v-col>
+      </v-row>
     </div>
   </v-alert>
 
