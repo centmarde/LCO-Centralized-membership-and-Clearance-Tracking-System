@@ -3,6 +3,7 @@
 import { ref, onMounted, computed } from 'vue';
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
 import MyOrganizationWidget from './MyOrganizationWidget.vue';
+import BlockedEventDialog from '@/pages/admin/dialogs/BlockedEventDialog.vue';
 import { useAuthUserStore } from '@/stores/authUser';
 import { useOrganizationMembersStore } from '@/stores/organizationMembersData';
 import { loadBlockedEvents } from '@/stores/eventsData';
@@ -16,6 +17,8 @@ const organizationMembersStore = useOrganizationMembersStore();
 const organizationWidget = ref<InstanceType<typeof MyOrganizationWidget> | null>(null);
 
 const blockedEvents = ref<{ name: string; date: string; status: string; showMore?: boolean; showDateMore?: boolean }[]>([]);
+const selectedEvent = ref<{ name: string; date: string; status: string } | null>(null);
+const eventDialog = ref(false);
 const studentOrganizations = ref<any[]>([]);
 const loading = ref(false);
 const loadingOrganizations = ref(false);
@@ -86,6 +89,16 @@ const toggleShowMore = (event: any) => {
 
 const toggleShowDateMore = (event: any) => {
   event.showDateMore = !event.showDateMore;
+};
+
+const openEventDialog = (event: { name: string; date: string; status: string }) => {
+  selectedEvent.value = event;
+  eventDialog.value = true;
+};
+
+const closeEventDialog = () => {
+  eventDialog.value = false;
+  selectedEvent.value = null;
 };
 
 onMounted(async () => {
@@ -177,7 +190,14 @@ onMounted(async () => {
                       sm="6"
                       md="4"
                     >
-                      <v-card elevation="2" rounded="lg" class="fill-height">
+                      <v-card
+                        elevation="2"
+                        rounded="lg"
+                        class="fill-height"
+                        hover
+                        @click="openEventDialog(event)"
+                        style="cursor: pointer;"
+                      >
                         <v-card-text class="pa-3 pa-sm-4">
                           <div class="d-flex align-center justify-space-between mb-2">
                             <v-chip color="error" variant="elevated" :size="$vuetify.display.xs ? 'x-small' : 'small'">{{ event.status }}</v-chip>
@@ -228,6 +248,12 @@ onMounted(async () => {
                 </div>
               </div>
             </v-card>
+
+            <BlockedEventDialog
+              v-model="eventDialog"
+              :event="selectedEvent"
+              @close="closeEventDialog"
+            />
 
           </v-col>
         </v-row>
