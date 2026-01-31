@@ -11,6 +11,7 @@ export interface Organization {
   title: string
   created_at?: string
   leader_id?: string | null
+  membership_deadline?: string | null
   leader?: {
     id: string
     email: string
@@ -57,7 +58,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
           id, 
           title, 
           created_at, 
-          leader_id
+          leader_id,
+          membership_deadline
         `)
         .order('created_at', { ascending: false })
 
@@ -91,6 +93,7 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
           title: org.title || 'Untitled Organization',
           created_at: org.created_at,
           leader_id: org.leader_id,
+          membership_deadline: org.membership_deadline,
           leader
         }
       })
@@ -166,14 +169,15 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
   /**
    * Creates a new organization
    */
-  const createOrganization = async (organizationData: { title: string; leader_id?: string | null }): Promise<boolean> => {
+  const createOrganization = async (organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null }): Promise<boolean> => {
     saving.value = true
     try {
       const { error } = await supabase
         .from('organizations')
         .insert([{
           title: organizationData.title,
-          leader_id: organizationData.leader_id || null
+          leader_id: organizationData.leader_id || null,
+          membership_deadline: organizationData.membership_deadline || null
         }])
 
       if (error) {
@@ -197,14 +201,15 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
   /**
    * Updates an existing organization
    */
-  const updateOrganization = async (id: string, organizationData: { title: string; leader_id?: string | null }): Promise<boolean> => {
+  const updateOrganization = async (id: string, organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null }): Promise<boolean> => {
     saving.value = true
     try {
       const { error } = await supabase
         .from('organizations')
         .update({
           title: organizationData.title,
-          leader_id: organizationData.leader_id || null
+          leader_id: organizationData.leader_id || null,
+          membership_deadline: organizationData.membership_deadline || null
         })
         .eq('id', id)
 

@@ -49,6 +49,22 @@
                   </template>
                 </v-select>
               </v-col>
+
+              <v-col cols="12" sm="12">
+                <v-text-field
+                  v-model="membershipDeadlineInput"
+                  label="Membership Deadline"
+                  type="datetime-local"
+                  variant="outlined"
+                  append-inner-icon="mdi-calendar-clock"
+                  class="deadline-field"
+                  hint="After this date, new members cannot be added unless quota is met"
+                  persistent-hint
+                  ref="deadlineField"
+                  @click="openDeadlinePicker"
+                  @keydown.enter.prevent="openDeadlinePicker"
+                />
+              </v-col>
             </v-row>
           </v-container>
         </v-form>
@@ -88,6 +104,7 @@ interface Props {
   organizationForm: {
     title: string
     leader_id: string | null
+    membership_deadline: string | null
   }
   organizationLeaders: OrganizationLeader[]
 }
@@ -106,6 +123,29 @@ const emit = defineEmits<Emits>()
 // Local reactive state
 const formRef = ref()
 const formValid = ref(false)
+const deadlineField = ref()
+
+const pad2 = (n: number) => String(n).padStart(2, '0')
+const toDatetimeLocal = (value: string) => {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`
+}
+
+const membershipDeadlineInput = computed({
+  get: () => props.organizationForm.membership_deadline ? toDatetimeLocal(props.organizationForm.membership_deadline) : '',
+  set: (value: string) => {
+    props.organizationForm.membership_deadline = value || null
+  }
+})
+
+const openDeadlinePicker = () => {
+  const inputEl = deadlineField.value?.$el?.querySelector('input') as HTMLInputElement | undefined
+  if (inputEl) {
+    inputEl.showPicker?.()
+    inputEl.focus()
+  }
+}
 
 // Computed properties
 const localDialog = computed({
@@ -147,3 +187,10 @@ const handleClose = () => {
   emit('close')
 }
 </script>
+
+<style scoped>
+:deep(.deadline-field input::-webkit-calendar-picker-indicator) {
+  opacity: 0;
+  display: none;
+}
+</style>

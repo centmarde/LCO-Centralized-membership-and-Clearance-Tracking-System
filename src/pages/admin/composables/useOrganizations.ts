@@ -24,7 +24,8 @@ export function useOrganizations() {
   // Form data
   const organizationForm = reactive({
     title: '',
-    leader_id: null as string | null
+    leader_id: null as string | null,
+    membership_deadline: null as string | null
   })
 
   /**
@@ -46,9 +47,14 @@ export function useOrganizations() {
    * Saves an organization (create or update)
    */
   const saveOrganization = async (): Promise<boolean> => {
+    const deadlineIso = organizationForm.membership_deadline
+      ? new Date(organizationForm.membership_deadline).toISOString()
+      : null
+
     const organizationData = {
       title: organizationForm.title,
-      leader_id: organizationForm.leader_id || null
+      leader_id: organizationForm.leader_id || null,
+      membership_deadline: deadlineIso
     }
 
     let success = false
@@ -77,6 +83,7 @@ export function useOrganizations() {
     editingOrganization.value = null
     organizationForm.title = ''
     organizationForm.leader_id = null
+    organizationForm.membership_deadline = null
     fetchOrganizationLeaders()
   }
 
@@ -87,6 +94,7 @@ export function useOrganizations() {
     editingOrganization.value = organization
     organizationForm.title = organization.title
     organizationForm.leader_id = organization.leader_id || null
+    organizationForm.membership_deadline = organization.membership_deadline || null
     fetchOrganizationLeaders()
   }
 
@@ -104,6 +112,7 @@ export function useOrganizations() {
     editingOrganization.value = null
     organizationForm.title = ''
     organizationForm.leader_id = null
+    organizationForm.membership_deadline = null
   }
 
   return {
