@@ -28,7 +28,7 @@
               :type="showPassword ? 'text' : 'password'"
               variant="outlined"
               density="comfortable"
-              :rules="[requiredValidator]"
+              :rules="passwordRules"
               :error-messages="errors.password"
               prepend-inner-icon="mdi-lock"
               :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from "vue";
+import { ref, reactive, nextTick } from "vue";
 import {
   requiredValidator,
   emailValidator,
@@ -101,6 +101,7 @@ const formRef = ref();
 const formValid = ref(false);
 const loading = ref(false);
 const showPassword = ref(false);
+const validatePassword = ref(false);
 
 // Form data
 const loginForm = reactive({
@@ -117,6 +118,10 @@ const errors = reactive({
 // Computed
 const isLoading = computed(() => loading.value || authStore.loading);
 const passwordLabel = "Password";
+const passwordRules = computed(() => {
+  if (!validatePassword.value) return [];
+  return [requiredValidator];
+});
 
 // Methods
 const clearErrors = () => {
@@ -125,6 +130,12 @@ const clearErrors = () => {
 };
 
 const handleLogin = async () => {
+  // Enable password validation only during submission
+  validatePassword.value = true;
+
+  // Wait for next tick to ensure validation runs
+  await nextTick();
+
   if (!formValid.value) {
     toast.error("Please fill in all required fields correctly");
     return;
@@ -163,6 +174,7 @@ const handleLogin = async () => {
 
 // Reset form
 const resetForm = () => {
+  validatePassword.value = false; // Disable password validation
   loginForm.email = "";
   loginForm.password = "";
   clearErrors();
