@@ -4,7 +4,7 @@ import { useDisplay } from 'vuetify'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useUserRolesStore } from '@/stores/roles'
 import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
-import { useEventsStore, updateStudentEventStatus } from '@/stores/eventsData'
+import { updateStudentEventStatus } from '@/stores/eventsData'
 import { supabase } from '@/lib/supabase'
 import { useToast } from 'vue-toastification'
 import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
@@ -40,7 +40,6 @@ interface User {
 const { xs, smAndDown, mdAndUp } = useDisplay()
 const authStore = useAuthUserStore()
 const rolesStore = useUserRolesStore()
-const eventsStore = useEventsStore()
 const toast = useToast()
 
 // Reactive data

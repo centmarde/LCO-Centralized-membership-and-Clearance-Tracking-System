@@ -30,6 +30,7 @@ declare module 'vue-router/auto-routes' {
     '/admin/dialogs/AddCalendarDialog': RouteRecordInfo<'/admin/dialogs/AddCalendarDialog', '/admin/dialogs/AddCalendarDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/AdminUserRolesDialog': RouteRecordInfo<'/admin/dialogs/AdminUserRolesDialog', '/admin/dialogs/AdminUserRolesDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/BlockedEventDialog': RouteRecordInfo<'/admin/dialogs/BlockedEventDialog', '/admin/dialogs/BlockedEventDialog', Record<never, never>, Record<never, never>>,
+    '/admin/dialogs/CalendarDialogExample': RouteRecordInfo<'/admin/dialogs/CalendarDialogExample', '/admin/dialogs/CalendarDialogExample', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/DeleteUserDialog': RouteRecordInfo<'/admin/dialogs/DeleteUserDialog', '/admin/dialogs/DeleteUserDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/EditUserDialog': RouteRecordInfo<'/admin/dialogs/EditUserDialog', '/admin/dialogs/EditUserDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/EventDetailsDialog': RouteRecordInfo<'/admin/dialogs/EventDetailsDialog', '/admin/dialogs/EventDetailsDialog', Record<never, never>, Record<never, never>>,
