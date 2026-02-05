@@ -2,6 +2,7 @@
 import { computed, watch, onMounted } from 'vue'
 import { useAddCalendarDialog } from '@/pages/admin/composables/calendarDialog'
 import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
+import LcoEventWarning from '@/components/admin/LcoEventWarning.vue'
 
 // Component name for ESLint multi-word rule
 defineOptions({
@@ -192,8 +193,16 @@ const handleCancel = () => {
                 </v-switch>
               </v-col>
 
-              <!-- Attach Organization (optional) -->
+              <!-- LCO Event Warning -->
               <v-col cols="12">
+                <LcoEventWarning
+                  :is-lco-event="!!formData.is_lco"
+                  :organization-hidden="!!formData.is_lco"
+                />
+              </v-col>
+
+              <!-- Attach Organization (optional) -->
+              <v-col v-if="!formData.is_lco" cols="12">
                 <v-select
                   v-model="selectedOrganizationId"
                   :items="organizations"

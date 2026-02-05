@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase } from '@/lib/supabase'
+import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { useAuthUserStore } from '@/stores/authUser'
 import { fetchBlockedEventsByUserId } from '@/stores/studentsData'
 
@@ -32,6 +32,96 @@ export type EventWithLCO = {
   title: string
   date: string
   is_lco: boolean
+}
+
+// Register all students for an LCO event
+export async function registerAllStudentsForLcoEvent(eventId: number): Promise<{ success: boolean; registeredCount: number }> {
+  try {
+    console.log(`Attempting to register all students for LCO event ${eventId}`)
+
+    // First, get all students (not just active ones) to see what we have
+    const { data: allStudents, error: allStudentsError } = await supabaseAdmin
+      .from('students')
+      .select('id, status')
+
+    if (allStudentsError) {
+      console.error('Error fetching all students:', allStudentsError)
+      throw allStudentsError
+    }
+
+    console.log('All students found:', allStudents)
+
+    // Filter for active students (case-insensitive check)
+    const activeStudents = allStudents?.filter(student =>
+      student.status?.toLowerCase() === 'active'
+    ) || []
+
+    console.log(`Found ${activeStudents.length} active students out of ${allStudents?.length || 0} total students`)
+
+    if (activeStudents.length === 0) {
+      console.log('No active students found')
+      // Let's try to get all students regardless of status for LCO events
+      const students = allStudents || []
+      if (students.length === 0) {
+        return { success: true, registeredCount: 0 }
+      }
+
+      console.log('Using all students for LCO event since no active students found')
+    }
+
+    const studentsToUse = activeStudents.length > 0 ? activeStudents : (allStudents || [])
+
+    // Check which students are already registered for this event using supabaseAdmin
+    const { data: existingRegistrations, error: existingError } = await supabaseAdmin
+      .from('student_events')
+      .select('student_id')
+      .eq('event_id', eventId)
+
+    if (existingError) {
+      console.error('Error checking existing registrations:', existingError)
+      throw existingError
+    }
+
+    const existingStudentIds = new Set(existingRegistrations?.map(reg => reg.student_id) || [])
+    console.log(`Found ${existingStudentIds.size} existing registrations for this event`)
+
+    // Filter out students who are already registered
+    const studentsToRegister = studentsToUse.filter(student => !existingStudentIds.has(student.id))
+
+    console.log(`${studentsToRegister.length} students need to be registered`)
+
+    if (studentsToRegister.length === 0) {
+      console.log('All students are already registered for this event')
+      return { success: true, registeredCount: 0 }
+    }
+
+    // Prepare bulk insert data
+    const registrations = studentsToRegister.map(student => ({
+      student_id: student.id,
+      event_id: eventId,
+      status: 'pending' // Default status for LCO events
+    }))
+
+    console.log('Preparing to insert registrations:', registrations)
+
+    // Bulk insert registrations using supabaseAdmin to bypass RLS
+    const { data: insertedData, error: insertError } = await supabaseAdmin
+      .from('student_events')
+      .insert(registrations)
+      .select()
+
+    if (insertError) {
+      console.error('Error registering students for LCO event:', insertError)
+      throw insertError
+    }
+
+    console.log(`Successfully registered ${studentsToRegister.length} students for LCO event`)
+    console.log('Inserted data:', insertedData)
+    return { success: true, registeredCount: studentsToRegister.length }
+  } catch (error) {
+    console.error('Failed to register all students for LCO event:', error)
+    throw error
+  }
 }
 
 export const useEventsStore = defineStore('events', () => {
@@ -154,6 +244,17 @@ export const useEventsStore = defineStore('events', () => {
         is_lco: data.is_lco ?? false
       }
 
+      // If this is an LCO event, register all students
+      if (newEvent.is_lco) {
+        try {
+          const { registeredCount } = await registerAllStudentsForLcoEvent(newEvent.id)
+          console.log(`LCO Event created: Registered ${registeredCount} students for event "${newEvent.title}"`)
+        } catch (registrationError) {
+          console.error('Failed to register students for LCO event:', registrationError)
+          // Don't throw here - the event was created successfully, just log the registration error
+        }
+      }
+
       events.value.unshift(newEvent) // Add to beginning of array
       return newEvent
     } catch (err) {
@@ -172,6 +273,22 @@ export const useEventsStore = defineStore('events', () => {
     try {
       const { id, ...updateData } = eventData
 
+      // First, get the current event state to check if LCO is being toggled on
+      let wasLcoEvent = false
+      if ('is_lco' in updateData) {
+        const { data: currentEventData, error: fetchError } = await supabase
+          .from('events')
+          .select('is_lco')
+          .eq('id', id)
+          .single()
+
+        if (fetchError) {
+          console.error('Error fetching current event state:', fetchError)
+        } else {
+          wasLcoEvent = currentEventData?.is_lco ?? false
+        }
+      }
+
       const { data, error: supabaseError } = await supabase
         .from('events')
         .update(updateData)
@@ -187,6 +304,17 @@ export const useEventsStore = defineStore('events', () => {
       const updatedEvent: EventWithLCO = {
         ...data,
         is_lco: data.is_lco ?? false
+      }
+
+      // If LCO was toggled on (wasn't LCO before, but is now), register all students
+      if (!wasLcoEvent && updatedEvent.is_lco) {
+        try {
+          const { registeredCount } = await registerAllStudentsForLcoEvent(updatedEvent.id)
+          console.log(`LCO Event toggled on: Registered ${registeredCount} students for event "${updatedEvent.title}"`)
+        } catch (registrationError) {
+          console.error('Failed to register students when toggling LCO on:', registrationError)
+          // Don't throw here - the event was updated successfully, just log the registration error
+        }
       }
 
       // Update in local state

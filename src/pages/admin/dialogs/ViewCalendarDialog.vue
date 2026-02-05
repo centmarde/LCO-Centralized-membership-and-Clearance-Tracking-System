@@ -226,7 +226,7 @@ const handleDeleteSubmit = async () => {
               </v-chip>
               <span class="text-caption text-medium-emphasis">
                 {{ event?.is_lco
-                  ? 'Official LCO (Local Chapter Officer) event'
+                  ? 'Official LCO event'
                   : 'Regular organizational event'
                 }}
               </span>

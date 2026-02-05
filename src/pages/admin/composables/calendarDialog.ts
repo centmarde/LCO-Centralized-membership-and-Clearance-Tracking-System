@@ -150,6 +150,16 @@ export function useAddCalendarDialog() {
     }
   }
 
+  // Watch for LCO toggle to clear organization selection
+  watch(
+    () => formData.value.is_lco,
+    (isLco) => {
+      if (isLco && selectedOrganizationId.value) {
+        selectedOrganizationId.value = null
+      }
+    }
+  )
+
   const handleSubmit = async (): Promise<EventWithLCO | null> => {
     if (!formRef.value) return null
 
