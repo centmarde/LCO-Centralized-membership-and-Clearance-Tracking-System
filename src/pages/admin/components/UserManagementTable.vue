@@ -4,7 +4,7 @@ import { useDisplay } from 'vuetify'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useUserRolesStore } from '@/stores/roles'
 import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
-import { updateStudentEventStatus } from '@/stores/eventsData'
+import { useEventsStore, updateStudentEventStatus } from '@/stores/eventsData'
 import { supabase } from '@/lib/supabase'
 import { useToast } from 'vue-toastification'
 import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
@@ -40,6 +40,7 @@ interface User {
 const { xs, smAndDown, mdAndUp } = useDisplay()
 const authStore = useAuthUserStore()
 const rolesStore = useUserRolesStore()
+const eventsStore = useEventsStore()
 const toast = useToast()
 
 // Reactive data
@@ -184,12 +185,12 @@ onMounted(async () => {
               <v-icon size="28" class="me-2">mdi-account-group</v-icon>
               <h2 class="text-h6 font-weight-bold">User Management</h2>
             </div>
-            <v-btn 
-              color="white" 
-              variant="elevated" 
-              size="small" 
-              @click="refreshData" 
-              :loading="loading" 
+            <v-btn
+              color="white"
+              variant="elevated"
+              size="small"
+              @click="refreshData"
+              :loading="loading"
               icon
             >
               <v-icon>mdi-refresh</v-icon>
@@ -197,7 +198,7 @@ onMounted(async () => {
           </div>
           <p class="text-body-2 mb-0 opacity-90">Manage all system users</p>
         </div>
-        
+
         <!-- Desktop Layout -->
         <div class="d-none d-sm-flex align-center justify-space-between w-100">
           <div class="d-flex align-center">
@@ -207,12 +208,12 @@ onMounted(async () => {
               <p class="text-body-2 mb-0 opacity-90">Manage all system users</p>
             </div>
           </div>
-          <v-btn 
-            color="white" 
-            variant="elevated" 
-            size="default" 
-            @click="refreshData" 
-            :loading="loading" 
+          <v-btn
+            color="white"
+            variant="elevated"
+            size="default"
+            @click="refreshData"
+            :loading="loading"
             prepend-icon="mdi-refresh"
           >
             Refresh
@@ -387,7 +388,7 @@ onMounted(async () => {
           </span>
         </v-col>
       </v-row>
-    
+
 
     <!-- User Details Dialog -->
     <UserDetailsDialog

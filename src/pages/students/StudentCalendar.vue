@@ -3,7 +3,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { CalendarView } from 'vue-simple-calendar';
 import { fetchStudentEvents, fetchStudents } from '@/stores/studentsData';
-import { fetchEvents } from '@/stores/eventsData';
+import { useEventsStore } from '@/stores/eventsData';
 import { useAuthUserStore } from '@/stores/authUser';
 import EventDetailsDialog from '@/pages/admin/dialogs/EventDetailsDialog.vue';
 import type { Event } from '@/stores/studentsData';
@@ -14,6 +14,7 @@ defineOptions({
   name: 'StudentCalendar',
 });
 
+const eventsStore = useEventsStore();
 const events = ref<(Event & { isRegistered?: boolean })[]>([]);
 const loading = ref(false);
 
@@ -89,11 +90,11 @@ const loadEvents = async () => {
     const studentId = student.id;
 
     // Fetch all events
-    const allEvents = await fetchEvents();
+    const allEvents = await eventsStore.fetchEvents();
     // Fetch only events the student is registered for
     const registeredEvents = await fetchStudentEvents(Number(studentId));
     const registeredEventIds = new Set(registeredEvents.map(e => e.id));
-    events.value = allEvents.map(event => ({
+    events.value = allEvents.map((event: any) => ({
       ...event,
       isRegistered: registeredEventIds.has(event.id),
     }));

@@ -4,7 +4,7 @@ import { useDisplay } from 'vuetify'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useUserRolesStore } from '@/stores/roles'
 import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
-import { updateStudentEventStatus } from '@/stores/eventsData'
+import { useEventsStore, updateStudentEventStatus } from '@/stores/eventsData'
 import { useToast } from 'vue-toastification'
 import { getStatusColor, getStatusText, getErrorMessage } from '@/utils/helpers'
 
@@ -32,6 +32,7 @@ const emit = defineEmits<Emits>()
 
 const authStore = useAuthUserStore()
 const rolesStore = useUserRolesStore()
+const eventsStore = useEventsStore()
 const toast = useToast()
 
 const loading = ref(false)
@@ -80,14 +81,14 @@ const loadUserData = async (user: User) => {
     try {
       const eventDetails = await fetchStudentEventDetailsByUserId(user.id)
       studentEventDetails.value = eventDetails
-      
+
       // Pre-populate the status dropdowns with current values
       eventDetails.forEach(event => {
         // Ensure the status is either 'cleared' or 'blocked', default to 'blocked' if neither
         const currentStatus = event.status?.toLowerCase()
-        editedEventStatuses.value[event.event_id] = 
-          currentStatus === 'cleared' || currentStatus === 'blocked' 
-            ? currentStatus 
+        editedEventStatuses.value[event.event_id] =
+          currentStatus === 'cleared' || currentStatus === 'blocked'
+            ? currentStatus
             : 'blocked'
       })
     } catch (error) {
@@ -95,21 +96,21 @@ const loadUserData = async (user: User) => {
       toast.error('Failed to fetch student event details')
     }
   }
-  
+
   loading.value = false
 }
 
 const saveUser = async () => {
   if (!editingUser.value) return
-  
+
   isSaving.value = true
   try {
     let hasChanges = false
 
     // Update role if changed
     if (editingUser.value.role_id !== props.user?.role_id) {
-      const { error } = await authStore.updateUser(editingUser.value.id, { 
-        role_id: editingUser.value.role_id 
+      const { error } = await authStore.updateUser(editingUser.value.id, {
+        role_id: editingUser.value.role_id
       })
       if (error) {
         toast.error('Failed to update user role: ' + getErrorMessage(error))
@@ -123,7 +124,7 @@ const saveUser = async () => {
       for (const eventId in editedEventStatuses.value) {
         const newStatus = editedEventStatuses.value[parseInt(eventId)]
         const originalEvent = studentEventDetails.value.find(e => e.event_id === parseInt(eventId))
-        
+
         if (originalEvent && originalEvent.status !== newStatus) {
           try {
             await updateStudentEventStatus(
@@ -163,9 +164,9 @@ const cancelEdit = () => {
 
 <template>
   <!-- Edit User Dialog -->
-  <v-dialog 
-    :model-value="modelValue" 
-    @update:model-value="emit('update:modelValue', $event)" 
+  <v-dialog
+    :model-value="modelValue"
+    @update:model-value="emit('update:modelValue', $event)"
     :max-width="smAndDown ?  '100%' : 800"
     :fullscreen="smAndDown"
     scrollable
@@ -211,7 +212,7 @@ const cancelEdit = () => {
                     <v-icon>mdi-calendar-check</v-icon>
                   </v-avatar>
                 </template>
-                
+
                 <v-list-item-title class="font-weight-medium">
                   {{ eventDetail.events?.title || 'Unknown Event' }}
                 </v-list-item-title>
@@ -220,16 +221,16 @@ const cancelEdit = () => {
                   {{ eventDetail.events?.date ? new Date(eventDetail.events.date).toLocaleDateString() : 'No date' }}
                   <v-spacer />
                   <span class="text-caption mr-2">Current:</span>
-                  <v-chip 
-                    :color="getStatusColor(eventDetail.status)" 
-                    variant="tonal" 
+                  <v-chip
+                    :color="getStatusColor(eventDetail.status)"
+                    variant="tonal"
                     :size="smAndDown ? 'x-small' : 'small'"
                     class="mr-2 mt-1 mt-sm-0"
                   >
                     {{ getStatusText(eventDetail.status) }}
                   </v-chip>
                 </v-list-item-subtitle>
-                
+
                 <template #append>
                   <div class="d-flex flex-column align-end">
                     <span class="text-caption mb-1 d-none d-sm-inline">Update to:</span>
@@ -264,7 +265,7 @@ const cancelEdit = () => {
             <v-alert v-else type="info" variant="tonal">
               This student is not registered for any events.
             </v-alert>
-            
+
             <!-- Changes Summary -->
             <template v-if="studentEventDetails.length > 0">
               <v-divider class="my-4" />

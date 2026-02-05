@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useViewCalendarDialog } from '@/pages/admin/composables/calendarDialog'
-import type { Event } from '@/stores/eventsData'
+import type { EventWithLCO } from '@/stores/eventsData'
 
 interface Props {
   isOpen: boolean
-  event: Event | null
+  event: EventWithLCO | null
 }
 
 interface Emits {
   (e: 'update:isOpen', value: boolean): void
-  (e: 'eventUpdated', event: Event): void
+  (e: 'eventUpdated', event: EventWithLCO): void
   (e: 'eventDeleted', eventId: number): void
 }
 
@@ -204,7 +204,33 @@ const handleDeleteSubmit = async () => {
             <div class="text-body-1">
               {{ formattedDate }}
             </div>
+          </div>
 
+          <!-- Event Type -->
+          <div>
+            <v-label class="text-subtitle-2 text-medium-emphasis mb-1">
+              Event Type
+            </v-label>
+            <div class="d-flex align-center">
+              <v-chip
+                :color="event?.is_lco ? 'primary' : 'secondary'"
+                variant="tonal"
+                size="small"
+                class="me-2"
+              >
+                <v-icon
+                  start
+                  :icon="event?.is_lco ? 'mdi-account-tie' : 'mdi-calendar'"
+                />
+                {{ event?.is_lco ? 'LCO Event' : 'Regular Event' }}
+              </v-chip>
+              <span class="text-caption text-medium-emphasis">
+                {{ event?.is_lco
+                  ? 'Official LCO (Local Chapter Officer) event'
+                  : 'Regular organizational event'
+                }}
+              </span>
+            </div>
           </div>
 
           <!-- Created Date -->
@@ -247,6 +273,34 @@ const handleDeleteSubmit = async () => {
             density="comfortable"
             class="mb-4"
           />
+
+          <!-- LCO Event Toggle -->
+          <v-switch
+            v-model="formData.is_lco"
+            color="primary"
+            :disabled="loading"
+            hide-details="auto"
+            class="mb-4"
+          >
+            <template #prepend>
+              <v-icon class="me-3" :color="formData.is_lco ? 'primary' : 'grey'">
+                {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-calendar' }}
+              </v-icon>
+            </template>
+            <template #label>
+              <div class="d-flex flex-column">
+                <span class="text-body-2 font-weight-medium">
+                  {{ formData.is_lco ? 'LCO Event' : 'Regular Event' }}
+                </span>
+                <span class="text-caption text-medium-emphasis">
+                  {{ formData.is_lco
+                    ? 'This is an official LCO (Local Chapter Officer) event'
+                    : 'This is a regular organizational event'
+                  }}
+                </span>
+              </div>
+            </template>
+          </v-switch>
         </v-form>
 
         <!-- Delete Confirmation -->

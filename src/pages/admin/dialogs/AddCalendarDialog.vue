@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineEmits, defineProps, defineOptions, watch, onMounted } from 'vue'
+import { computed, watch, onMounted } from 'vue'
 import { useAddCalendarDialog } from '@/pages/admin/composables/calendarDialog'
 import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
 
@@ -160,6 +160,36 @@ const handleCancel = () => {
                   hint="Select the date when the event will take place"
                   persistent-hint
                 ></v-text-field>
+              </v-col>
+
+              <!-- LCO Event Toggle -->
+              <v-col cols="12">
+                <v-switch
+                  v-model="formData.is_lco"
+                  color="primary"
+                  :disabled="loading"
+                  hide-details="auto"
+                  class="mb-2"
+                >
+                  <template #prepend>
+                    <v-icon class="me-3" :color="formData.is_lco ? 'primary' : 'grey'">
+                      {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-calendar' }}
+                    </v-icon>
+                  </template>
+                  <template #label>
+                    <div class="d-flex flex-column">
+                      <span class="text-body-2 font-weight-medium">
+                        {{ formData.is_lco ? 'LCO Event' : 'Regular Event' }}
+                      </span>
+                      <span class="text-caption text-medium-emphasis">
+                        {{ formData.is_lco
+                          ? 'This is an official LCO (Local Chapter Officer) event'
+                          : 'This is a regular organizational event'
+                        }}
+                      </span>
+                    </div>
+                  </template>
+                </v-switch>
               </v-col>
 
               <!-- Attach Organization (optional) -->

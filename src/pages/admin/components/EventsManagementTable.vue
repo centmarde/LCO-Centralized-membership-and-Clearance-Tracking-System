@@ -48,7 +48,7 @@
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
-            label="Search events..."
+            label="Search events... (try 'LCO' or 'Regular')"
             single-line
             hide-details
             clearable
@@ -87,14 +87,28 @@
           md="6"
           lg="3"
         >
-          <v-card class="event-card" elevation="2" hover>
+          <v-card
+            class="event-card"
+            elevation="2"
+            hover
+            :class="{ 'lco-event-card': event.is_lco }"
+          >
             <v-card-title class="d-flex align-center pb-2">
               <v-avatar color="primary" size="40" class="mr-3">
-                <v-icon color="white">mdi-calendar-star</v-icon>
+                <v-icon color="white">{{ event.is_lco ? 'mdi-account-tie' : 'mdi-calendar-star' }}</v-icon>
               </v-avatar>
               <div class="text-truncate flex-grow-1">
-                <div class="text-subtitle-1 font-weight-bold text-truncate">
-                  {{ event.title || 'N/A' }}
+                <div class="d-flex align-center mb-1">
+                  <div class="text-subtitle-1 font-weight-bold text-truncate me-2">
+                    {{ event.title || 'N/A' }}
+                  </div>
+                  <v-chip
+                    :color="event.is_lco ? 'primary' : 'secondary'"
+                    size="x-small"
+                    variant="tonal"
+                  >
+                    {{ event.is_lco ? 'LCO' : 'REG' }}
+                  </v-chip>
                 </div>
                 <div class="text-caption text-grey">
                   ID: {{ event.id }}
@@ -232,6 +246,33 @@
               :rules="[rules.required]"
               required
             ></v-text-field>
+
+            <!-- LCO Event Toggle -->
+            <v-switch
+              v-model="editedEvent.is_lco"
+              color="primary"
+              hide-details="auto"
+              class="mb-2"
+            >
+              <template #prepend>
+                <v-icon class="me-3" :color="editedEvent.is_lco ? 'primary' : 'grey'">
+                  {{ editedEvent.is_lco ? 'mdi-account-tie' : 'mdi-calendar' }}
+                </v-icon>
+              </template>
+              <template #label>
+                <div class="d-flex flex-column">
+                  <span class="text-body-2 font-weight-medium">
+                    {{ editedEvent.is_lco ? 'LCO Event' : 'Regular Event' }}
+                  </span>
+                  <span class="text-caption text-medium-emphasis">
+                    {{ editedEvent.is_lco
+                      ? 'This is an official LCO (Local Chapter Officer) event'
+                      : 'This is a regular organizational event'
+                    }}
+                  </span>
+                </div>
+              </template>
+            </v-switch>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -310,24 +351,22 @@
 import { ref, onMounted, computed } from 'vue'
 import { useDisplay } from 'vuetify'
 import {
-  fetchEvents,
-  createEvent,
-  updateEvent,
-  deleteEvent as deleteEventApi,
+  useEventsStore,
   fetchEventsWithRegistrationCounts,
   fetchEventsWithStats,
-  type Event,
+  type EventWithLCO,
   type CreateEventRequest
 } from '@/stores/eventsData'
 
 // Composables
 const { xs, smAndDown, mdAndUp } = useDisplay()
+const eventsStore = useEventsStore()
 
 // Reactive state
 const loading = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
-const events = ref<(Event & {
+const events = ref<(EventWithLCO & {
   registration_count?: number
   status_counts?: {
     blocked: number
@@ -346,15 +385,17 @@ const itemsPerPage = ref(8)
 // Event editing
 const editedEvent = ref<CreateEventRequest & { id?: number }>({
   title: '',
-  date: ''
+  date: '',
+  is_lco: false
 })
 
 const defaultEvent: CreateEventRequest & { id?: number } = {
   title: '',
-  date: ''
+  date: '',
+  is_lco: false
 }
 
-const eventToDelete = ref<Event | null>(null)
+const eventToDelete = ref<EventWithLCO | null>(null)
 
 // Snackbar
 const snackbar = ref({
@@ -381,7 +422,9 @@ const filteredEvents = computed(() => {
   const searchLower = search.value.toLowerCase()
   return events.value.filter(event =>
     event.title?.toLowerCase().includes(searchLower) ||
-    event.id?.toString().includes(searchLower)
+    event.id?.toString().includes(searchLower) ||
+    (event.is_lco && 'lco'.includes(searchLower)) ||
+    (!event.is_lco && 'regular'.includes(searchLower))
   )
 })
 
@@ -419,11 +462,12 @@ const openCreateDialog = () => {
   dialog.value = true
 }
 
-const editEvent = (event: Event) => {
+const editEvent = (event: EventWithLCO) => {
   editedEvent.value = {
     id: event.id,
     title: event.title || '',
-    date: event.date || ''
+    date: event.date || '',
+    is_lco: event.is_lco || false
   }
   dialog.value = true
 }
@@ -441,11 +485,11 @@ const saveEvent = async () => {
   try {
     if (editedEvent.value.id) {
       // Update existing event
-      await updateEvent(editedEvent.value as any)
+      await eventsStore.updateEvent(editedEvent.value as any)
       showSnackbar('Event updated successfully', 'success')
     } else {
       // Create new event
-      await createEvent(editedEvent.value)
+      await eventsStore.createEvent(editedEvent.value)
       showSnackbar('Event created successfully', 'success')
     }
 
@@ -459,7 +503,7 @@ const saveEvent = async () => {
   }
 }
 
-const deleteEvent = (event: Event) => {
+const deleteEvent = (event: EventWithLCO) => {
   eventToDelete.value = event
   deleteDialog.value = true
 }
@@ -469,7 +513,7 @@ const confirmDelete = async () => {
 
   deleting.value = true
   try {
-    await deleteEventApi(eventToDelete.value.id)
+    await eventsStore.deleteEvent(eventToDelete.value.id)
     showSnackbar('Event deleted successfully', 'success')
     await loadEvents()
   } catch (error) {
@@ -521,6 +565,10 @@ onMounted(() => {
 
 .event-card:hover {
   transform: translateY(-4px);
+}
+
+.lco-event-card {
+  border-left: 4px solid rgb(var(--v-theme-primary));
 }
 
 .event-info {
