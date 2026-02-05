@@ -10,6 +10,19 @@
   color: rgb(var(--v-theme-on-primary)) !important;
   border-left: 3px solid rgb(var(--v-theme-accent-darken-1));
 }
+
+/* LCO Events - Red Color Styling */
+.calendar-container .cv-item.lco-event {
+  background-color: #f44336 !important; /* Red color for LCO events */
+  color: #ffffff !important;
+  border-left: 3px solid #d32f2f !important; /* Darker red for left border */
+}
+
+.calendar-container .cv-item.lco-event:hover {
+  background-color: #d32f2f !important; /* Darker red on hover */
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(244, 67, 54, 0.3);
+}
 /* Calendar Events Component Styles */
 
 .calendar-container .calendar-wrapper {

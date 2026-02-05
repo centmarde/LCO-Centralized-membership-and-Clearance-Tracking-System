@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { CalendarView, CalendarViewHeader } from 'vue-simple-calendar'
-import { fetchEvents, fetchEventsWithStats } from '@/stores/eventsData'
-import type { Event } from '@/stores/eventsData'
+import { useEventsStore, fetchEventsWithStats, type EventWithLCO } from '@/stores/eventsData'
 import { useCalendarView, calendarViews } from '@/pages/admin/composables/calendarView'
 import AddCalendarDialog from '@/pages/admin/dialogs/AddCalendarDialog.vue'
 import ViewCalendarDialog from '@/pages/admin/dialogs/ViewCalendarDialog.vue'
@@ -13,6 +12,9 @@ import '@/styles/calendar.css'
 defineOptions({
   name: 'CalendarEventsWidget'
 })
+
+// Store instance
+const eventsStore = useEventsStore()
 
 // Use calendar view composable
 const {
@@ -36,7 +38,7 @@ const {
 } = useCalendarView()
 
 // Reactive data
-const events = ref<Event[]>([])
+const events = ref<EventWithLCO[]>([])
 const loading = ref(false)
 const selectedDate = ref(new Date())
 
@@ -44,7 +46,7 @@ const selectedDate = ref(new Date())
 const showAddEventDialog = ref(false)
 const selectedDateForEvent = ref<Date | null>(null)
 const showViewEventDialog = ref(false)
-const selectedEvent = ref<Event | null>(null)
+const selectedEvent = ref<EventWithLCO | null>(null)
 
 // Calendar configuration
 const calendarRef = ref(null)
@@ -59,11 +61,34 @@ const eventsCounts = computed(() => {
   return getEventCounts(events.value)
 })
 
+// Get LCO events count
+const lcoEventsCounts = computed(() => {
+  const lcoEvents = events.value.filter(event => event.is_lco)
+  const regularEvents = events.value.filter(event => !event.is_lco)
+
+  return {
+    lco: lcoEvents.length,
+    regular: regularEvents.length,
+    lcoUpcoming: lcoEvents.filter(event => {
+      const eventDate = new Date(event.date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return eventDate >= today
+    }).length,
+    regularUpcoming: regularEvents.filter(event => {
+      const eventDate = new Date(event.date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return eventDate >= today
+    }).length
+  }
+})
+
 // Load events data
 const loadEvents = async () => {
   try {
     loading.value = true
-    events.value = await fetchEvents()
+    events.value = await eventsStore.fetchEvents()
   } catch (error) {
     console.error('Error loading events:', error)
   } finally {
@@ -73,7 +98,7 @@ const loadEvents = async () => {
 
 // Handle event click using composable utilities
 const onEventClick = (event: any) => {
-  const actualEvent = eventClickUtils.resolveEventFromClick(event, events.value)
+  const actualEvent = eventClickUtils.resolveEventFromClick(event, events.value) as EventWithLCO
 
   if (actualEvent) {
     // Save to localStorage using composable
@@ -85,7 +110,7 @@ const onEventClick = (event: any) => {
   } else {
     console.warn('Could not resolve event from click data')
     // Try to load last event from storage as fallback
-    const storedEvent = storageUtils.loadEvent()
+    const storedEvent = storageUtils.loadEvent() as EventWithLCO
     if (storedEvent) {
       console.log('Using stored event as fallback:', storedEvent)
       selectedEvent.value = storedEvent
@@ -113,14 +138,14 @@ const openAddEventDialog = () => {
 }
 
 // Handle event created
-const onEventCreated = (newEvent: Event) => {
+const onEventCreated = (newEvent: EventWithLCO) => {
   console.log('New event created:', newEvent)
   // Refresh events list to include the new event
   loadEvents()
 }
 
 // Handle event updated
-const onEventUpdated = (updatedEvent: Event) => {
+const onEventUpdated = (updatedEvent: EventWithLCO) => {
   console.log('Event updated:', updatedEvent)
   // Refresh events list to show updated event
   loadEvents()
@@ -305,9 +330,33 @@ onMounted(() => {
               <span class="d-inline d-sm-none">{{ eventsCounts.total }}</span>
             </v-chip>
 
+            <!-- LCO Events Count -->
+            <v-chip
+              v-if="lcoEventsCounts.lco > 0"
+              color="primary"
+              variant="tonal"
+              :size="$vuetify.display.xs ? 'small' : 'default'"
+              prepend-icon="mdi-account-tie"
+            >
+              <span class="d-none d-sm-inline">LCO: {{ lcoEventsCounts.lco }}</span>
+              <span class="d-inline d-sm-none">LCO {{ lcoEventsCounts.lco }}</span>
+            </v-chip>
+
+            <!-- Regular Events Count -->
+            <v-chip
+              v-if="lcoEventsCounts.regular > 0"
+              color="secondary"
+              variant="tonal"
+              :size="$vuetify.display.xs ? 'small' : 'default'"
+              prepend-icon="mdi-calendar"
+            >
+              <span class="d-none d-sm-inline">Regular: {{ lcoEventsCounts.regular }}</span>
+              <span class="d-inline d-sm-none">REG {{ lcoEventsCounts.regular }}</span>
+            </v-chip>
+
             <v-chip
               v-if="eventsCounts.today > 0"
-              color="secondary"
+              color="warning"
               variant="elevated"
               :size="$vuetify.display.xs ? 'small' : 'default'"
               prepend-icon="mdi-calendar-today"

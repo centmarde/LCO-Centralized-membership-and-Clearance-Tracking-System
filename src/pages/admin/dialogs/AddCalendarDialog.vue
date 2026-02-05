@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, defineEmits, defineProps, defineOptions, watch, onMounted } from 'vue'
+import { computed, watch, onMounted } from 'vue'
 import { useAddCalendarDialog } from '@/pages/admin/composables/calendarDialog'
 import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
+import LcoEventWarning from '@/components/admin/LcoEventWarning.vue'
 
 // Component name for ESLint multi-word rule
 defineOptions({
@@ -162,8 +163,46 @@ const handleCancel = () => {
                 ></v-text-field>
               </v-col>
 
-              <!-- Attach Organization (optional) -->
+              <!-- LCO Event Toggle -->
               <v-col cols="12">
+                <v-switch
+                  v-model="formData.is_lco"
+                  color="primary"
+                  :disabled="loading"
+                  hide-details="auto"
+                  class="mb-2"
+                >
+                  <template #prepend>
+                    <v-icon class="me-3" :color="formData.is_lco ? 'primary' : 'grey'">
+                      {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-calendar' }}
+                    </v-icon>
+                  </template>
+                  <template #label>
+                    <div class="d-flex flex-column">
+                      <span class="text-body-2 font-weight-medium">
+                        {{ formData.is_lco ? 'LCO Event' : 'Regular Event' }}
+                      </span>
+                      <span class="text-caption text-medium-emphasis">
+                        {{ formData.is_lco
+                          ? 'This is an official LCO (Local Chapter Officer) event'
+                          : 'This is a regular organizational event'
+                        }}
+                      </span>
+                    </div>
+                  </template>
+                </v-switch>
+              </v-col>
+
+              <!-- LCO Event Warning -->
+              <v-col cols="12">
+                <LcoEventWarning
+                  :is-lco-event="!!formData.is_lco"
+                  :organization-hidden="!!formData.is_lco"
+                />
+              </v-col>
+
+              <!-- Attach Organization (optional) -->
+              <v-col v-if="!formData.is_lco" cols="12">
                 <v-select
                   v-model="selectedOrganizationId"
                   :items="organizations"
