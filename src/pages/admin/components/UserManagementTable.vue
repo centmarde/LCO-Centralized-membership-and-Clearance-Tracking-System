@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useUserRolesStore } from '@/stores/roles'
@@ -7,16 +7,20 @@ import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
 import { updateStudentEventStatus } from '@/stores/eventsData'
 import { supabase } from '@/lib/supabase'
 import { useToast } from 'vue-toastification'
+
+// Component imports
 import DeleteUserDialog from '@/pages/admin/dialogs/DeleteUserDialog.vue'
 import EditUserDialog from '@/pages/admin/dialogs/EditUserDialog.vue'
 import UserDetailsDialog from '@/pages/admin/dialogs/UserDetailsDialog.vue'
 import StatusSummary from '@/pages/admin/components/StatusSummary.vue'
+import UserManagementHeader from '@/pages/admin/components/userManagement/UserManagementHeader.vue'
+import UserSearchControls from '@/pages/admin/components/userManagement/UserSearchControls.vue'
+import UserCard from '@/pages/admin/components/userManagement/UserCard.vue'
+import UserListTable from '@/pages/admin/components/userManagement/UserListTable.vue'
+import UserEmptyState from '@/pages/admin/components/userManagement/UserEmptyState.vue'
+import UserPagination from '@/pages/admin/components/userManagement/UserPagination.vue'
+
 import {
-  getRoleColor,
-  getRoleText,
-  getStatusColor,
-  getStatusText,
-  formatDate,
   getUserStatusDisplay,
   getErrorMessage,
   type UserStatusDisplay
@@ -54,6 +58,19 @@ const deleteDialog = ref(false)
 const userToDelete = ref<User | null>(null)
 const page = ref(1)
 const itemsPerPage = ref(4)
+const viewMode = ref<'all' | 'blocked'>('all')
+const layoutMode = ref<'card' | 'list'>('card')
+
+// Watch viewMode to reset pagination
+watch(viewMode, () => {
+  page.value = 1
+})
+
+// Watch layoutMode to adjust items per page
+watch(layoutMode, () => {
+  page.value = 1
+  itemsPerPage.value = layoutMode.value === 'list' ? 10 : 4
+})
 
 // Function to get user status display with blocked events count (using helper function)
 const getUserStatusDisplayForUser = (user: User): UserStatusDisplay => {
@@ -61,13 +78,30 @@ const getUserStatusDisplayForUser = (user: User): UserStatusDisplay => {
   return getUserStatusDisplay(user, userEvents)
 }
 
+// Get blocked students
+const blockedStudents = computed(() => {
+  const students = authStore.users.filter(user => user.role_id === 2 && user.student_id)
+
+  return students.filter(student => {
+    const userEvents = studentEventStatusMap.value[student.id] || []
+    const blockedEvents = userEvents.filter(event => event.status?.toLowerCase() === 'blocked')
+    return blockedEvents.length > 0
+  })
+})
+
+// Get users based on view mode
+const usersToShow = computed(() => {
+  return viewMode.value === 'blocked' ? blockedStudents.value : authStore.users
+})
+
 // Computed filtered and paginated users
 const filteredUsers = computed(() => {
+  const users = usersToShow.value
   if (!search.value) {
-    return authStore.users
+    return users
   }
   const searchLower = search.value.toLowerCase()
-  return authStore.users.filter(user =>
+  return users.filter(user =>
     user.full_name?.toLowerCase().includes(searchLower) ||
     user.email?.toLowerCase().includes(searchLower) ||
     user.student_number?.toLowerCase().includes(searchLower)
@@ -173,281 +207,93 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="mt-5">
-    <!-- Page Header to match OrganizationsView -->
-    <v-card class="mb-6" elevation="7" rounded="lg">
-      <v-card-title class="pa-4 bg-primary text-white">
-        <!-- Mobile Layout -->
-        <div class="d-block d-sm-none w-100">
-          <div class="d-flex align-center justify-space-between mb-3">
-            <div class="d-flex align-center">
-              <v-icon size="28" class="me-2">mdi-account-group</v-icon>
-              <h2 class="text-h6 font-weight-bold">User Management</h2>
-            </div>
-            <v-btn
-              color="white"
-              variant="elevated"
-              size="small"
-              @click="refreshData"
-              :loading="loading"
-              icon
-            >
-              <v-icon>mdi-refresh</v-icon>
-            </v-btn>
-          </div>
-          <p class="text-body-2 mb-0 opacity-90">Manage all system users</p>
-        </div>
+  <v-container fluid class="user-management">
+    <!-- Header -->
+    <UserManagementHeader
+      :loading="loading"
+      @refresh="refreshData"
+    />
 
-        <!-- Desktop Layout -->
-        <div class="d-none d-sm-flex align-center justify-space-between w-100">
-          <div class="d-flex align-center">
-            <v-icon size="32" class="me-3">mdi-account-group</v-icon>
-            <div>
-              <h2 class="text-h5 font-weight-bold mb-1">User Management</h2>
-              <p class="text-body-2 mb-0 opacity-90">Manage all system users</p>
-            </div>
-          </div>
-          <v-btn
-            color="white"
-            variant="elevated"
-            size="default"
-            @click="refreshData"
-            :loading="loading"
-            prepend-icon="mdi-refresh"
-          >
-            Refresh
-          </v-btn>
-        </div>
-      </v-card-title>
-    </v-card>
-
-    <!-- Search Bar to match OrganizationsView -->
-    <v-card class="mb-4" elevation="2">
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="search"
-              prepend-inner-icon="mdi-magnify"
-              label="Search users..."
-              variant="outlined"
-              hide-details
-              clearable
-              density="compact"
-            />
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
+    <!-- Search and Controls -->
+    <UserSearchControls
+      v-model:search="search"
+      v-model:view-mode="viewMode"
+      v-model:layout-mode="layoutMode"
+      :all-users-count="authStore.users.length"
+      :blocked-students-count="blockedStudents.length"
+    />
 
     <!-- Status Summary -->
-    <StatusSummary :users="authStore.users" />
+    <div class="summary-section mb-4">
+      <StatusSummary :users="filteredUsers" />
+    </div>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="d-flex flex-column gap-4">
-        <v-skeleton-loader
-          v-for="i in 4"
-          :key="i"
-          type="card"
-          class="mb-4"
-        ></v-skeleton-loader>
-      </div>
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-8">
+      <v-progress-circular indeterminate color="primary" size="64" />
+      <div class="text-h6 mt-4">Loading users...</div>
+    </div>
 
-      <!-- No Data State -->
-      <div v-else-if="filteredUsers.length === 0" class="text-center pa-8">
-        <v-icon size="64" color="grey">mdi-account-off</v-icon>
-        <p class="text-h6 mt-4">No users found</p>
-        <p class="text-body-2 text-grey">
-          {{ search ? 'No users match your search criteria.' : 'There are no users in the system yet.' }}
-        </p>
-      </div>
+    <!-- Empty State -->
+    <UserEmptyState
+      v-else-if="paginatedUsers.length === 0"
+      :view-mode="viewMode"
+      :has-search="!!search"
+    />
 
-      <!-- User Cards Grid -->
-      <v-row v-else>
-        <v-col
-          v-for="user in paginatedUsers"
-          :key="user.id"
-          cols="12"
-          sm="6"
-          md="4"
-          lg="3"
-        >
-          <v-card
-            class="organization-card user-card fill-height"
-            elevation="3"
-            rounded="lg"
-            hover
-          >
-            <v-card-title class="pa-4 pb-2">
-              <div class="d-flex align-center justify-space-between w-100">
-              <v-avatar color="primary" size="40" class="mr-3">
-                <span class="text-h6">{{ user.full_name?.charAt(0).toUpperCase() || '?' }}</span>
-              </v-avatar>
-              <div class="text-truncate flex-grow-1">
-                <div class="text-subtitle-1 font-weight-bold text-truncate">
-                  {{ user.full_name || 'N/A' }}
-                </div>
-                <div class="text-caption text-grey">
-                  {{ user.student_number || 'No ID' }}
-                </div>
-              </div>
-              </div>
-            </v-card-title>
+    <!-- Users Content -->
+    <div v-else>
+      <!-- Card Layout -->
+      <UserCard
+        v-if="layoutMode === 'card'"
+        :users="paginatedUsers"
+        :student-event-status-map="studentEventStatusMap"
+        :view-mode="viewMode"
+        @view-user="viewUser"
+        @edit-user="editUser"
+        @delete-user="deleteUser"
+      />
 
-            <v-divider></v-divider>
-
-            <v-card-text class="pa-4 pt-3">
-              <div class="user-info mb-3">
-                <div class="d-flex align-center mb-2">
-                  <v-icon size="small" class="mr-2">mdi-email</v-icon>
-                  <span class="text-body-2 text-truncate">{{ user.email || 'N/A' }}</span>
-                </div>
-                <div class="d-flex align-center mb-2">
-                  <v-icon size="small" class="mr-2">mdi-calendar</v-icon>
-                  <span class="text-body-2">{{ formatDate(user.created_at) }}</span>
-                </div>
-              </div>
-
-              <div class="d-flex flex-wrap gap-2 mb-3">
-                <v-chip
-                  :color="getRoleColor(user.role_id)"
-                  variant="tonal"
-                  size="small"
-                  label
-                >
-                  <v-icon start size="small">mdi-shield-account</v-icon>
-                  {{ getRoleText(user.role_id) }}
-                </v-chip>
-                <v-chip
-                  :color="getUserStatusDisplayForUser(user).color"
-                  variant="tonal"
-                  size="small"
-                  label
-                >
-                  <v-icon start size="small">mdi-circle</v-icon>
-                  {{ getUserStatusDisplayForUser(user).text }}
-                </v-chip>
-              </div>
-            </v-card-text>
-
-            <v-divider></v-divider>
-
-            <v-card-actions class="justify-space-between px-4">
-              <v-btn
-                icon="mdi-eye"
-                variant="text"
-                size="small"
-                @click="viewUser(user)"
-                color="info"
-              >
-                <v-icon>mdi-eye</v-icon>
-                <v-tooltip activator="parent" location="top">View Details</v-tooltip>
-              </v-btn>
-              <v-btn
-                icon="mdi-pencil"
-                variant="text"
-                size="small"
-                @click="editUser(user)"
-                color="primary"
-              >
-                <v-icon>mdi-pencil</v-icon>
-                <v-tooltip activator="parent" location="top">Edit User</v-tooltip>
-              </v-btn>
-              <v-btn
-                icon="mdi-delete"
-                variant="text"
-                size="small"
-                @click="deleteUser(user)"
-                color="error"
-              >
-                <v-icon>mdi-delete</v-icon>
-                <v-tooltip activator="parent" location="top">Delete User</v-tooltip>
-              </v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-col>
-      </v-row>
+      <!-- List Layout -->
+      <UserListTable
+        v-else
+        :users="paginatedUsers"
+        :student-event-status-map="studentEventStatusMap"
+        :loading="loading"
+        :view-mode="viewMode"
+        @view-user="viewUser"
+        @edit-user="editUser"
+        @delete-user="deleteUser"
+      />
 
       <!-- Pagination -->
-      <v-row v-if="!loading && filteredUsers.length > 0" class="mt-4">
-        <v-col cols="12" class="d-flex justify-center align-center">
-          <v-pagination
-            v-model="page"
-            :length="totalPages"
-            :total-visible="5"
-            rounded="circle"
-            show-first-last-page
-          ></v-pagination>
-        </v-col>
-        <v-col cols="12" class="text-center">
-          <span class="text-body-2 text-grey">
-            Showing {{ (page - 1) * itemsPerPage + 1 }} -
-            {{ Math.min(page * itemsPerPage, filteredUsers.length) }}
-            of {{ filteredUsers.length }} users
-          </span>
-        </v-col>
-      </v-row>
+      <UserPagination
+        v-model:current-page="page"
+        :total-pages="totalPages"
+        :total-items="filteredUsers.length"
+        :items-per-page="itemsPerPage"
+        :view-mode="viewMode"
+      />
+    </div>
 
-
-    <!-- User Details Dialog -->
+    <!-- Dialogs -->
     <UserDetailsDialog
       v-model="userDialog"
       :user="selectedUser"
     />
 
-    <!-- Edit User Dialog -->
     <EditUserDialog
       v-model="editDialog"
       :user="editingUser"
       @user-updated="onUserUpdated"
     />
 
-    <!-- Delete User Dialog -->
     <DeleteUserDialog
       v-model="deleteDialog"
       :user="userToDelete"
       @user-deleted="onUserDeleted"
     />
-  </div>
+  </v-container>
 </template>
 
-<style scoped>
-.v-card-title h3 {
-  margin-bottom: 4px;
-}
-
-/* Match OrganizationsView card look */
-.v-card {
-  border-radius: 12px !important;
-}
-
-.user-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s ease;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-}
-
-.user-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
-}
-
-.user-card .v-card-title {
-  background: rgba(var(--v-theme-surface), 0.02);
-  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
-}
-
-.user-info {
-  min-height: 60px;
-}
-
-.gap-2 {
-  gap: 8px;
-}
-
-.gap-4 {
-  gap: 16px;
-}
-</style>
+<style scoped src="@/styles/userManagement.css"></style>
