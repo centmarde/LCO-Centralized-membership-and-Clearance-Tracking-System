@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { watch, computed } from 'vue'
 import { getEmailInitials, memberStatusOptions, memberRoleOptions, getMemberStatusColor, getMemberRoleTitle } from '@/utils/helpers'
 import type { OrganizationMember } from '@/stores/organizationMembersData'
 
@@ -18,6 +18,7 @@ interface Props {
     notes: string
   }
   viewOnly?: boolean
+  organizationDeadline?: string | null
 }
 
 interface Emits {
@@ -54,6 +55,20 @@ const handleRemoveMember = (memberId: string) => emit('remove-member', memberId)
 const getStatusColor = getMemberStatusColor
 const getRoleTitle = getMemberRoleTitle
 
+const showDeadline = computed(() => !!props.organizationDeadline && props.members.length < 5)
+const formattedDeadline = computed(() => {
+  if (!props.organizationDeadline) return ''
+  const date = new Date(props.organizationDeadline)
+  if (Number.isNaN(date.getTime())) return props.organizationDeadline
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+})
+
 // Ensure the form has the correct organization id when the panel is shown
 watch(() => props.organizationId, (newId) => {
   if (newId) {
@@ -78,6 +93,17 @@ watch(() => props.organizationId, (newId) => {
 
     <v-card-text class="pa-0">
       <v-container fluid class="pa-6">
+        <v-alert
+          v-if="showDeadline"
+          type="warning"
+          variant="tonal"
+          class="mb-4"
+          border="start"
+          color="warning"
+        >
+          Membership deadline: {{ formattedDeadline }}. Add at least 5 members to clear this requirement.
+        </v-alert>
+
         <!-- Add New Member Section -->
         <v-card v-if="!viewOnly" class="mb-6" elevation="2" rounded="lg">
           <v-card-title class="pb-2">
