@@ -1,15 +1,8 @@
-import { useAuthUserStore } from '@/stores/authUser';
-import { fetchBlockedEventsByUserId } from '@/stores/studentsData';
-
-// Loads blocked events for the currently authenticated user
-export async function loadBlockedEvents(): Promise<{ name: string; date: string; status: string }[]> {
-  const authUserStore = useAuthUserStore();
-  const userId = authUserStore.userData?.id;
-  if (!userId) throw new Error('User not authenticated');
-  return await fetchBlockedEventsByUserId(userId);
-}
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
-import type { Event, StudentEvent } from './studentsData'
+import { useAuthUserStore } from '@/stores/authUser'
+import { fetchBlockedEventsByUserId } from '@/stores/studentsData'
 
 // Re-export types for external use
 export type { Event, StudentEvent } from './studentsData'
@@ -18,6 +11,7 @@ export type { Event, StudentEvent } from './studentsData'
 export type CreateEventRequest = {
   title: string
   date?: string
+  is_lco?: boolean
 }
 
 export type UpdateEventRequest = Partial<CreateEventRequest> & {
@@ -31,139 +25,307 @@ export type EventStats = {
   cancelled: number
 }
 
-// Basic CRUD operations for events
-
-// Fetch all events
-export async function fetchEvents(): Promise<Event[]> {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching events:', error)
-    throw error
-  }
-
-  return data || []
+// Extended Event type with is_lco property
+export type EventWithLCO = {
+  id: number
+  created_at: string
+  title: string
+  date: string
+  is_lco: boolean
 }
 
-// Fetch a single event by ID
-export async function fetchEventById(eventId: number): Promise<Event | null> {
-  const { data, error } = await supabase
-    .from('events')
-    .select('*')
-    .eq('id', eventId)
-    .single()
+export const useEventsStore = defineStore('events', () => {
+  // State
+  const events = ref<EventWithLCO[]>([])
+  const currentEvent = ref<EventWithLCO | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-  if (error) {
-    if (error.code === 'PGRST116') {
-      return null // No rows returned
-    }
-    console.error('Error fetching event:', error)
-    throw error
-  }
-
-  return data
-}
-
-// Create a new event
-export async function createEvent(eventData: CreateEventRequest): Promise<Event> {
-  const { data, error } = await supabase
-    .from('events')
-    .insert(eventData)
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error creating event:', error)
-    throw error
-  }
-
-  return data
-}
-
-// Update an event
-export async function updateEvent(eventData: UpdateEventRequest): Promise<Event> {
-  const { id, ...updateData } = eventData
-
-  const { data, error } = await supabase
-    .from('events')
-    .update(updateData)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error updating event:', error)
-    throw error
-  }
-
-  return data
-}
-
-// Delete an event
-export async function deleteEvent(eventId: number): Promise<{ success: boolean }> {
-  const { error } = await supabase
-    .from('events')
-    .delete()
-    .eq('id', eventId)
-
-  if (error) {
-    console.error('Error deleting event:', error)
-    throw error
-  }
-
-  return { success: true }
-}
-
-// Get event statistics
-export async function fetchEventStats(): Promise<EventStats> {
-  const { data: events, error } = await supabase
-    .from('events')
-    .select(`
-      id,
-      date,
-      student_events:student_events!student_events_event_id_fkey(status)
-    `)
-
-  if (error) {
-    console.error('Error fetching event stats:', error)
-    throw error
-  }
-
-  const total = events.length
-  const today = new Date().toISOString().split('T')[0]
-
-  let upcoming = 0
-  let completed = 0
-  let cancelled = 0
-
-  events.forEach((event) => {
-    const hasActiveRegistrations = event.student_events?.some((se: any) =>
-      se.status && se.status !== 'cancelled'
-    )
-
-    const hasCancelledRegistrations = event.student_events?.every((se: any) =>
-      se.status === 'cancelled'
-    )
-
-    if (hasCancelledRegistrations && event.student_events?.length > 0) {
-      cancelled++
-    } else if (event.date && event.date < today) {
-      completed++
-    } else if (event.date && event.date >= today) {
-      upcoming++
-    }
+  // Getters
+  const lcoEvents = computed(() => events.value.filter(event => event.is_lco))
+  const nonLcoEvents = computed(() => events.value.filter(event => !event.is_lco))
+  const upcomingEvents = computed(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return events.value.filter(event => event.date && event.date >= today)
+  })
+  const completedEvents = computed(() => {
+    const today = new Date().toISOString().split('T')[0]
+    return events.value.filter(event => event.date && event.date < today)
   })
 
-  return {
-    total,
-    upcoming,
-    completed,
-    cancelled,
+  // Actions
+  async function loadBlockedEvents(): Promise<{ name: string; date: string; status: string }[]> {
+    const authUserStore = useAuthUserStore()
+    const userId = authUserStore.userData?.id
+    if (!userId) throw new Error('User not authenticated')
+    return await fetchBlockedEventsByUserId(userId)
   }
-}// Student-Event relationship functions
+
+  // Fetch all events
+  async function fetchEvents(): Promise<EventWithLCO[]> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('events')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (supabaseError) {
+        console.error('Error fetching events:', supabaseError)
+        throw supabaseError
+      }
+
+      const eventsWithLCO: EventWithLCO[] = (data || []).map(event => ({
+        ...event,
+        is_lco: event.is_lco ?? false
+      }))
+
+      events.value = eventsWithLCO
+      return eventsWithLCO
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch events'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Fetch a single event by ID
+  async function fetchEventById(eventId: number): Promise<EventWithLCO | null> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data, error: supabaseError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .single()
+
+      if (supabaseError) {
+        if (supabaseError.code === 'PGRST116') {
+          return null // No rows returned
+        }
+        console.error('Error fetching event:', supabaseError)
+        throw supabaseError
+      }
+
+      const eventWithLCO: EventWithLCO = {
+        ...data,
+        is_lco: data.is_lco ?? false
+      }
+
+      currentEvent.value = eventWithLCO
+      return eventWithLCO
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch event'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Create a new event
+  async function createEvent(eventData: CreateEventRequest): Promise<EventWithLCO> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const insertData = {
+        ...eventData,
+        is_lco: eventData.is_lco ?? false
+      }
+
+      const { data, error: supabaseError } = await supabase
+        .from('events')
+        .insert(insertData)
+        .select()
+        .single()
+
+      if (supabaseError) {
+        console.error('Error creating event:', supabaseError)
+        throw supabaseError
+      }
+
+      const newEvent: EventWithLCO = {
+        ...data,
+        is_lco: data.is_lco ?? false
+      }
+
+      events.value.unshift(newEvent) // Add to beginning of array
+      return newEvent
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create event'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Update an event
+  async function updateEvent(eventData: UpdateEventRequest): Promise<EventWithLCO> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { id, ...updateData } = eventData
+
+      const { data, error: supabaseError } = await supabase
+        .from('events')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (supabaseError) {
+        console.error('Error updating event:', supabaseError)
+        throw supabaseError
+      }
+
+      const updatedEvent: EventWithLCO = {
+        ...data,
+        is_lco: data.is_lco ?? false
+      }
+
+      // Update in local state
+      const index = events.value.findIndex(event => event.id === id)
+      if (index !== -1) {
+        events.value[index] = updatedEvent
+      }
+
+      if (currentEvent.value?.id === id) {
+        currentEvent.value = updatedEvent
+      }
+
+      return updatedEvent
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update event'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Delete an event
+  async function deleteEvent(eventId: number): Promise<{ success: boolean }> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { error: supabaseError } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId)
+
+      if (supabaseError) {
+        console.error('Error deleting event:', supabaseError)
+        throw supabaseError
+      }
+
+      // Remove from local state
+      events.value = events.value.filter(event => event.id !== eventId)
+
+      if (currentEvent.value?.id === eventId) {
+        currentEvent.value = null
+      }
+
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete event'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Get event statistics
+  async function fetchEventStats(): Promise<EventStats> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const { data: eventData, error: supabaseError } = await supabase
+        .from('events')
+        .select(`
+          id,
+          date,
+          is_lco,
+          student_events:student_events!student_events_event_id_fkey(status)
+        `)
+
+      if (supabaseError) {
+        console.error('Error fetching event stats:', supabaseError)
+        throw supabaseError
+      }
+
+      const total = eventData.length
+      const today = new Date().toISOString().split('T')[0]
+
+      let upcoming = 0
+      let completed = 0
+      let cancelled = 0
+
+      eventData.forEach((event) => {
+        const hasActiveRegistrations = event.student_events?.some((se: any) =>
+          se.status && se.status !== 'cancelled'
+        )
+
+        const hasCancelledRegistrations = event.student_events?.every((se: any) =>
+          se.status === 'cancelled'
+        )
+
+        if (hasCancelledRegistrations && event.student_events?.length > 0) {
+          cancelled++
+        } else if (event.date && event.date < today) {
+          completed++
+        } else if (event.date && event.date >= today) {
+          upcoming++
+        }
+      })
+
+      return {
+        total,
+        upcoming,
+        completed,
+        cancelled,
+      }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch event stats'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Return store API
+  return {
+    // State
+    events,
+    currentEvent,
+    loading,
+    error,
+
+    // Getters
+    lcoEvents,
+    nonLcoEvents,
+    upcomingEvents,
+    completedEvents,
+
+    // Actions
+    loadBlockedEvents,
+    fetchEvents,
+    fetchEventById,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    fetchEventStats,
+  }
+})
+
+// Student-Event relationship functions (keeping as standalone functions for now)
+import type { StudentEvent } from './studentsData'
 
 // Get all student registrations for an event
 export async function fetchEventRegistrations(eventId: number): Promise<StudentEvent[]> {
@@ -288,7 +450,7 @@ export async function bulkRegisterStudentsForEvent(
 }
 
 // Get events with registration counts
-export async function fetchEventsWithRegistrationCounts(): Promise<(Event & { registration_count: number })[]> {
+export async function fetchEventsWithRegistrationCounts(): Promise<(EventWithLCO & { registration_count: number })[]> {
   const { data, error } = await supabase
     .from('events')
     .select(`
@@ -304,12 +466,13 @@ export async function fetchEventsWithRegistrationCounts(): Promise<(Event & { re
 
   return data?.map(event => ({
     ...event,
+    is_lco: event.is_lco ?? false,
     registration_count: event.student_events?.[0]?.count || 0
   })) || []
 }
 
 // Get events with registration counts and status counts
-export async function fetchEventsWithStats(): Promise<(Event & {
+export async function fetchEventsWithStats(): Promise<(EventWithLCO & {
   registration_count: number
   status_counts: {
     blocked: number
@@ -344,6 +507,7 @@ export async function fetchEventsWithStats(): Promise<(Event & {
 
     return {
       ...event,
+      is_lco: event.is_lco ?? false,
       registration_count: registrationCount,
       status_counts: statusCounts
     }
