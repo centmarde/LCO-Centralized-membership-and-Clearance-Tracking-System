@@ -3,13 +3,13 @@ import { onMounted, computed, ref } from 'vue'
 import {
   getEmailInitials,
   formatDate,
-  createViewMembersHandler,
   organizationsTableHeaders
 } from '@/utils/helpers'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
 import OrganizationFormDialog from './dialogs/OrganizationFormDialog.vue'
 import OrganizationDeleteDialog from './dialogs/OrganizationDeleteDialog.vue'
 import OrganizationMembersStatusDialog from './dialogs/OrganizationMembersStatusDialog.vue'
+import DeletedOrgDialog from './dialogs/DeletedOrg.vue'
 import { useOrganizations } from './composables/useOrganizations'
 import { useDialogs } from './composables/useDialogs'
 import { useOrganizationMembers } from './composables/useOrganizationMembers'
@@ -30,6 +30,8 @@ const {
   fetchOrganizations,
   saveOrganization,
   deleteOrganization,
+  restoreOrganization,
+  hardDeleteOrganization,
   prepareCreateOrganization,
   prepareEditOrganization,
   prepareDeleteOrganization,
@@ -74,13 +76,27 @@ const headers = organizationsTableHeaders
 // Member dialog state
 const membersDialog = ref(false)
 const selectedOrganization = ref<any>(null)
+const deletedOrgDialog = ref(false)
+const selectedDeletedOrganization = ref<any>(null)
 
 // Computed properties
-const filteredOrganizations = computed(() => {
-  if (!search.value) return organizations.value
+const activeOrganizations = computed(() => organizations.value.filter(org => !org.deleted_at))
+const deletedOrganizations = computed(() => organizations.value.filter(org => !!org.deleted_at))
 
+const filteredActiveOrganizations = computed(() => {
+  if (!search.value) return activeOrganizations.value
   const searchTerm = search.value.toLowerCase()
-  return organizations.value.filter(org =>
+  return activeOrganizations.value.filter(org =>
+    org.title.toLowerCase().includes(searchTerm) ||
+    org.leader?.full_name?.toLowerCase().includes(searchTerm) ||
+    org.leader?.email?.toLowerCase().includes(searchTerm)
+  )
+})
+
+const filteredDeletedOrganizations = computed(() => {
+  if (!search.value) return deletedOrganizations.value
+  const searchTerm = search.value.toLowerCase()
+  return deletedOrganizations.value.filter(org =>
     org.title.toLowerCase().includes(searchTerm) ||
     org.leader?.full_name?.toLowerCase().includes(searchTerm) ||
     org.leader?.email?.toLowerCase().includes(searchTerm)
@@ -125,8 +141,43 @@ const handleConfirmDelete = async () => {
   }
 }
 
+const handleOpenDeletedDialog = (organization: any) => {
+  selectedDeletedOrganization.value = organization
+  deletedOrgDialog.value = true
+}
+
+const closeDeletedDialog = () => {
+  deletedOrgDialog.value = false
+  selectedDeletedOrganization.value = null
+}
+
+const handleRecoverOrganizationFromCard = async (organization: any) => {
+  selectedDeletedOrganization.value = organization
+  await handleRecoverOrganization()
+}
+
+const handleRecoverOrganization = async () => {
+  if (!selectedDeletedOrganization.value) return
+  const success = await restoreOrganization(selectedDeletedOrganization.value)
+  if (success) {
+    closeDeletedDialog()
+  }
+}
+
+const handleHardDeleteOrganization = async () => {
+  if (!selectedDeletedOrganization.value) return
+  const success = await hardDeleteOrganization(selectedDeletedOrganization.value)
+  if (success) {
+    closeDeletedDialog()
+  }
+}
+
 // Open dialog to manage member event statuses (Blocked/Cleared)
 const handleOpenMembersStatusDialog = async (organization: any) => {
+  if (organization.deleted_at) {
+    handleOpenDeletedDialog(organization)
+    return
+  }
   selectedOrganization.value = organization
   membersDialog.value = true
   await fetchOrganizationMembers(organization.id)
@@ -223,7 +274,7 @@ onMounted(() => {
       <div class="text-body-1 text-sm-h6">Loading organizations...</div>
     </div>
 
-    <div v-else-if="filteredOrganizations.length === 0 && !loading">
+    <div v-else-if="filteredActiveOrganizations.length === 0 && !loading">
       <v-card elevation="2" class="text-center pa-6 pa-sm-8">
         <v-icon :size="$vuetify.display.xs ? '64' : '80'" color="grey-lighten-1" class="mb-3 mb-sm-4">mdi-domain-off</v-icon>
         <h3 class="text-h6 text-sm-h5 mb-2">No organizations found</h3>
@@ -246,7 +297,7 @@ onMounted(() => {
     <div v-else>
       <v-row>
         <v-col
-          v-for="organization in filteredOrganizations"
+          v-for="organization in filteredActiveOrganizations"
           :key="organization.id"
           cols="12"
           sm="6"
@@ -297,7 +348,7 @@ onMounted(() => {
                       prepend-icon="mdi-delete"
                       class="text-error"
                     >
-                      <v-list-item-title>Delete</v-list-item-title>
+                      <v-list-item-title>Move to Deleted</v-list-item-title>
                     </v-list-item>
                   </v-list>
                 </v-menu>
@@ -349,6 +400,59 @@ onMounted(() => {
       </v-row>
     </div>
 
+    <!-- Deleted Organizations Section -->
+    <div v-if="filteredDeletedOrganizations.length > 0" class="mt-8">
+      <div class="d-flex align-center mb-3">
+        <v-icon class="me-2" color="error">mdi-delete-clock</v-icon>
+        <span class="text-subtitle-1 font-weight-bold">Deleted Organizations (Recoverable)</span>
+      </div>
+      <v-row>
+        <v-col
+          v-for="organization in filteredDeletedOrganizations"
+          :key="organization.id"
+          cols="12"
+          sm="6"
+          md="4"
+          lg="3"
+        >
+          <v-card
+            elevation="1"
+            rounded="lg"
+            class="organization-card fill-height"
+          >
+            <v-card-title class="pa-3 pa-sm-4 pb-2 d-flex justify-space-between align-center">
+              <div class="d-flex align-center">
+                <v-icon color="error" :size="$vuetify.display.xs ? '20' : '24'" class="mr-2">mdi-domain-off</v-icon>
+                <span class="text-body-1 text-sm-h6 font-weight-bold">{{ organization.title }}</span>
+              </div>
+              <v-chip color="error" variant="tonal" size="x-small">Deleted</v-chip>
+            </v-card-title>
+
+            <v-card-text class="pa-3 pa-sm-4 pt-0">
+              <div class="text-caption text-medium-emphasis mb-2">Deleted At</div>
+              <div class="d-flex align-center mb-3">
+                <v-icon :size="$vuetify.display.xs ? '14' : '16'" color="grey" class="mr-1">mdi-calendar-remove</v-icon>
+                <span class="text-caption text-sm-body-2">{{ formatDate(organization.deleted_at || undefined) }}</span>
+              </div>
+
+              <v-alert type="warning" variant="tonal" density="comfortable" class="mb-3">
+                Members removed and leader reset to student. Recover to use again.
+              </v-alert>
+
+              <div class="d-flex flex-column">
+                <v-btn color="primary" variant="tonal" block class="mb-2" @click="handleRecoverOrganizationFromCard(organization)" :loading="saving" :disabled="deleting">
+                  Recover
+                </v-btn>
+                <v-btn color="error" variant="text" block @click="handleOpenDeletedDialog(organization)" :loading="deleting" :disabled="saving">
+                  Options
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
     <!-- Create/Edit Organization Dialog -->
     <OrganizationFormDialog
       v-model:dialog="dialog"
@@ -378,6 +482,15 @@ onMounted(() => {
       :organization-title="selectedOrganization.title || 'Unknown Organization'"
       :members="members"
       @close="handleCloseMembersDialog"
+    />
+
+    <DeletedOrgDialog
+      v-model:dialog="deletedOrgDialog"
+      :organization="selectedDeletedOrganization"
+      :loading="deleting || saving"
+      @recover="handleRecoverOrganization"
+      @purge="handleHardDeleteOrganization"
+      @close="closeDeletedDialog"
     />
             </div>
           </v-col>
