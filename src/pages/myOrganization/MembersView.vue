@@ -159,6 +159,7 @@ onMounted(async () => {
                 :saving="savingMembers"
                 :organization-id="selectedOrganization.id"
                 :organization-title="selectedOrganization.title || 'Unknown Organization'"
+                :organization-deadline="selectedOrganization.membership_deadline"
                 :members="members"
                 :available-students="availableStudents"
                 :member-form="memberForm"

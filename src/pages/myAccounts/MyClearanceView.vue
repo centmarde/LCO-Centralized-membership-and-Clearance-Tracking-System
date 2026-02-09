@@ -3,45 +3,49 @@
 import { ref, onMounted, computed } from 'vue';
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue';
 import MyOrganizationWidget from './MyOrganizationWidget.vue';
+import BlockedEventDialog from '@/pages/admin/dialogs/BlockedEventDialog.vue';
 import { useAuthUserStore } from '@/stores/authUser';
 import { useOrganizationMembersStore } from '@/stores/organizationMembersData';
-import { loadBlockedEvents } from '@/stores/eventsData';
+import { useEventsStore } from '@/stores/eventsData';
 import { fetchStudents } from '@/stores/studentsData';
 import { formatDateShort } from '@/utils/helpers';
 
+// Store instances
 const authStore = useAuthUserStore();
 const organizationMembersStore = useOrganizationMembersStore();
+const eventsStore = useEventsStore(); // Using new Pinia store for events with is_lco support
 
 // Reference to the organization widget component
 const organizationWidget = ref<InstanceType<typeof MyOrganizationWidget> | null>(null);
 
 const blockedEvents = ref<{ name: string; date: string; status: string; showMore?: boolean; showDateMore?: boolean }[]>([]);
+const selectedEvent = ref<{ name: string; date: string; status: string } | null>(null);
+const eventDialog = ref(false);
 const studentOrganizations = ref<any[]>([]);
-const loading = ref(false);
 const loadingOrganizations = ref(false);
-const error = ref<string | null>(null);
 
 // Computed property to check if user has any organization
 const hasOrganization = computed(() => {
   return studentOrganizations.value.length > 0;
 });
 
+// Computed property for any loading state
+const isLoading = computed(() => {
+  return eventsStore.loading || loadingOrganizations.value;
+});
+
 const loadBlockedEventsUI = async () => {
-  loading.value = true;
-  error.value = null;
   try {
-    const events = await loadBlockedEvents();
+    const events = await eventsStore.loadBlockedEvents();
     // Initialize showMore and showDateMore properties
-    blockedEvents.value = events.map(event => ({
+    blockedEvents.value = events.map((event: { name: string; date: string; status: string }) => ({
       ...event,
       showMore: false,
       showDateMore: false
     }));
   } catch (err: any) {
-    error.value = err.message || 'Failed to load clearance data.';
+    console.error('Failed to load clearance data:', err);
     blockedEvents.value = [];
-  } finally {
-    loading.value = false;
   }
 };
 
@@ -88,6 +92,16 @@ const toggleShowDateMore = (event: any) => {
   event.showDateMore = !event.showDateMore;
 };
 
+const openEventDialog = (event: { name: string; date: string; status: string }) => {
+  selectedEvent.value = event;
+  eventDialog.value = true;
+};
+
+const closeEventDialog = () => {
+  eventDialog.value = false;
+  selectedEvent.value = null;
+};
+
 onMounted(async () => {
   await Promise.all([
     loadBlockedEventsUI(),
@@ -117,12 +131,12 @@ onMounted(async () => {
                   </div>
                 </div>
                 <div class="d-none d-sm-block">
-                  <v-btn color="white" variant="elevated" size="default" @click="refreshAll" :loading="loading || loadingOrganizations" prepend-icon="mdi-refresh">
+                  <v-btn color="white" variant="elevated" size="default" @click="refreshAll" :loading="isLoading" prepend-icon="mdi-refresh">
                     Refresh
                   </v-btn>
                 </div>
                 <div class="d-block d-sm-none">
-                  <v-btn color="white" variant="elevated" size="small" @click="refreshAll" :loading="loading || loadingOrganizations" icon>
+                  <v-btn color="white" variant="elevated" size="small" @click="refreshAll" :loading="isLoading" icon>
                     <v-icon>mdi-refresh</v-icon>
                   </v-btn>
                 </div>
@@ -151,13 +165,33 @@ onMounted(async () => {
 
               <v-divider></v-divider>
               <div class="pa-4 pa-sm-6">
-                <div v-if="loading" class="text-center">
+                <div v-if="eventsStore.loading" class="text-center">
                   <v-progress-circular indeterminate color="primary" :size="$vuetify.display.xs ? '32' : '40'" class="mb-3 mb-sm-4" />
                   <div class="text-body-2 text-sm-body-1">Loading clearance data...</div>
                 </div>
-               <!--  <div v-else-if="error" class="text-center text-error">
-                  {{ error }}
-                </div> -->
+                <v-alert
+                  v-else-if="eventsStore.error"
+                  type="error"
+                  variant="tonal"
+                  class="ma-4"
+                >
+                  <template #prepend>
+                    <v-icon>mdi-alert-circle</v-icon>
+                  </template>
+                  <div class="text-body-2 font-weight-bold mb-1">Error Loading Clearance Data</div>
+                  <div class="text-caption">{{ eventsStore.error }}</div>
+                  <template #append>
+                    <v-btn
+                      variant="text"
+                      size="small"
+                      color="error"
+                      @click="loadBlockedEventsUI"
+                      :loading="eventsStore.loading"
+                    >
+                      Retry
+                    </v-btn>
+                  </template>
+                </v-alert>
                 <div v-else-if="blockedEvents.length === 0" class="text-center text-success">
                   <v-img
                     src="/images/cleared.png"
@@ -177,7 +211,14 @@ onMounted(async () => {
                       sm="6"
                       md="4"
                     >
-                      <v-card elevation="2" rounded="lg" class="fill-height">
+                      <v-card
+                        elevation="2"
+                        rounded="lg"
+                        class="fill-height"
+                        hover
+                        @click="openEventDialog(event)"
+                        style="cursor: pointer;"
+                      >
                         <v-card-text class="pa-3 pa-sm-4">
                           <div class="d-flex align-center justify-space-between mb-2">
                             <v-chip color="error" variant="elevated" :size="$vuetify.display.xs ? 'x-small' : 'small'">{{ event.status }}</v-chip>
@@ -228,6 +269,12 @@ onMounted(async () => {
                 </div>
               </div>
             </v-card>
+
+            <BlockedEventDialog
+              v-model="eventDialog"
+              :event="selectedEvent"
+              @close="closeEventDialog"
+            />
 
           </v-col>
         </v-row>

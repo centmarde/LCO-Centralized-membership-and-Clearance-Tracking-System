@@ -1,5 +1,5 @@
 import { ref, computed, watch } from 'vue'
-import { createEvent, updateEvent, deleteEvent, type Event, type CreateEventRequest, type UpdateEventRequest } from '@/stores/eventsData'
+import { useEventsStore, type CreateEventRequest, type UpdateEventRequest, type EventWithLCO } from '@/stores/eventsData'
 import { supabase } from '@/lib/supabase'
 import { useOrganizationMembersStore } from '@/stores/organizationMembersData'
 
@@ -107,10 +107,14 @@ export const eventStatus = {
 
 // Add Event Composable
 export function useAddCalendarDialog() {
+  // Store instance
+  const eventsStore = useEventsStore()
+
   // State
   const formData = ref<CreateEventRequest>({
     title: '',
-    date: ''
+    date: '',
+    is_lco: false
   })
 
   // Optional organization to attach for auto-blocking members
@@ -127,7 +131,8 @@ export function useAddCalendarDialog() {
   const resetForm = (selectedDate?: Date | null) => {
     formData.value = {
       title: '',
-      date: selectedDate ? formatters.selectedDate(selectedDate) : ''
+      date: selectedDate ? formatters.selectedDate(selectedDate) : '',
+      is_lco: false
     }
     selectedOrganizationId.value = null
 
@@ -145,7 +150,17 @@ export function useAddCalendarDialog() {
     }
   }
 
-  const handleSubmit = async (): Promise<Event | null> => {
+  // Watch for LCO toggle to clear organization selection
+  watch(
+    () => formData.value.is_lco,
+    (isLco) => {
+      if (isLco && selectedOrganizationId.value) {
+        selectedOrganizationId.value = null
+      }
+    }
+  )
+
+  const handleSubmit = async (): Promise<EventWithLCO | null> => {
     if (!formRef.value) return null
 
     // Validate form
@@ -154,7 +169,7 @@ export function useAddCalendarDialog() {
 
     try {
       loading.value = true
-      const newEvent = await createEvent(formData.value)
+      const newEvent = await eventsStore.createEvent(formData.value)
       console.log('Event created successfully:', newEvent)
 
       // If an organization is selected, block all its members for this new event
@@ -226,6 +241,9 @@ export function useAddCalendarDialog() {
 
 // View/Edit Event Composable
 export function useViewCalendarDialog() {
+  // Store instance
+  const eventsStore = useEventsStore()
+
   // State
   const isEditMode = ref(false)
   const loading = ref(false)
@@ -235,7 +253,8 @@ export function useViewCalendarDialog() {
   const formData = ref<UpdateEventRequest>({
     id: 0,
     title: '',
-    date: ''
+    date: '',
+    is_lco: false
   })
 
   const formRef = ref<any>(null)
@@ -245,26 +264,28 @@ export function useViewCalendarDialog() {
   const minDate = computed(() => formatters.minDate())
 
   // Methods
-  const initializeForm = (event: Event | null) => {
+  const initializeForm = (event: EventWithLCO | null) => {
     if (event) {
       formData.value = {
         id: event.id,
         title: event.title || '',
-        date: event.date || ''
+        date: event.date || '',
+        is_lco: event.is_lco || false
       }
     }
     isEditMode.value = false
     showDeleteConfirm.value = false
   }
 
-  const toggleEditMode = (event: Event | null) => {
+  const toggleEditMode = (event: EventWithLCO | null) => {
     if (isEditMode.value) {
       // Cancel edit mode - restore original data
       if (event) {
         formData.value = {
           id: event.id,
           title: event.title || '',
-          date: event.date || ''
+          date: event.date || '',
+          is_lco: event.is_lco || false
         }
       }
       isEditMode.value = false
@@ -276,7 +297,7 @@ export function useViewCalendarDialog() {
     }
   }
 
-  const handleUpdate = async (): Promise<Event | null> => {
+  const handleUpdate = async (): Promise<EventWithLCO | null> => {
     if (!formRef.value) return null
 
     // Validate form
@@ -285,7 +306,7 @@ export function useViewCalendarDialog() {
 
     try {
       loading.value = true
-      const updatedEvent = await updateEvent(formData.value)
+      const updatedEvent = await eventsStore.updateEvent(formData.value)
       isEditMode.value = false
       console.log('Event updated successfully:', updatedEvent)
       return updatedEvent
@@ -308,7 +329,7 @@ export function useViewCalendarDialog() {
   const handleDelete = async (eventId: number): Promise<boolean> => {
     try {
       deleteLoading.value = true
-      await deleteEvent(eventId)
+      await eventsStore.deleteEvent(eventId)
       console.log('Event deleted successfully')
       showDeleteConfirm.value = false
       return true
@@ -328,23 +349,23 @@ export function useViewCalendarDialog() {
   }
 
   // Computed properties for event display
-  const getFormattedDate = (event: Event | null) => {
+  const getFormattedDate = (event: EventWithLCO | null) => {
     return computed(() => formatters.eventDate(event?.date))
   }
 
-  const getFormattedCreatedAt = (event: Event | null) => {
+  const getFormattedCreatedAt = (event: EventWithLCO | null) => {
     return computed(() => formatters.createdAt(event?.created_at))
   }
 
-  const getEventStatusColor = (event: Event | null) => {
+  const getEventStatusColor = (event: EventWithLCO | null) => {
     return computed(() => eventStatus.getColor(event?.date))
   }
 
-  const getEventStatusText = (event: Event | null) => {
+  const getEventStatusText = (event: EventWithLCO | null) => {
     return computed(() => eventStatus.getText(event?.date))
   }
 
-  const getIsEventInPast = (event: Event | null) => {
+  const getIsEventInPast = (event: EventWithLCO | null) => {
     return computed(() => eventStatus.isInPast(event?.date))
   }
 

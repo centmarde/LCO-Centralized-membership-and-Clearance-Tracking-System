@@ -44,7 +44,7 @@ export const navigationConfig: NavigationGroup[] = [
     ]
   },
   {
-    title: 'Admin Controls',
+    title: 'LCO Admin Controls',
     icon: 'mdi-cog',
     permission: 'admin.access',
     children: [

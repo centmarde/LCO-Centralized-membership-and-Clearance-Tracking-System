@@ -1,11 +1,11 @@
 <script setup lang="ts">
 
 import { ref, computed, onMounted } from 'vue';
-import { useTheme } from 'vuetify';
-import { CalendarView, CalendarViewHeader } from 'vue-simple-calendar';
+import { CalendarView } from 'vue-simple-calendar';
 import { fetchStudentEvents, fetchStudents } from '@/stores/studentsData';
-import { fetchEvents } from '@/stores/eventsData';
+import { useEventsStore } from '@/stores/eventsData';
 import { useAuthUserStore } from '@/stores/authUser';
+import EventDetailsDialog from '@/pages/admin/dialogs/EventDetailsDialog.vue';
 import type { Event } from '@/stores/studentsData';
 import 'vue-simple-calendar/dist/vue-simple-calendar.css';
 import '@/styles/calendar.css';
@@ -14,17 +14,18 @@ defineOptions({
   name: 'StudentCalendar',
 });
 
+const eventsStore = useEventsStore();
 const events = ref<(Event & { isRegistered?: boolean })[]>([]);
 const loading = ref(false);
-const theme = useTheme();
 
 const calendarRef = ref(null);
-const showDate = ref(new Date());
 const displayPeriodUom = ref('month');
 const displayPeriodCount = ref(1);
 const startingDayOfWeek = ref(0);
 const currentPeriodStart = ref(new Date());
 const currentView = ref('month');
+const eventDialog = ref(false);
+const selectedEvent = ref<(Event & { isRegistered?: boolean }) | null>(null);
 
 const calendarViews = [
   { title: 'Month', value: 'month', icon: 'mdi-calendar-month' },
@@ -32,14 +33,32 @@ const calendarViews = [
 ];
 
 const calendarEvents = computed(() => {
-  return events.value.map(event => ({
-    id: event.id.toString(),
-    title: event.title,
-    startDate: new Date(event.date || new Date()),
-    endDate: new Date(event.date || new Date()),
-    classes: event.isRegistered ? ['event-registered'] : ['event-upcoming'],
-    originalEvent: event,
-  }));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return events.value.map(event => {
+    const start = new Date(event.date || new Date());
+    start.setHours(0, 0, 0, 0);
+    const isPast = start < today;
+
+    const classes = [] as string[];
+    if (isPast) {
+      classes.push('event-past');
+    } else if (event.isRegistered) {
+      classes.push('event-registered');
+    } else {
+      classes.push('event-upcoming');
+    }
+
+    return {
+      id: event.id.toString(),
+      title: event.title,
+      startDate: new Date(event.date || new Date()),
+      endDate: new Date(event.date || new Date()),
+      classes,
+      originalEvent: event,
+    };
+  });
 });
 
 const displayPeriodLabel = computed(() => {
@@ -71,11 +90,11 @@ const loadEvents = async () => {
     const studentId = student.id;
 
     // Fetch all events
-    const allEvents = await fetchEvents();
+    const allEvents = await eventsStore.fetchEvents();
     // Fetch only events the student is registered for
     const registeredEvents = await fetchStudentEvents(Number(studentId));
     const registeredEventIds = new Set(registeredEvents.map(e => e.id));
-    events.value = allEvents.map(event => ({
+    events.value = allEvents.map((event: any) => ({
       ...event,
       isRegistered: registeredEventIds.has(event.id),
     }));
@@ -103,7 +122,6 @@ const changeView = (view: string) => {
 
 const goToToday = () => {
   currentPeriodStart.value = new Date();
-  showDate.value = new Date();
 };
 
 const goToPreviousPeriod = () => {
@@ -117,7 +135,6 @@ const goToPreviousPeriod = () => {
       break;
   }
   currentPeriodStart.value = current;
-  showDate.value = current;
 };
 
 const goToNextPeriod = () => {
@@ -131,7 +148,22 @@ const goToNextPeriod = () => {
       break;
   }
   currentPeriodStart.value = current;
-  showDate.value = current;
+};
+
+const handleItemSelect = (value: any) => {
+  const originalItem = value?.originalEvent || value?.originalItem || value;
+  const payload = originalItem?.originalEvent || originalItem;
+  if (payload) {
+    selectedEvent.value = payload;
+    eventDialog.value = true;
+  }
+};
+
+const handleDialogModel = (value: boolean) => {
+  eventDialog.value = value;
+  if (!value) {
+    selectedEvent.value = null;
+  }
 };
 
 onMounted(() => {
@@ -212,8 +244,32 @@ onMounted(() => {
         :show-times="false"
         :time-format-options="{ hour: 'numeric', minute: '2-digit' }"
         class="theme-calendar calendar-large"
-        item-content-height="2.5rem"
-      />
+        item-content-height="20px"
+      >
+        <template #item="{ value, top }">
+          <v-sheet
+            rounded="lg"
+            elevation="3"
+            class="calendar-item cv-item d-flex align-center ps-3 pe-4 text-white font-weight-bold mt-5"
+            :class="value.classes"
+            :style="[value.style, { top }]"
+            variant="elevated"
+              :color="value.classes?.includes('event-past')
+                ? 'black'
+                : value.classes?.includes('event-registered')
+                  ? '#fb8c00'
+                  : 'accent'"
+            role="button"
+            tabindex="0"
+            @click.stop="handleItemSelect(value)"
+            @mousedown.stop
+            @keydown.enter.prevent="handleItemSelect(value)"
+            @keydown.space.prevent="handleItemSelect(value)"
+          >
+            <span class="text-truncate">{{ value.title }}</span>
+          </v-sheet>
+        </template>
+      </CalendarView>
     </div>
     <div v-if="!loading && calendarEvents.length === 0" class="text-center pa-6 pa-sm-8">
       <v-icon color="grey-lighten-1" :size="$vuetify.display.xs ? '48' : '64'" class="mb-3 mb-sm-4">mdi-calendar-blank</v-icon>
@@ -225,7 +281,7 @@ onMounted(() => {
       <v-row class="events-summary">
         <v-col cols="12">
           <div class="d-flex flex-wrap ga-2 ga-sm-3 align-center">
-            <v-chip color="primary" variant="elevated" :size="$vuetify.display.xs ? 'small' : 'default'" prepend-icon="mdi-calendar-check">
+            <v-chip color="#fb8c00" variant="elevated" :size="$vuetify.display.xs ? 'small' : 'default'" prepend-icon="mdi-calendar-check">
               <span class="d-none d-sm-inline">Registered Events</span>
               <span class="d-inline d-sm-none">Registered</span>
             </v-chip>
@@ -233,10 +289,20 @@ onMounted(() => {
               <span class="d-none d-sm-inline">Upcoming Events</span>
               <span class="d-inline d-sm-none">Upcoming</span>
             </v-chip>
+            <v-chip color="black" variant="elevated" :size="$vuetify.display.xs ? 'small' : 'default'" prepend-icon="mdi-calendar-remove">
+              <span class="d-none d-sm-inline">Past Events</span>
+              <span class="d-inline d-sm-none">Past</span>
+            </v-chip>
           </div>
         </v-col>
       </v-row>
     </v-card-text>
+
+    <EventDetailsDialog
+      v-model="eventDialog"
+      :event="selectedEvent"
+      @update:modelValue="handleDialogModel"
+    />
   </v-card>
 </template>
 

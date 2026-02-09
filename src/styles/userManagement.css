@@ -1,0 +1,99 @@
+.v-card-title h3 {
+  margin-bottom: 4px;
+}
+
+/* Match OrganizationsView card look */
+.v-card {
+  border-radius: 12px !important;
+}
+
+.user-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.user-card .v-card-title {
+  background: rgba(var(--v-theme-surface), 0.02);
+  border-bottom: 1px solid rgba(var(--v-theme-primary), 0.1);
+}
+
+.user-info {
+  min-height: 60px;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+
+.gap-4 {
+  gap: 16px;
+}
+
+/* Blocked students specific styles */
+.blocked-events {
+  margin-top: 12px;
+}
+
+.events-list {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* Scrollbar styling for events list */
+.events-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.events-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.events-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.events-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* List view specific styles */
+.user-list-table :deep(.v-data-table__td) {
+  padding: 8px 16px !important;
+}
+
+.blocked-events-inline {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 200px;
+}
+
+.user-list-table :deep(.v-data-table-header) {
+  background-color: rgba(var(--v-theme-primary), 0.05);
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .v-btn-toggle {
+    width: 100%;
+  }
+
+  .v-btn-toggle .v-btn {
+    min-width: 0 !important;
+    flex: 1;
+  }
+
+  .v-btn-toggle .v-btn .text-caption {
+    line-height: 1.2;
+    font-size: 0.65rem !important;
+  }
+}

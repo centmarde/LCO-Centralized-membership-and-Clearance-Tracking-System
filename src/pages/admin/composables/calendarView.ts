@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { useTheme } from 'vuetify'
-import type { Event } from '@/stores/eventsData'
+import type { Event, EventWithLCO } from '@/stores/eventsData'
 
 // Calendar view options
 export const calendarViews = [
@@ -64,7 +64,7 @@ export const dateUtils = {
 // Event classification helpers
 export const eventClassifiers = {
   // Get event status based on date
-  getEventStatus: (event: Event): 'past' | 'today' | 'upcoming' => {
+  getEventStatus: (event: Event | EventWithLCO): 'past' | 'today' | 'upcoming' => {
     if (!event.date) return 'upcoming'
 
     const eventDate = new Date(event.date)
@@ -75,16 +75,22 @@ export const eventClassifiers = {
   },
 
   // Get CSS classes for event styling
-  getEventClasses: (event: Event): string[] => {
+  getEventClasses: (event: Event | EventWithLCO): string[] => {
     const classes = ['event-item']
     const status = eventClassifiers.getEventStatus(event)
 
     classes.push(`${status}-event`)
+
+    // Add LCO specific class if event is an LCO event
+    if ('is_lco' in event && event.is_lco) {
+      classes.push('lco-event')
+    }
+
     return classes
   },
 
   // Get event color based on status and theme
-  getEventColor: (event: Event, themeColors?: any): string => {
+  getEventColor: (event: Event | EventWithLCO, themeColors?: any): string => {
     const status = eventClassifiers.getEventStatus(event)
 
     if (!themeColors) return '#1976d2' // Default blue
@@ -105,7 +111,7 @@ export const eventClassifiers = {
 // Events counting and statistics
 export const eventStats = {
   // Count events by status
-  getEventCounts: (events: Event[]) => {
+  getEventCounts: (events: (Event | EventWithLCO)[]) => {
     const counts = {
       total: events.length,
       past: 0,
@@ -122,7 +128,7 @@ export const eventStats = {
   },
 
   // Filter events by status
-  filterEventsByStatus: (events: Event[], status: 'past' | 'today' | 'upcoming'): Event[] => {
+  filterEventsByStatus: (events: (Event | EventWithLCO)[], status: 'past' | 'today' | 'upcoming'): (Event | EventWithLCO)[] => {
     return events.filter(event => eventClassifiers.getEventStatus(event) === status)
   }
 }
@@ -199,7 +205,7 @@ export const storageUtils = {
 // Calendar formatting helpers
 export const calendarFormatters = {
   // Format events for vue-simple-calendar
-  formatEventsForCalendar: (events: Event[]): any[] => {
+  formatEventsForCalendar: (events: (Event | EventWithLCO)[]): any[] => {
     return events.map(event => ({
       id: event.id.toString(),
       title: event.title,
@@ -233,7 +239,7 @@ export const calendarFormatters = {
 // Event click resolution utilities
 export const eventClickUtils = {
   // Resolve event data from calendar click
-  resolveEventFromClick: (clickEvent: any, allEvents: Event[]): Event | null => {
+  resolveEventFromClick: (clickEvent: any, allEvents: (Event | EventWithLCO)[]): Event | EventWithLCO | null => {
     console.log('Full event object:', clickEvent)
     console.log('Event originalEvent:', clickEvent.originalEvent)
     console.log('Event properties:', Object.keys(clickEvent))
@@ -348,12 +354,12 @@ export function useCalendarView() {
   }
 
   // Format events for calendar display
-  const formatEventsForCalendar = (events: Event[]) => {
+  const formatEventsForCalendar = (events: (Event | EventWithLCO)[]) => {
     return calendarFormatters.formatEventsForCalendar(events)
   }
 
   // Get event counts
-  const getEventCounts = (events: Event[]) => {
+  const getEventCounts = (events: (Event | EventWithLCO)[]) => {
     return eventStats.getEventCounts(events)
   }
 
