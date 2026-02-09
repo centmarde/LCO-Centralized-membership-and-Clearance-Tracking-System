@@ -207,6 +207,8 @@ onMounted(async () => {
                 v-model="eventsDialog"
                 :event="selectedEvent"
                 :member-student-ids="memberStudentIds as any"
+                :organization-id="selectedOrganization?.id"
+                :leader-id="authStore.userData?.id || null"
               />
             </div>
           </v-col>

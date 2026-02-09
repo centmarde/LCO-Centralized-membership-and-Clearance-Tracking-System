@@ -13,6 +13,8 @@ import DeletedOrgDialog from './dialogs/DeletedOrg.vue'
 import { useOrganizations } from './composables/useOrganizations'
 import { useDialogs } from './composables/useDialogs'
 import { useOrganizationMembers } from './composables/useOrganizationMembers'
+import { useEventBlockingStore } from '@/stores/eventBlocking'
+import { useAuthUserStore } from '@/stores/authUser'
 
 // Composables
 const {
@@ -70,6 +72,11 @@ const {
   clearMembersData
 } = useOrganizationMembers()
 
+const eventBlockingStore = useEventBlockingStore()
+const authStore = useAuthUserStore()
+const batchDialog = ref(false)
+const selectedBatchId = ref<string | null>(null)
+
 // Table configuration
 const headers = organizationsTableHeaders
 
@@ -78,6 +85,8 @@ const membersDialog = ref(false)
 const selectedOrganization = ref<any>(null)
 const deletedOrgDialog = ref(false)
 const selectedDeletedOrganization = ref<any>(null)
+const pendingBatches = computed(() => eventBlockingStore.pendingBatches)
+const batchItems = computed(() => eventBlockingStore.batchItems)
 
 // Computed properties
 const activeOrganizations = computed(() => organizations.value.filter(org => !org.deleted_at))
@@ -172,6 +181,25 @@ const handleHardDeleteOrganization = async () => {
   }
 }
 
+const handleOpenBatch = async (batchId: string) => {
+  selectedBatchId.value = batchId
+  batchDialog.value = true
+  await eventBlockingStore.fetchBatchItems(batchId)
+}
+
+const closeBatchDialog = () => {
+  batchDialog.value = false
+  selectedBatchId.value = null
+}
+
+const handleApproveBatch = async (batchId: string) => {
+  await eventBlockingStore.approveBatch(batchId, authStore.userData?.id || null)
+}
+
+const handleDeclineBatch = async (batchId: string) => {
+  await eventBlockingStore.declineBatch(batchId, authStore.userData?.id || null)
+}
+
 // Open dialog to manage member event statuses (Blocked/Cleared)
 const handleOpenMembersStatusDialog = async (organization: any) => {
   if (organization.deleted_at) {
@@ -192,6 +220,7 @@ const handleCloseMembersDialog = () => {
 // Lifecycle
 onMounted(() => {
   fetchOrganizations()
+  eventBlockingStore.fetchPendingBatches()
 })
 </script>
 
@@ -265,6 +294,54 @@ onMounted(() => {
             />
           </v-col>
         </v-row>
+      </v-card-text>
+    </v-card>
+
+    <!-- Pending Batch Blocking Submissions -->
+    <v-card class="mb-6" elevation="2">
+      <v-card-title class="d-flex align-center justify-space-between pa-4 pa-sm-5">
+        <div class="d-flex align-center">
+          <v-icon class="me-2" color="primary">mdi-clipboard-clock</v-icon>
+          <div>
+            <div class="text-subtitle-1 font-weight-bold">Pending Batch Blocking</div>
+            <div class="text-caption text-medium-emphasis">Submitted by organization leaders for approval</div>
+          </div>
+        </div>
+        <v-chip color="primary" variant="tonal" size="small">{{ pendingBatches.length }} pending</v-chip>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="pa-4 pa-sm-5">
+        <div v-if="eventBlockingStore.loading" class="text-center py-4">
+          <v-progress-circular indeterminate color="primary" />
+        </div>
+        <div v-else-if="pendingBatches.length === 0" class="text-medium-emphasis text-body-2">No pending submissions.</div>
+        <v-table v-else density="compact">
+          <thead>
+            <tr>
+              <th class="text-left">Event</th>
+              <th class="text-left">Organization</th>
+              <th class="text-left">Leader</th>
+              <th class="text-left">Submitted</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="batch in pendingBatches" :key="batch.id">
+              <td>
+                <div class="font-weight-medium">{{ batch.event?.title || 'Unknown Event' }}</div>
+                <div class="text-caption text-medium-emphasis">{{ formatDate(batch.event?.date || undefined) }}</div>
+              </td>
+              <td>{{ batch.organization?.title || batch.organization_id }}</td>
+              <td>{{ batch.leader?.full_name || batch.leader?.email || batch.leader_id || 'Unknown' }}</td>
+              <td>{{ formatDate(batch.submitted_at || undefined) }}</td>
+              <td class="text-right">
+                <v-btn size="small" variant="text" color="primary" @click="handleOpenBatch(batch.id)">View</v-btn>
+                <v-btn size="small" variant="tonal" color="success" class="ml-1" :loading="eventBlockingStore.approving" @click="handleApproveBatch(batch.id)">Approve</v-btn>
+                <v-btn size="small" variant="text" color="error" class="ml-1" :loading="eventBlockingStore.approving" @click="handleDeclineBatch(batch.id)">Decline</v-btn>
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
       </v-card-text>
     </v-card>
 
@@ -492,6 +569,49 @@ onMounted(() => {
       @purge="handleHardDeleteOrganization"
       @close="closeDeletedDialog"
     />
+
+    <v-dialog v-model="batchDialog" max-width="720px">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="me-2" color="primary">mdi-clipboard-list</v-icon>
+          Batch Details
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="closeBatchDialog" />
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-4">
+          <div v-if="eventBlockingStore.loading" class="text-center py-4">
+            <v-progress-circular indeterminate color="primary" />
+          </div>
+          <div v-else-if="batchItems.length === 0" class="text-medium-emphasis text-body-2">No students in this batch.</div>
+          <v-table v-else density="compact">
+            <thead>
+              <tr>
+                <th class="text-left">Student</th>
+                <th class="text-left">Student #</th>
+                <th class="text-left">Email</th>
+                <th class="text-left">Present</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in batchItems" :key="item.id">
+                <td>{{ item.student?.full_name || item.student?.email || item.student_id }}</td>
+                <td>{{ item.student?.student_number || '—' }}</td>
+                <td>{{ item.student?.email || '—' }}</td>
+                <td>
+                  <v-chip color="success" variant="tonal" size="x-small" v-if="item.present">Present</v-chip>
+                  <v-chip color="grey" variant="tonal" size="x-small" v-else>Not marked</v-chip>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="closeBatchDialog">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
             </div>
           </v-col>
         </v-row>
