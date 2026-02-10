@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useTheme } from "vuetify";
 import { createDynamicThemeConfigFromExternal } from "@/themes/index";
+import { useAuthUserStore } from "@/stores/authUser";
 
 // Composables
 const router = useRouter();
@@ -13,8 +14,36 @@ const themeLoading = ref(true);
 const themeError = ref<string | null>(null);
 
 // Methods
-const navigateToDashboard = () => {
-  router.push("/account/profile");
+const navigateToDashboard = async () => {
+  try {
+    const authStore = useAuthUserStore();
+    const currentUserResult = await authStore.getCurrentUser();
+
+    if (currentUserResult.user) {
+      const userRoleId = currentUserResult.user.user_metadata?.role;
+
+      // Role-based navigation
+      switch (userRoleId) {
+        case 2: // Student/User
+          router.push("/account/profile");
+          break;
+        case 3: // Organization Leader
+          router.push("/organization/members");
+          break;
+        case 1: // LCO Admin
+        default:
+          router.push("/admin/organizations");
+          break;
+      }
+    } else {
+      // Fallback if no user found
+      router.push("/account/profile");
+    }
+  } catch (error) {
+    console.error('Error determining role for navigation:', error);
+    // Fallback to default if there's an error
+    router.push("/account/profile");
+  }
 };
 
 const goBack = () => {
