@@ -13,6 +13,9 @@ const emit = defineEmits<{
   'update:search': [value: string]
   'update:viewMode': [value: 'all' | 'blocked']
   'update:layoutMode': [value: 'card' | 'list']
+  'export:pdf': []
+  'export:docx': []
+  'export:excel': []
 }>()
 </script>
 
@@ -64,7 +67,7 @@ const emit = defineEmits<{
             </v-btn-toggle>
           </v-col>
           <v-col cols="12" class="pt-2">
-            <div class="d-flex justify-center">
+            <div class="d-flex justify-center align-center gap-2">
               <v-btn-toggle
                 :model-value="layoutMode"
                 @update:model-value="emit('update:layoutMode', $event)"
@@ -82,6 +85,43 @@ const emit = defineEmits<{
                   <v-tooltip activator="parent" location="top">List View</v-tooltip>
                 </v-btn>
               </v-btn-toggle>
+
+              <!-- Export menu for blocked students -->
+              <v-menu v-if="viewMode === 'blocked' && blockedStudentsCount > 0">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    variant="outlined"
+                    size="small"
+										class="mx-2"
+                    density="compact"
+                    icon
+                  >
+                    <v-icon>mdi-dots-vertical</v-icon>
+                    <v-tooltip activator="parent" location="top">Export Options</v-tooltip>
+                  </v-btn>
+                </template>
+                <v-list density="compact" min-width="120">
+                  <v-list-item @click="emit('export:pdf')">
+                    <template v-slot:prepend>
+                      <v-icon color="error">mdi-file-pdf-box</v-icon>
+                    </template>
+                    <v-list-item-title>Export to PDF</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="emit('export:docx')">
+                    <template v-slot:prepend>
+                      <v-icon color="primary">mdi-file-document</v-icon>
+                    </template>
+                    <v-list-item-title>Export to DOCX</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="emit('export:excel')">
+                    <template v-slot:prepend>
+                      <v-icon color="success">mdi-file-excel</v-icon>
+                    </template>
+                    <v-list-item-title>Export to Excel</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
             </div>
           </v-col>
         </v-row>
@@ -132,6 +172,7 @@ const emit = defineEmits<{
             variant="outlined"
             density="compact"
             divided
+            class="me-2"
           >
             <v-btn value="card" size="small">
               <v-icon>mdi-view-grid</v-icon>
@@ -142,6 +183,42 @@ const emit = defineEmits<{
               <v-tooltip activator="parent" location="top">List View</v-tooltip>
             </v-btn>
           </v-btn-toggle>
+
+          <!-- Export menu for blocked students -->
+          <v-menu v-if="viewMode === 'blocked' && blockedStudentsCount > 0">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                variant="outlined"
+                size="small"
+                density="compact"
+                icon
+              >
+                <v-icon>mdi-dots-vertical</v-icon>
+                <v-tooltip activator="parent" location="top">Export Options</v-tooltip>
+              </v-btn>
+            </template>
+            <v-list density="compact" min-width="120">
+              <v-list-item @click="emit('export:pdf')">
+                <template v-slot:prepend>
+                  <v-icon color="error">mdi-file-pdf-box</v-icon>
+                </template>
+                <v-list-item-title>Export to PDF</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="emit('export:docx')">
+                <template v-slot:prepend>
+                  <v-icon color="primary">mdi-file-document</v-icon>
+                </template>
+                <v-list-item-title>Export to DOCX</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="emit('export:excel')">
+                <template v-slot:prepend>
+                  <v-icon color="success">mdi-file-excel</v-icon>
+                </template>
+                <v-list-item-title>Export to Excel</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
         </v-col>
       </v-row>
     </v-card-text>

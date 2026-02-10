@@ -77,6 +77,20 @@ export function useOrganizations() {
   }
 
   /**
+   * Restores a previously soft-deleted organization
+   */
+  const restoreOrganization = async (organization: Organization): Promise<boolean> => {
+    return await store.restoreOrganization(organization.id)
+  }
+
+  /**
+   * Permanently deletes an organization
+   */
+  const hardDeleteOrganization = async (organization: Organization): Promise<boolean> => {
+    return await store.hardDeleteOrganization(organization.id)
+  }
+
+  /**
    * Prepares the form for creating a new organization
    */
   const prepareCreateOrganization = () => {
@@ -135,6 +149,8 @@ export function useOrganizations() {
     fetchOrganizationLeaders,
     saveOrganization,
     deleteOrganization,
+    restoreOrganization,
+    hardDeleteOrganization,
     prepareCreateOrganization,
     prepareEditOrganization,
     prepareDeleteOrganization,

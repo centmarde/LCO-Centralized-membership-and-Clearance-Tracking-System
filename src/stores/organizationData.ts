@@ -12,6 +12,7 @@ export interface Organization {
   created_at?: string
   leader_id?: string | null
   membership_deadline?: string | null
+  deleted_at?: string | null
   leader?: {
     id: string
     email: string
@@ -59,7 +60,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
           title, 
           created_at, 
           leader_id,
-          membership_deadline
+          membership_deadline,
+          deleted_at
         `)
         .order('created_at', { ascending: false })
 
@@ -94,6 +96,7 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
           created_at: org.created_at,
           leader_id: org.leader_id,
           membership_deadline: org.membership_deadline,
+          deleted_at: org.deleted_at,
           leader
         }
       })
@@ -232,27 +235,121 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
   }
 
   /**
-   * Deletes an organization
+   * Soft-deletes an organization. Keeps the row for recovery, drops members, and demotes the leader to student.
    */
   const deleteOrganization = async (id: string): Promise<boolean> => {
     deleting.value = true
     try {
+      // Fetch current organization to capture leader before demotion
+      const existing = organizations.value.find(o => o.id === id)
+      const leaderId = existing?.leader_id || null
+
+      // Mark as deleted and clear leader_id
+      const { error: updateErr } = await supabase
+        .from('organizations')
+        .update({
+          deleted_at: new Date().toISOString(),
+          leader_id: null
+        })
+        .eq('id', id)
+
+      if (updateErr) {
+        toast.error('Failed to delete organization: ' + getErrorMessage(updateErr))
+        return false
+      }
+
+      // Remove all members tied to this organization
+      const { error: membersErr } = await supabase
+        .from('organization_members')
+        .delete()
+        .eq('organization_id', id)
+
+      if (membersErr) {
+        console.warn('Failed to remove organization members on delete:', membersErr)
+      }
+
+      // Demote leader to student (role_id = 2)
+      if (leaderId) {
+        try {
+          const authStore = useAuthUserStore()
+          await authStore.updateUser(leaderId, { role_id: 2 })
+        } catch (demoteErr) {
+          console.warn('Failed to demote organization leader to student:', demoteErr)
+        }
+      }
+
+      toast.success('Organization moved to deleted and members cleared.')
+      await fetchOrganizations()
+      return true
+
+    } catch (error: any) {
+      toast.error('An unexpected error occurred while deleting organization')
+      console.error('Error:', error)
+      return false
+    } finally {
+      deleting.value = false
+    }
+  }
+
+  /**
+   * Restores a soft-deleted organization
+   */
+  const restoreOrganization = async (id: string): Promise<boolean> => {
+    saving.value = true
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ deleted_at: null })
+        .eq('id', id)
+
+      if (error) {
+        toast.error('Failed to restore organization: ' + getErrorMessage(error))
+        return false
+      }
+
+      toast.success('Organization restored. Assign a leader and add members as needed.')
+      await fetchOrganizations()
+      return true
+    } catch (error: any) {
+      toast.error('An unexpected error occurred while restoring organization')
+      console.error('Error:', error)
+      return false
+    } finally {
+      saving.value = false
+    }
+  }
+
+  /**
+   * Permanently deletes an organization record
+   */
+  const hardDeleteOrganization = async (id: string): Promise<boolean> => {
+    deleting.value = true
+    try {
+      // Clean up members first (idempotent if already cleared)
+      const { error: membersErr } = await supabase
+        .from('organization_members')
+        .delete()
+        .eq('organization_id', id)
+
+      if (membersErr) {
+        console.warn('Failed to remove organization members before hard delete:', membersErr)
+      }
+
       const { error } = await supabase
         .from('organizations')
         .delete()
         .eq('id', id)
 
       if (error) {
-        toast.error('Failed to delete organization: ' + getErrorMessage(error))
+        toast.error('Failed to permanently delete organization: ' + getErrorMessage(error))
         return false
       }
 
-      toast.success('Organization deleted successfully!')
+      toast.success('Organization permanently deleted.')
       await fetchOrganizations()
       return true
-
     } catch (error: any) {
-      toast.error('An unexpected error occurred while deleting organization')
+      toast.error('An unexpected error occurred while permanently deleting organization')
       console.error('Error:', error)
       return false
     } finally {
@@ -302,6 +399,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
     createOrganization,
     updateOrganization,
     deleteOrganization,
+    restoreOrganization,
+    hardDeleteOrganization,
     fetchOrganizationStats,
     findOrganizationById
   }
