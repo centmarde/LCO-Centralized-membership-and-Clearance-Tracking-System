@@ -3,8 +3,11 @@ import { onMounted, computed, ref } from 'vue'
 import {
   getEmailInitials,
   formatDate,
-  organizationsTableHeaders
+  organizationsTableHeaders,
+  organizationCategories,
+  formatOrganizationCategory
 } from '@/utils/helpers'
+import type { OrganizationCategory } from '@/utils/helpers'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
 import OrganizationFormDialog from './dialogs/OrganizationFormDialog.vue'
 import OrganizationDeleteDialog from './dialogs/OrganizationDeleteDialog.vue'
@@ -79,6 +82,11 @@ const selectedBatchId = ref<string | null>(null)
 
 // Table configuration
 const headers = organizationsTableHeaders
+const categoryOptions = organizationCategories
+const categorySelectItems = computed(() => [
+  { title: 'All categories', short: 'All', value: 'all' as const },
+  ...categoryOptions
+])
 
 // Member dialog state
 const membersDialog = ref(false)
@@ -87,30 +95,31 @@ const deletedOrgDialog = ref(false)
 const selectedDeletedOrganization = ref<any>(null)
 const pendingBatches = computed(() => eventBlockingStore.pendingBatches)
 const batchItems = computed(() => eventBlockingStore.batchItems)
+const categoryFilter = ref<'all' | OrganizationCategory>('all')
 
 // Computed properties
 const activeOrganizations = computed(() => organizations.value.filter(org => !org.deleted_at))
 const deletedOrganizations = computed(() => organizations.value.filter(org => !!org.deleted_at))
 
-const filteredActiveOrganizations = computed(() => {
-  if (!search.value) return activeOrganizations.value
-  const searchTerm = search.value.toLowerCase()
-  return activeOrganizations.value.filter(org =>
-    org.title.toLowerCase().includes(searchTerm) ||
-    org.leader?.full_name?.toLowerCase().includes(searchTerm) ||
-    org.leader?.email?.toLowerCase().includes(searchTerm)
-  )
-})
+const applyFilters = (items: any[]) => {
+  let result = items
 
-const filteredDeletedOrganizations = computed(() => {
-  if (!search.value) return deletedOrganizations.value
+  if (categoryFilter.value !== 'all') {
+    result = result.filter(org => org.category === categoryFilter.value)
+  }
+
+  if (!search.value) return result
+
   const searchTerm = search.value.toLowerCase()
-  return deletedOrganizations.value.filter(org =>
+  return result.filter(org =>
     org.title.toLowerCase().includes(searchTerm) ||
     org.leader?.full_name?.toLowerCase().includes(searchTerm) ||
     org.leader?.email?.toLowerCase().includes(searchTerm)
   )
-})
+}
+
+const filteredActiveOrganizations = computed(() => applyFilters(activeOrganizations.value))
+const filteredDeletedOrganizations = computed(() => applyFilters(deletedOrganizations.value))
 
 // Event handlers
 const handleCreateOrganization = () => {
@@ -278,19 +287,50 @@ onMounted(() => {
       </v-card-title>
     </v-card>
 
-    <!-- Search Bar -->
+    <!-- Category Filter + Search -->
     <v-card class="mb-4" elevation="2">
       <v-card-text class="pa-3 pa-sm-4">
-        <v-row>
-          <v-col cols="12" md="6">
+        <v-row align="center" class="g-3 g-sm-4" :class="{'flex-column': $vuetify.display.xs}">
+          <v-col cols="12" md="7">
+            <v-select
+              v-model="categoryFilter"
+              :items="categorySelectItems"
+              item-title="title"
+              item-value="value"
+              label="Filter by category"
+              variant="outlined"
+              density="comfortable"
+              prepend-inner-icon="mdi-filter-variant"
+              class="category-select filter-input"
+              hide-details
+            >
+              <template #selection="{ item }">
+                <div class="d-flex align-center">
+                  <span class="font-weight-medium">{{ item.raw.short }}</span>
+                  <span class="text-caption text-medium-emphasis ml-2">{{ item.raw.title }}</span>
+                </div>
+              </template>
+              <template #item="{ props, item }">
+                <v-list-item
+                  v-bind="props"
+                  :title="item.raw.title"
+                  :subtitle="item.raw.short"
+                />
+              </template>
+            </v-select>
+          </v-col>
+
+          <v-col cols="12" md="5">
             <v-text-field
               v-model="search"
               prepend-inner-icon="mdi-magnify"
-              label="Search organizations..."
+              label="Search organizations"
               variant="outlined"
               hide-details
               clearable
-              density="compact"
+              density="comfortable"
+              class="filter-input"
+              placeholder="Search organizations..."
             />
           </v-col>
         </v-row>
@@ -394,6 +434,11 @@ onMounted(() => {
                 <div class="flex-grow-1">
                   <v-icon color="primary" :size="$vuetify.display.xs ? '20' : '24'" class="mr-2">mdi-domain</v-icon>
                   <span class="text-body-1 text-sm-h6 font-weight-bold">{{ organization.title }}</span>
+                  <div class="mt-1">
+                    <v-chip color="primary" variant="tonal" size="x-small">
+                      {{ formatOrganizationCategory(organization.category) }}
+                    </v-chip>
+                  </div>
                 </div>
                 <!-- Action Menu -->
                 <v-menu location="bottom end">
@@ -506,6 +551,11 @@ onMounted(() => {
             </v-card-title>
 
             <v-card-text class="pa-3 pa-sm-4 pt-0">
+              <div class="mb-3">
+                <v-chip color="primary" variant="tonal" size="x-small">
+                  {{ formatOrganizationCategory(organization.category) }}
+                </v-chip>
+              </div>
               <div class="text-caption text-medium-emphasis mb-2">Deleted At</div>
               <div class="d-flex align-center mb-3">
                 <v-icon :size="$vuetify.display.xs ? '14' : '16'" color="grey" class="mr-1">mdi-calendar-remove</v-icon>
@@ -625,6 +675,18 @@ onMounted(() => {
   padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.category-select {
+  width: 100%;
+}
+
+.filter-input :deep(.v-field) {
+  min-height: 56px;
+}
+
+.filter-input :deep(.v-field__input) {
+  align-items: center;
 }
 
 .v-card {
