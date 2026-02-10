@@ -3,16 +3,18 @@ import { onMounted, computed, ref } from 'vue'
 import {
   getEmailInitials,
   formatDate,
-  createViewMembersHandler,
   organizationsTableHeaders
 } from '@/utils/helpers'
 import InnerLayoutWrapper from '@/layouts/InnerLayoutWrapper.vue'
 import OrganizationFormDialog from './dialogs/OrganizationFormDialog.vue'
 import OrganizationDeleteDialog from './dialogs/OrganizationDeleteDialog.vue'
 import OrganizationMembersStatusDialog from './dialogs/OrganizationMembersStatusDialog.vue'
+import DeletedOrgDialog from './dialogs/DeletedOrg.vue'
 import { useOrganizations } from './composables/useOrganizations'
 import { useDialogs } from './composables/useDialogs'
 import { useOrganizationMembers } from './composables/useOrganizationMembers'
+import { useEventBlockingStore } from '@/stores/eventBlocking'
+import { useAuthUserStore } from '@/stores/authUser'
 
 // Composables
 const {
@@ -30,6 +32,8 @@ const {
   fetchOrganizations,
   saveOrganization,
   deleteOrganization,
+  restoreOrganization,
+  hardDeleteOrganization,
   prepareCreateOrganization,
   prepareEditOrganization,
   prepareDeleteOrganization,
@@ -68,19 +72,40 @@ const {
   clearMembersData
 } = useOrganizationMembers()
 
+const eventBlockingStore = useEventBlockingStore()
+const authStore = useAuthUserStore()
+const batchDialog = ref(false)
+const selectedBatchId = ref<string | null>(null)
+
 // Table configuration
 const headers = organizationsTableHeaders
 
 // Member dialog state
 const membersDialog = ref(false)
 const selectedOrganization = ref<any>(null)
+const deletedOrgDialog = ref(false)
+const selectedDeletedOrganization = ref<any>(null)
+const pendingBatches = computed(() => eventBlockingStore.pendingBatches)
+const batchItems = computed(() => eventBlockingStore.batchItems)
 
 // Computed properties
-const filteredOrganizations = computed(() => {
-  if (!search.value) return organizations.value
+const activeOrganizations = computed(() => organizations.value.filter(org => !org.deleted_at))
+const deletedOrganizations = computed(() => organizations.value.filter(org => !!org.deleted_at))
 
+const filteredActiveOrganizations = computed(() => {
+  if (!search.value) return activeOrganizations.value
   const searchTerm = search.value.toLowerCase()
-  return organizations.value.filter(org =>
+  return activeOrganizations.value.filter(org =>
+    org.title.toLowerCase().includes(searchTerm) ||
+    org.leader?.full_name?.toLowerCase().includes(searchTerm) ||
+    org.leader?.email?.toLowerCase().includes(searchTerm)
+  )
+})
+
+const filteredDeletedOrganizations = computed(() => {
+  if (!search.value) return deletedOrganizations.value
+  const searchTerm = search.value.toLowerCase()
+  return deletedOrganizations.value.filter(org =>
     org.title.toLowerCase().includes(searchTerm) ||
     org.leader?.full_name?.toLowerCase().includes(searchTerm) ||
     org.leader?.email?.toLowerCase().includes(searchTerm)
@@ -125,8 +150,62 @@ const handleConfirmDelete = async () => {
   }
 }
 
+const handleOpenDeletedDialog = (organization: any) => {
+  selectedDeletedOrganization.value = organization
+  deletedOrgDialog.value = true
+}
+
+const closeDeletedDialog = () => {
+  deletedOrgDialog.value = false
+  selectedDeletedOrganization.value = null
+}
+
+const handleRecoverOrganizationFromCard = async (organization: any) => {
+  selectedDeletedOrganization.value = organization
+  await handleRecoverOrganization()
+}
+
+const handleRecoverOrganization = async () => {
+  if (!selectedDeletedOrganization.value) return
+  const success = await restoreOrganization(selectedDeletedOrganization.value)
+  if (success) {
+    closeDeletedDialog()
+  }
+}
+
+const handleHardDeleteOrganization = async () => {
+  if (!selectedDeletedOrganization.value) return
+  const success = await hardDeleteOrganization(selectedDeletedOrganization.value)
+  if (success) {
+    closeDeletedDialog()
+  }
+}
+
+const handleOpenBatch = async (batchId: string) => {
+  selectedBatchId.value = batchId
+  batchDialog.value = true
+  await eventBlockingStore.fetchBatchItems(batchId)
+}
+
+const closeBatchDialog = () => {
+  batchDialog.value = false
+  selectedBatchId.value = null
+}
+
+const handleApproveBatch = async (batchId: string) => {
+  await eventBlockingStore.approveBatch(batchId, authStore.userData?.id || null)
+}
+
+const handleDeclineBatch = async (batchId: string) => {
+  await eventBlockingStore.declineBatch(batchId, authStore.userData?.id || null)
+}
+
 // Open dialog to manage member event statuses (Blocked/Cleared)
 const handleOpenMembersStatusDialog = async (organization: any) => {
+  if (organization.deleted_at) {
+    handleOpenDeletedDialog(organization)
+    return
+  }
   selectedOrganization.value = organization
   membersDialog.value = true
   await fetchOrganizationMembers(organization.id)
@@ -141,6 +220,7 @@ const handleCloseMembersDialog = () => {
 // Lifecycle
 onMounted(() => {
   fetchOrganizations()
+  eventBlockingStore.fetchPendingBatches()
 })
 </script>
 
@@ -217,13 +297,61 @@ onMounted(() => {
       </v-card-text>
     </v-card>
 
+    <!-- Pending Batch Blocking Submissions -->
+    <v-card class="mb-6" elevation="2">
+      <v-card-title class="d-flex align-center justify-space-between pa-4 pa-sm-5">
+        <div class="d-flex align-center">
+          <v-icon class="me-2" color="primary">mdi-clipboard-clock</v-icon>
+          <div>
+            <div class="text-subtitle-1 font-weight-bold">Pending Batch Blocking</div>
+            <div class="text-caption text-medium-emphasis">Submitted by organization leaders for approval</div>
+          </div>
+        </div>
+        <v-chip color="primary" variant="tonal" size="small">{{ pendingBatches.length }} pending</v-chip>
+      </v-card-title>
+      <v-divider />
+      <v-card-text class="pa-4 pa-sm-5">
+        <div v-if="eventBlockingStore.loading" class="text-center py-4">
+          <v-progress-circular indeterminate color="primary" />
+        </div>
+        <div v-else-if="pendingBatches.length === 0" class="text-medium-emphasis text-body-2">No pending submissions.</div>
+        <v-table v-else density="compact">
+          <thead>
+            <tr>
+              <th class="text-left">Event</th>
+              <th class="text-left">Organization</th>
+              <th class="text-left">Leader</th>
+              <th class="text-left">Submitted</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="batch in pendingBatches" :key="batch.id">
+              <td>
+                <div class="font-weight-medium">{{ batch.event?.title || 'Unknown Event' }}</div>
+                <div class="text-caption text-medium-emphasis">{{ formatDate(batch.event?.date || undefined) }}</div>
+              </td>
+              <td>{{ batch.organization?.title || batch.organization_id }}</td>
+              <td>{{ batch.leader?.full_name || batch.leader?.email || batch.leader_id || 'Unknown' }}</td>
+              <td>{{ formatDate(batch.submitted_at || undefined) }}</td>
+              <td class="text-right">
+                <v-btn size="small" variant="text" color="primary" @click="handleOpenBatch(batch.id)">View</v-btn>
+                <v-btn size="small" variant="tonal" color="success" class="ml-1" :loading="eventBlockingStore.approving" @click="handleApproveBatch(batch.id)">Approve</v-btn>
+                <v-btn size="small" variant="text" color="error" class="ml-1" :loading="eventBlockingStore.approving" @click="handleDeclineBatch(batch.id)">Decline</v-btn>
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-card-text>
+    </v-card>
+
     <!-- Organizations Cards Grid -->
     <div v-if="loading" class="text-center pa-6 pa-sm-8">
       <v-progress-circular indeterminate color="primary" :size="$vuetify.display.xs ? '48' : '60'" class="mb-3 mb-sm-4" />
       <div class="text-body-1 text-sm-h6">Loading organizations...</div>
     </div>
 
-    <div v-else-if="filteredOrganizations.length === 0 && !loading">
+    <div v-else-if="filteredActiveOrganizations.length === 0 && !loading">
       <v-card elevation="2" class="text-center pa-6 pa-sm-8">
         <v-icon :size="$vuetify.display.xs ? '64' : '80'" color="grey-lighten-1" class="mb-3 mb-sm-4">mdi-domain-off</v-icon>
         <h3 class="text-h6 text-sm-h5 mb-2">No organizations found</h3>
@@ -246,7 +374,7 @@ onMounted(() => {
     <div v-else>
       <v-row>
         <v-col
-          v-for="organization in filteredOrganizations"
+          v-for="organization in filteredActiveOrganizations"
           :key="organization.id"
           cols="12"
           sm="6"
@@ -297,7 +425,7 @@ onMounted(() => {
                       prepend-icon="mdi-delete"
                       class="text-error"
                     >
-                      <v-list-item-title>Delete</v-list-item-title>
+                      <v-list-item-title>Move to Deleted</v-list-item-title>
                     </v-list-item>
                   </v-list>
                 </v-menu>
@@ -349,6 +477,59 @@ onMounted(() => {
       </v-row>
     </div>
 
+    <!-- Deleted Organizations Section -->
+    <div v-if="filteredDeletedOrganizations.length > 0" class="mt-8">
+      <div class="d-flex align-center mb-3">
+        <v-icon class="me-2" color="error">mdi-delete-clock</v-icon>
+        <span class="text-subtitle-1 font-weight-bold">Deleted Organizations (Recoverable)</span>
+      </div>
+      <v-row>
+        <v-col
+          v-for="organization in filteredDeletedOrganizations"
+          :key="organization.id"
+          cols="12"
+          sm="6"
+          md="4"
+          lg="3"
+        >
+          <v-card
+            elevation="1"
+            rounded="lg"
+            class="organization-card fill-height"
+          >
+            <v-card-title class="pa-3 pa-sm-4 pb-2 d-flex justify-space-between align-center">
+              <div class="d-flex align-center">
+                <v-icon color="error" :size="$vuetify.display.xs ? '20' : '24'" class="mr-2">mdi-domain-off</v-icon>
+                <span class="text-body-1 text-sm-h6 font-weight-bold">{{ organization.title }}</span>
+              </div>
+              <v-chip color="error" variant="tonal" size="x-small">Deleted</v-chip>
+            </v-card-title>
+
+            <v-card-text class="pa-3 pa-sm-4 pt-0">
+              <div class="text-caption text-medium-emphasis mb-2">Deleted At</div>
+              <div class="d-flex align-center mb-3">
+                <v-icon :size="$vuetify.display.xs ? '14' : '16'" color="grey" class="mr-1">mdi-calendar-remove</v-icon>
+                <span class="text-caption text-sm-body-2">{{ formatDate(organization.deleted_at || undefined) }}</span>
+              </div>
+
+              <v-alert type="warning" variant="tonal" density="comfortable" class="mb-3">
+                Members removed and leader reset to student. Recover to use again.
+              </v-alert>
+
+              <div class="d-flex flex-column">
+                <v-btn color="primary" variant="tonal" block class="mb-2" @click="handleRecoverOrganizationFromCard(organization)" :loading="saving" :disabled="deleting">
+                  Recover
+                </v-btn>
+                <v-btn color="error" variant="text" block @click="handleOpenDeletedDialog(organization)" :loading="deleting" :disabled="saving">
+                  Options
+                </v-btn>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
     <!-- Create/Edit Organization Dialog -->
     <OrganizationFormDialog
       v-model:dialog="dialog"
@@ -379,6 +560,58 @@ onMounted(() => {
       :members="members"
       @close="handleCloseMembersDialog"
     />
+
+    <DeletedOrgDialog
+      v-model:dialog="deletedOrgDialog"
+      :organization="selectedDeletedOrganization"
+      :loading="deleting || saving"
+      @recover="handleRecoverOrganization"
+      @purge="handleHardDeleteOrganization"
+      @close="closeDeletedDialog"
+    />
+
+    <v-dialog v-model="batchDialog" max-width="720px">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="me-2" color="primary">mdi-clipboard-list</v-icon>
+          Batch Details
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="closeBatchDialog" />
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-4">
+          <div v-if="eventBlockingStore.loading" class="text-center py-4">
+            <v-progress-circular indeterminate color="primary" />
+          </div>
+          <div v-else-if="batchItems.length === 0" class="text-medium-emphasis text-body-2">No students in this batch.</div>
+          <v-table v-else density="compact">
+            <thead>
+              <tr>
+                <th class="text-left">Student</th>
+                <th class="text-left">Student #</th>
+                <th class="text-left">Email</th>
+                <th class="text-left">Present</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in batchItems" :key="item.id">
+                <td>{{ item.student?.full_name || item.student?.email || item.student_id }}</td>
+                <td>{{ item.student?.student_number || '—' }}</td>
+                <td>{{ item.student?.email || '—' }}</td>
+                <td>
+                  <v-chip color="success" variant="tonal" size="x-small" v-if="item.present">Present</v-chip>
+                  <v-chip color="grey" variant="tonal" size="x-small" v-else>Not marked</v-chip>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="closeBatchDialog">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
             </div>
           </v-col>
         </v-row>

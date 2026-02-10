@@ -26,6 +26,9 @@ import {
   type UserStatusDisplay
 } from '@/utils/helpers'
 
+// Export utilities
+import { exportBlockedStudentsToPDF, exportBlockedStudentsToDocx, exportBlockedStudentsToExcel } from '@/utils/exportUtils'
+
 interface User {
   id: string
   email?: string
@@ -199,6 +202,37 @@ const onUserDeleted = async () => {
   await refreshData() // Refresh the user list and student event statuses
 }
 
+// Export functions
+const handleExportToPDF = () => {
+  try {
+    exportBlockedStudentsToPDF(blockedStudents.value, studentEventStatusMap.value)
+    toast.success('PDF export completed successfully!')
+  } catch (error) {
+    toast.error('Failed to export PDF: ' + getErrorMessage(error))
+    console.error('PDF export error:', error)
+  }
+}
+
+const handleExportToDocx = async () => {
+  try {
+    await exportBlockedStudentsToDocx(blockedStudents.value, studentEventStatusMap.value)
+    toast.success('DOCX export completed successfully!')
+  } catch (error) {
+    toast.error('Failed to export DOCX: ' + getErrorMessage(error))
+    console.error('DOCX export error:', error)
+  }
+}
+
+const handleExportToExcel = () => {
+  try {
+    exportBlockedStudentsToExcel(blockedStudents.value, studentEventStatusMap.value)
+    toast.success('Excel export completed successfully!')
+  } catch (error) {
+    toast.error('Failed to export Excel: ' + getErrorMessage(error))
+    console.error('Excel export error:', error)
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   await refreshData()
@@ -221,6 +255,9 @@ onMounted(async () => {
       v-model:layout-mode="layoutMode"
       :all-users-count="authStore.users.length"
       :blocked-students-count="blockedStudents.length"
+      @export:pdf="handleExportToPDF"
+      @export:docx="handleExportToDocx"
+      @export:excel="handleExportToExcel"
     />
 
     <!-- Status Summary -->

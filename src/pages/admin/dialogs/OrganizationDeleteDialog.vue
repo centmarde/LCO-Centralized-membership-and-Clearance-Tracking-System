@@ -3,11 +3,11 @@
     <v-card>
       <v-card-title class="text-h5 text-center">
         <v-icon color="error" size="large" class="mb-2">mdi-alert-circle</v-icon>
-        <div>Confirm Deletion</div>
+        <div>Move Organization to Deleted</div>
       </v-card-title>
       
       <v-card-text class="text-center">
-        <p>Are you sure you want to delete this organization?</p>
+        <p>Are you sure you want to move this organization to the deleted list?</p>
         <div v-if="organizationToDelete" class="mt-4 pa-3 bg-grey-lighten-4 rounded">
           <div class="text-h6 font-weight-bold">{{ organizationToDelete.title }}</div>
           <div v-if="organizationToDelete.leader" class="text-body-2 text-grey-darken-1 mt-1">
@@ -18,7 +18,7 @@
           </div>
         </div>
         <v-alert type="warning" variant="tonal" class="text-left mt-4">
-          <strong>Warning:</strong> This action cannot be undone. All associated data will be affected.
+          <strong>Note:</strong> The organization can be recovered later. Members will be removed and the leader will revert to student.
         </v-alert>
       </v-card-text>
 
@@ -33,7 +33,7 @@
           @click="handleConfirm"
           :loading="deleting"
         >
-          Delete Organization
+          Confirm Move
         </v-btn>
       </v-card-actions>
     </v-card>
