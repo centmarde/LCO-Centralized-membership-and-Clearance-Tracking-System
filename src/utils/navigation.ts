@@ -40,6 +40,12 @@ export const navigationConfig: NavigationGroup[] = [
         icon: 'mdi-account-group',
         route: '/organization/members',
         permission: 'organization.members.view'
+      },
+      {
+        title: 'Event Management',
+        icon: 'mdi-calendar-multiple',
+        route: '/organization/events',
+        permission: 'organization.events.manage'
       }
     ]
   },
