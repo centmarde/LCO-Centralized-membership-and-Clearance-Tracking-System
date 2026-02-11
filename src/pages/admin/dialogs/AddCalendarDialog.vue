@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import { useAddCalendarDialog } from '@/pages/admin/composables/calendarDialog'
 import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
 import LcoEventWarning from '@/components/admin/LcoEventWarning.vue'
@@ -13,10 +13,12 @@ defineOptions({
 interface Props {
   modelValue: boolean
   selectedDate?: Date | null
+  lockedOrganizationId?: string | number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  selectedDate: null
+  selectedDate: null,
+  lockedOrganizationId: null
 })
 
 // Emits
@@ -45,6 +47,21 @@ const {
   fetchOrganizations
 } = useOrganizations()
 
+const isOrganizationLocked = computed(() => props.lockedOrganizationId !== null && props.lockedOrganizationId !== undefined)
+
+const organizationOptions = computed(() => {
+  if (isOrganizationLocked.value && props.lockedOrganizationId !== null && props.lockedOrganizationId !== undefined) {
+    return (organizations.value || []).filter(org => org.id === props.lockedOrganizationId)
+  }
+  return organizations.value
+})
+
+const lockedOrganizationName = computed(() => {
+  if (!isOrganizationLocked.value) return ''
+  const match = (organizations.value || []).find(org => org.id === props.lockedOrganizationId)
+  return match?.title || 'Selected organization'
+})
+
 // Dialog state
 const dialog = computed({
   get: () => props.modelValue,
@@ -66,6 +83,15 @@ watch(dialog, (isOpen) => {
   if (isOpen) {
     initializeForm(props.selectedDate)
     fetchOrganizations()
+    if (isOrganizationLocked.value) {
+      selectedOrganizationId.value = props.lockedOrganizationId
+    }
+  }
+})
+
+watch(() => props.lockedOrganizationId, (newVal) => {
+  if (isOrganizationLocked.value) {
+    selectedOrganizationId.value = newVal
   }
 })
 
@@ -168,7 +194,7 @@ const handleCancel = () => {
                 <v-switch
                   v-model="formData.is_lco"
                   color="primary"
-                  :disabled="loading"
+                  :disabled="loading || isOrganizationLocked"
                   hide-details="auto"
                   class="mb-2"
                 >
@@ -202,10 +228,10 @@ const handleCancel = () => {
               </v-col>
 
               <!-- Attach Organization (optional) -->
-              <v-col v-if="!formData.is_lco" cols="12">
+              <v-col v-if="!formData.is_lco && !isOrganizationLocked" cols="12">
                 <v-select
                   v-model="selectedOrganizationId"
-                  :items="organizations"
+                  :items="organizationOptions"
                   item-title="title"
                   item-value="id"
                   label="Attach Organization (optional)"
@@ -216,6 +242,23 @@ const handleCancel = () => {
                   persistent-hint
                   clearable
                 />
+              </v-col>
+
+              <v-col v-else-if="!formData.is_lco && isOrganizationLocked" cols="12">
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  density="comfortable"
+                  class="mb-2"
+                >
+                  <template #prepend>
+                    <v-icon>mdi-domain</v-icon>
+                  </template>
+                  <div class="d-flex flex-column">
+                    <span class="text-body-2 font-weight-medium">Organization locked</span>
+                    <span class="text-caption text-medium-emphasis">Events will be attached to {{ lockedOrganizationName || 'your organization' }}</span>
+                  </div>
+                </v-alert>
               </v-col>
 
               <!-- Selected Date Info (if provided) -->
