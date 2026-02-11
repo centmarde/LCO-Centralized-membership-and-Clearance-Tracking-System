@@ -71,9 +71,15 @@ const page = ref(1)
 const itemsPerPage = ref(4)
 const viewMode = ref<'all' | 'blocked'>('all')
 const layoutMode = ref<'card' | 'list'>('card')
+const selectedOrganization = ref<string | null>(null)
 
 // Watch viewMode to reset pagination
 watch(viewMode, () => {
+  page.value = 1
+})
+
+// Watch selectedOrganization to reset pagination
+watch(selectedOrganization, () => {
   page.value = 1
 })
 
@@ -105,18 +111,49 @@ const usersToShow = computed(() => {
   return viewMode.value === 'blocked' ? blockedStudents.value : authStore.users
 })
 
+// Get all unique organizations from users
+const allOrganizations = computed(() => {
+  const organizations: Array<{ id: string; title: string }> = []
+  const seen = new Set<string>()
+
+  authStore.users.forEach(user => {
+    if (user.organizations && user.organizations.length > 0) {
+      user.organizations.forEach((org: { id: string; title: string }) => {
+        if (!seen.has(org.id)) {
+          seen.add(org.id)
+          organizations.push({
+            id: org.id,
+            title: org.title
+          })
+        }
+      })
+    }
+  })
+
+  return organizations.sort((a, b) => a.title.localeCompare(b.title))
+})
+
 // Computed filtered and paginated users
 const filteredUsers = computed(() => {
-  const users = usersToShow.value
-  if (!search.value) {
-    return users
+  let users = usersToShow.value
+
+  // Filter by search term
+  if (search.value) {
+    const searchLower = search.value.toLowerCase()
+    users = users.filter(user =>
+      user.full_name?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower) ||
+      user.student_number?.toLowerCase().includes(searchLower)
+    )
   }
-  const searchLower = search.value.toLowerCase()
-  return users.filter(user =>
-    user.full_name?.toLowerCase().includes(searchLower) ||
-    user.email?.toLowerCase().includes(searchLower) ||
-    user.student_number?.toLowerCase().includes(searchLower)
-  )
+
+  // Filter by organization
+  if (selectedOrganization.value) {
+    users = users.filter(user =>
+      user.organizations &&
+      user.organizations.some((org: { id: string; title: string }) => org.id === selectedOrganization.value)
+    )
+  }  return users
 })
 
 const totalPages = computed(() => {
@@ -325,8 +362,10 @@ onMounted(async () => {
       v-model:search="search"
       v-model:view-mode="viewMode"
       v-model:layout-mode="layoutMode"
+      v-model:selected-organization="selectedOrganization"
       :all-users-count="authStore.users.length"
       :blocked-students-count="blockedStudents.length"
+      :organizations="allOrganizations"
       @export:pdf="handleExportToPDF"
       @export:docx="handleExportToDocx"
     />
