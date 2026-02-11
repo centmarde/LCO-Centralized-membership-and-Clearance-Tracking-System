@@ -19,7 +19,7 @@ export const navigationConfig: NavigationGroup[] = [
     icon: 'mdi-account',
     children: [
       {
-        title: 'Profile',
+        title: 'My Profile',
         icon: 'mdi-account-circle',
         route: '/account/user-profile'
       },
