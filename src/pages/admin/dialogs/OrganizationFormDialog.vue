@@ -18,6 +18,33 @@
                   prepend-inner-icon="mdi-domain"
                 />
               </v-col>
+
+              <v-col cols="12">
+                <v-select
+                  v-model="organizationForm.category"
+                  :items="categoryOptions"
+                  item-title="title"
+                  item-value="value"
+                  label="Category"
+                  variant="outlined"
+                  prepend-inner-icon="mdi-shape"
+                  :rules="organizationValidationRules.category"
+                >
+                  <template #selection="{ item }">
+                    <div class="d-flex align-center">
+                      <span class="font-weight-medium">{{ item.raw.short }}</span>
+                      <span class="text-caption text-medium-emphasis ml-2">{{ item.raw.title }}</span>
+                    </div>
+                  </template>
+                  <template #item="{ props, item }">
+                    <v-list-item
+                      v-bind="props"
+                      :title="item.raw.title"
+                      :subtitle="item.raw.short"
+                    />
+                  </template>
+                </v-select>
+              </v-col>
               
               <!-- Leader Selection -->
               <v-col cols="12">
@@ -80,7 +107,7 @@
           variant="flat"
           @click="handleSave"
           :loading="saving"
-          :disabled="!props.organizationForm.title.trim()"
+          :disabled="!props.organizationForm.title.trim() || !props.organizationForm.category"
         >
           {{ editingOrganization ? 'Update' : 'Create' }}
         </v-btn>
@@ -91,8 +118,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
-import { getEmailInitials } from '@/utils/helpers'
-import { organizationValidationRules } from '@/utils/helpers'
+import { getEmailInitials, organizationValidationRules, organizationCategories } from '@/utils/helpers'
 import type { Organization, OrganizationLeader } from '../composables/useOrganizations'
 
 // Props
@@ -105,6 +131,7 @@ interface Props {
     title: string
     leader_id: string | null
     membership_deadline: string | null
+    category: string
   }
   organizationLeaders: OrganizationLeader[]
 }
@@ -124,6 +151,7 @@ const emit = defineEmits<Emits>()
 const formRef = ref()
 const formValid = ref(false)
 const deadlineField = ref()
+const categoryOptions = organizationCategories
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 const toDatetimeLocal = (value: string) => {

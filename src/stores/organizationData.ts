@@ -4,6 +4,7 @@ import { useToast } from 'vue-toastification'
 import { supabase } from '@/lib/supabase'
 import { useAuthUserStore } from '@/stores/authUser'
 import { getErrorMessage } from '@/utils/helpers'
+import type { OrganizationCategory } from '@/utils/helpers'
 
 // Organization types
 export interface Organization {
@@ -12,6 +13,8 @@ export interface Organization {
   created_at?: string
   leader_id?: string | null
   membership_deadline?: string | null
+  deleted_at?: string | null
+  category?: OrganizationCategory | null
   leader?: {
     id: string
     email: string
@@ -59,7 +62,9 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
           title, 
           created_at, 
           leader_id,
-          membership_deadline
+          membership_deadline,
+          category,
+          deleted_at
         `)
         .order('created_at', { ascending: false })
 
@@ -94,6 +99,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
           created_at: org.created_at,
           leader_id: org.leader_id,
           membership_deadline: org.membership_deadline,
+          category: org.category,
+          deleted_at: org.deleted_at,
           leader
         }
       })
@@ -169,7 +176,7 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
   /**
    * Creates a new organization
    */
-  const createOrganization = async (organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null }): Promise<boolean> => {
+  const createOrganization = async (organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null; category?: OrganizationCategory | null }): Promise<boolean> => {
     saving.value = true
     try {
       const { error } = await supabase
@@ -177,7 +184,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
         .insert([{
           title: organizationData.title,
           leader_id: organizationData.leader_id || null,
-          membership_deadline: organizationData.membership_deadline || null
+          membership_deadline: organizationData.membership_deadline || null,
+          category: organizationData.category || null
         }])
 
       if (error) {
@@ -201,7 +209,7 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
   /**
    * Updates an existing organization
    */
-  const updateOrganization = async (id: string, organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null }): Promise<boolean> => {
+  const updateOrganization = async (id: string, organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null; category?: OrganizationCategory | null }): Promise<boolean> => {
     saving.value = true
     try {
       const { error } = await supabase
@@ -209,7 +217,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
         .update({
           title: organizationData.title,
           leader_id: organizationData.leader_id || null,
-          membership_deadline: organizationData.membership_deadline || null
+          membership_deadline: organizationData.membership_deadline || null,
+          category: organizationData.category || null
         })
         .eq('id', id)
 
@@ -232,27 +241,121 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
   }
 
   /**
-   * Deletes an organization
+   * Soft-deletes an organization. Keeps the row for recovery, drops members, and demotes the leader to student.
    */
   const deleteOrganization = async (id: string): Promise<boolean> => {
     deleting.value = true
     try {
+      // Fetch current organization to capture leader before demotion
+      const existing = organizations.value.find(o => o.id === id)
+      const leaderId = existing?.leader_id || null
+
+      // Mark as deleted and clear leader_id
+      const { error: updateErr } = await supabase
+        .from('organizations')
+        .update({
+          deleted_at: new Date().toISOString(),
+          leader_id: null
+        })
+        .eq('id', id)
+
+      if (updateErr) {
+        toast.error('Failed to delete organization: ' + getErrorMessage(updateErr))
+        return false
+      }
+
+      // Remove all members tied to this organization
+      const { error: membersErr } = await supabase
+        .from('organization_members')
+        .delete()
+        .eq('organization_id', id)
+
+      if (membersErr) {
+        console.warn('Failed to remove organization members on delete:', membersErr)
+      }
+
+      // Demote leader to student (role_id = 2)
+      if (leaderId) {
+        try {
+          const authStore = useAuthUserStore()
+          await authStore.updateUser(leaderId, { role_id: 2 })
+        } catch (demoteErr) {
+          console.warn('Failed to demote organization leader to student:', demoteErr)
+        }
+      }
+
+      toast.success('Organization moved to deleted and members cleared.')
+      await fetchOrganizations()
+      return true
+
+    } catch (error: any) {
+      toast.error('An unexpected error occurred while deleting organization')
+      console.error('Error:', error)
+      return false
+    } finally {
+      deleting.value = false
+    }
+  }
+
+  /**
+   * Restores a soft-deleted organization
+   */
+  const restoreOrganization = async (id: string): Promise<boolean> => {
+    saving.value = true
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ deleted_at: null })
+        .eq('id', id)
+
+      if (error) {
+        toast.error('Failed to restore organization: ' + getErrorMessage(error))
+        return false
+      }
+
+      toast.success('Organization restored. Assign a leader and add members as needed.')
+      await fetchOrganizations()
+      return true
+    } catch (error: any) {
+      toast.error('An unexpected error occurred while restoring organization')
+      console.error('Error:', error)
+      return false
+    } finally {
+      saving.value = false
+    }
+  }
+
+  /**
+   * Permanently deletes an organization record
+   */
+  const hardDeleteOrganization = async (id: string): Promise<boolean> => {
+    deleting.value = true
+    try {
+      // Clean up members first (idempotent if already cleared)
+      const { error: membersErr } = await supabase
+        .from('organization_members')
+        .delete()
+        .eq('organization_id', id)
+
+      if (membersErr) {
+        console.warn('Failed to remove organization members before hard delete:', membersErr)
+      }
+
       const { error } = await supabase
         .from('organizations')
         .delete()
         .eq('id', id)
 
       if (error) {
-        toast.error('Failed to delete organization: ' + getErrorMessage(error))
+        toast.error('Failed to permanently delete organization: ' + getErrorMessage(error))
         return false
       }
 
-      toast.success('Organization deleted successfully!')
+      toast.success('Organization permanently deleted.')
       await fetchOrganizations()
       return true
-
     } catch (error: any) {
-      toast.error('An unexpected error occurred while deleting organization')
+      toast.error('An unexpected error occurred while permanently deleting organization')
       console.error('Error:', error)
       return false
     } finally {
@@ -302,6 +405,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
     createOrganization,
     updateOrganization,
     deleteOrganization,
+    restoreOrganization,
+    hardDeleteOrganization,
     fetchOrganizationStats,
     findOrganizationById
   }

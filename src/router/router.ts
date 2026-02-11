@@ -13,6 +13,7 @@ import UserManagementView from '@/pages/admin/UserManagementView.vue';
 import OrganizationsView from '@/pages/admin/OrganizationsView.vue';
 
 import MembersView from '@/pages/myOrganization/MembersView.vue';
+import PerOrgCalendar from '@/pages/myOrganization/PerOrgCalendar.vue';
 
 import MyClearanceView from '@/pages/myAccounts/MyClearanceView.vue';
 import MyEventsView from '@/pages/myAccounts/MyEventsView.vue';
@@ -66,6 +67,11 @@ const routes = setupLayouts([
   {
     path: '/organization/members',
     component: MembersView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/organization/events',
+    component: PerOrgCalendar,
     meta: { requiresAuth: true }
   },
   {

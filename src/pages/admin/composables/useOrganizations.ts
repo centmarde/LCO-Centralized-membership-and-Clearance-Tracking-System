@@ -2,6 +2,7 @@ import { ref, reactive } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useOrganizationDataStore } from '@/stores/organizationData'
 import type { Organization, OrganizationLeader } from '@/stores/organizationData'
+import type { OrganizationCategory } from '@/utils/helpers'
 
 export function useOrganizations() {
   const store = useOrganizationDataStore()
@@ -25,7 +26,8 @@ export function useOrganizations() {
   const organizationForm = reactive({
     title: '',
     leader_id: null as string | null,
-    membership_deadline: null as string | null
+    membership_deadline: null as string | null,
+    category: 'soc' as OrganizationCategory
   })
 
   /**
@@ -54,7 +56,8 @@ export function useOrganizations() {
     const organizationData = {
       title: organizationForm.title,
       leader_id: organizationForm.leader_id || null,
-      membership_deadline: deadlineIso
+      membership_deadline: deadlineIso,
+      category: organizationForm.category
     }
 
     let success = false
@@ -77,6 +80,20 @@ export function useOrganizations() {
   }
 
   /**
+   * Restores a previously soft-deleted organization
+   */
+  const restoreOrganization = async (organization: Organization): Promise<boolean> => {
+    return await store.restoreOrganization(organization.id)
+  }
+
+  /**
+   * Permanently deletes an organization
+   */
+  const hardDeleteOrganization = async (organization: Organization): Promise<boolean> => {
+    return await store.hardDeleteOrganization(organization.id)
+  }
+
+  /**
    * Prepares the form for creating a new organization
    */
   const prepareCreateOrganization = () => {
@@ -84,6 +101,7 @@ export function useOrganizations() {
     organizationForm.title = ''
     organizationForm.leader_id = null
     organizationForm.membership_deadline = null
+    organizationForm.category = 'soc'
     fetchOrganizationLeaders()
   }
 
@@ -95,6 +113,7 @@ export function useOrganizations() {
     organizationForm.title = organization.title
     organizationForm.leader_id = organization.leader_id || null
     organizationForm.membership_deadline = organization.membership_deadline || null
+    organizationForm.category = (organization.category as OrganizationCategory) || 'soc'
     fetchOrganizationLeaders()
   }
 
@@ -113,6 +132,7 @@ export function useOrganizations() {
     organizationForm.title = ''
     organizationForm.leader_id = null
     organizationForm.membership_deadline = null
+    organizationForm.category = 'soc'
   }
 
   return {
@@ -135,6 +155,8 @@ export function useOrganizations() {
     fetchOrganizationLeaders,
     saveOrganization,
     deleteOrganization,
+    restoreOrganization,
+    hardDeleteOrganization,
     prepareCreateOrganization,
     prepareEditOrganization,
     prepareDeleteOrganization,

@@ -556,11 +556,25 @@ export const createViewMembersHandler = (config: {
 // ORGANIZATION CONFIGURATION
 // ========================================
 
+export const organizationCategories = [
+  { value: 'soc', title: 'Service Oriented Council (S.O.C.)', short: 'S.O.C.' },
+  { value: 'roc', title: 'Religious Oriented Council (R.O.C.)', short: 'R.O.C.' },
+  { value: 'sf', title: 'Sorority/Fraternity', short: 'S/F' }
+] as const
+
+export type OrganizationCategory = typeof organizationCategories[number]['value']
+
+export const formatOrganizationCategory = (category: string | null | undefined): string => {
+  const match = organizationCategories.find(opt => opt.value === category)
+  return match?.title || 'Uncategorized'
+}
+
 /**
  * Table configuration for Organizations data table
  */
 export const organizationsTableHeaders = [
   { title: 'Organization Name', key: 'title', sortable: true },
+  { title: 'Category', key: 'category', sortable: true },
   { title: 'Leader', key: 'leader', sortable: true },
   { title: 'Created Date', key: 'created_at', sortable: true },
   { title: 'Actions', key: 'actions', sortable: false },
@@ -572,5 +586,8 @@ export const organizationsTableHeaders = [
 export const organizationValidationRules = {
   title: [
     (v: string) => !!v || 'Organization name is required'
+  ],
+  category: [
+    (v: string) => !!v || 'Category is required'
   ]
 }

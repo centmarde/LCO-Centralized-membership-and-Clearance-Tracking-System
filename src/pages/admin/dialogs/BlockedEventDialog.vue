@@ -60,7 +60,7 @@ const closeDialog = () => {
 							<v-icon color="primary">mdi-calendar</v-icon>
 							<div class="text-body-2 text-medium-emphasis">{{ formatDateShort(props.event.date) }}</div>
 						</div>
-						<v-chip :color="getEventStatusColor(props.event.status)" variant="elevated" size="small" class="text-uppercase">
+						<v-chip :color="getEventStatusColor(props.event.status)" variant="elevated" size="small" class="text-uppercase font-weight-bold">
 							{{ props.event.status }}
 						</v-chip>
 					</div>
@@ -73,9 +73,17 @@ const closeDialog = () => {
 
 				<div class="mb-2">
 					<div class="text-caption text-medium-emphasis text-center">Status details</div>
-					<div class="text-body-2 text-medium-emphasis text-justify">
-						This event is currently marked as {{ props.event.status.toLowerCase() }}. Please settle any pending requirements with your organization or clearance officer.
-					</div>
+					<v-alert type="warning" variant="tonal" density="comfortable" class="mb-3" border="start">
+						<div class="font-weight-bold">Required event • Auto-blocked</div>
+						<div class="text-body-2">Attendance is mandatory. You are blocked by default until your presence is processed.</div>
+					</v-alert>
+					<v-alert type="info" variant="tonal" density="comfortable" class="mb-2" border="start">
+						<div class="font-weight-bold">One-week window after event</div>
+						<div class="text-body-2">
+							After the event date, you have <strong>7 days</strong> to settle attendance/clearance with your organization or clearance officer.
+						</div>
+					</v-alert>
+					
 				</div>
 			</v-card-text>
 

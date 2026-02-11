@@ -118,7 +118,7 @@ export function useAddCalendarDialog() {
   })
 
   // Optional organization to attach for auto-blocking members
-  const selectedOrganizationId = ref<string | null>(null)
+  const selectedOrganizationId = ref<string | number | null>(null)
 
   const formRef = ref<any>(null)
   const isValid = ref(false)

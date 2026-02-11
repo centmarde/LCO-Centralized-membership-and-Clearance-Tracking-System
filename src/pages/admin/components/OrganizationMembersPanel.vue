@@ -48,18 +48,34 @@ const updateNotes = (value: string | null) => {
 }
 
 // Methods
-const handleAddMember = () => emit('add-member')
+const deadlineDate = computed(() => {
+  if (!props.organizationDeadline) return null
+  const date = new Date(props.organizationDeadline)
+  return Number.isNaN(date.getTime()) ? null : date
+})
+
+const isDeadlinePassed = computed(() => {
+  const date = deadlineDate.value
+  if (!date) return false
+  return date.getTime() <= Date.now()
+})
+
+const handleAddMember = () => {
+  if (isDeadlinePassed.value) return
+  emit('add-member')
+}
 const handleUpdateMember = (member: OrganizationMember, field: string, value: any) => emit('update-member', member.id, { [field]: value })
 const handleRemoveMember = (memberId: string) => emit('remove-member', memberId)
 
 const getStatusColor = getMemberStatusColor
 const getRoleTitle = getMemberRoleTitle
 
-const showDeadline = computed(() => !!props.organizationDeadline && props.members.length < 5)
+const showDeadlineWarning = computed(() => !!props.organizationDeadline && !isDeadlinePassed.value && props.members.length < 5)
+const showDeadlineRestriction = computed(() => !!props.organizationDeadline && isDeadlinePassed.value)
 const formattedDeadline = computed(() => {
   if (!props.organizationDeadline) return ''
-  const date = new Date(props.organizationDeadline)
-  if (Number.isNaN(date.getTime())) return props.organizationDeadline
+  const date = deadlineDate.value
+  if (!date) return props.organizationDeadline
   return date.toLocaleString(undefined, {
     year: 'numeric',
     month: 'long',
@@ -94,7 +110,7 @@ watch(() => props.organizationId, (newId) => {
     <v-card-text class="pa-0">
       <v-container fluid class="pa-6">
         <v-alert
-          v-if="showDeadline"
+          v-if="showDeadlineWarning"
           type="warning"
           variant="tonal"
           class="mb-4"
@@ -102,6 +118,17 @@ watch(() => props.organizationId, (newId) => {
           color="warning"
         >
           Membership deadline: {{ formattedDeadline }}. Add at least 5 members to clear this requirement.
+        </v-alert>
+
+        <v-alert
+          v-else-if="showDeadlineRestriction"
+          type="error"
+          variant="tonal"
+          class="mb-4"
+          border="start"
+          color="error"
+        >
+          Membership deadline passed on {{ formattedDeadline }}. Adding new members is disabled. Contact an administrator to request an extension.
         </v-alert>
 
         <!-- Add New Member Section -->
@@ -125,6 +152,7 @@ watch(() => props.organizationId, (newId) => {
                   :loading="loading"
                   clearable
                   :return-object="false"
+                  :disabled="isDeadlinePassed"
                 >
                   <template #selection="{ item }">
                     <div class="d-flex align-center">
@@ -146,6 +174,7 @@ watch(() => props.organizationId, (newId) => {
                   label="Member Role"
                   variant="outlined"
                   density="compact"
+                  :disabled="isDeadlinePassed"
                 />
               </v-col>
               <v-col cols="12" md="3">
@@ -156,6 +185,7 @@ watch(() => props.organizationId, (newId) => {
                   label="Status"
                   variant="outlined"
                   density="compact"
+                  :disabled="isDeadlinePassed"
                 />
               </v-col>
               <v-col cols="12">
@@ -167,6 +197,7 @@ watch(() => props.organizationId, (newId) => {
                   density="compact"
                   rows="2"
                   auto-grow
+                  :disabled="isDeadlinePassed"
                 />
               </v-col>
               <v-col cols="12">
@@ -175,7 +206,7 @@ watch(() => props.organizationId, (newId) => {
                   prepend-icon="mdi-account-plus"
                   @click="handleAddMember"
                   :loading="saving"
-                  :disabled="!memberForm.student_id"
+                  :disabled="isDeadlinePassed || !memberForm.student_id"
                 >
                   Add Member
                 </v-btn>
