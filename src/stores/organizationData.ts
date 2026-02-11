@@ -4,6 +4,7 @@ import { useToast } from 'vue-toastification'
 import { supabase } from '@/lib/supabase'
 import { useAuthUserStore } from '@/stores/authUser'
 import { getErrorMessage } from '@/utils/helpers'
+import type { OrganizationCategory } from '@/utils/helpers'
 
 // Organization types
 export interface Organization {
@@ -13,6 +14,7 @@ export interface Organization {
   leader_id?: string | null
   membership_deadline?: string | null
   deleted_at?: string | null
+  category?: OrganizationCategory | null
   leader?: {
     id: string
     email: string
@@ -61,6 +63,7 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
           created_at, 
           leader_id,
           membership_deadline,
+          category,
           deleted_at
         `)
         .order('created_at', { ascending: false })
@@ -96,6 +99,7 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
           created_at: org.created_at,
           leader_id: org.leader_id,
           membership_deadline: org.membership_deadline,
+          category: org.category,
           deleted_at: org.deleted_at,
           leader
         }
@@ -172,7 +176,7 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
   /**
    * Creates a new organization
    */
-  const createOrganization = async (organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null }): Promise<boolean> => {
+  const createOrganization = async (organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null; category?: OrganizationCategory | null }): Promise<boolean> => {
     saving.value = true
     try {
       const { error } = await supabase
@@ -180,7 +184,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
         .insert([{
           title: organizationData.title,
           leader_id: organizationData.leader_id || null,
-          membership_deadline: organizationData.membership_deadline || null
+          membership_deadline: organizationData.membership_deadline || null,
+          category: organizationData.category || null
         }])
 
       if (error) {
@@ -204,7 +209,7 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
   /**
    * Updates an existing organization
    */
-  const updateOrganization = async (id: string, organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null }): Promise<boolean> => {
+  const updateOrganization = async (id: string, organizationData: { title: string; leader_id?: string | null; membership_deadline?: string | null; category?: OrganizationCategory | null }): Promise<boolean> => {
     saving.value = true
     try {
       const { error } = await supabase
@@ -212,7 +217,8 @@ export const useOrganizationDataStore = defineStore('organizationData', () => {
         .update({
           title: organizationData.title,
           leader_id: organizationData.leader_id || null,
-          membership_deadline: organizationData.membership_deadline || null
+          membership_deadline: organizationData.membership_deadline || null,
+          category: organizationData.category || null
         })
         .eq('id', id)
 

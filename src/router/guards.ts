@@ -17,9 +17,35 @@ export const authGuard = async (to: RouteLocationNormalized, from: RouteLocation
     return next("/auth");
   }
 
-  // If user is authenticated and trying to access public/auth pages, redirect to dashboard
+  // If user is authenticated and trying to access public/auth pages, redirect based on role
   if (isLoggedIn && publicPages.includes(to.path)) {
     /*  toast.info("You are already logged in. Redirecting to home."); */
+
+    try {
+      const authStore = useAuthUserStore();
+      const currentUserResult = await authStore.getCurrentUser();
+
+      if (currentUserResult.user) {
+        const userRoleId = currentUserResult.user.user_metadata?.role;
+
+        // Role-based default redirect
+        switch (userRoleId) {
+          case 2: // Student/User
+            return next("/account/profile");
+          case 3: // Organization Leader
+            return next("/organization/members");
+          case 1: // LCO Admin
+          default:
+            return next("/admin/organizations");
+        }
+      }
+    } catch (error) {
+      console.error('Error determining role for redirect:', error);
+      // Fallback to default if there's an error
+      return next("/account/profile");
+    }
+
+    // Fallback if no role found
     return next("/account/profile");
   }
 

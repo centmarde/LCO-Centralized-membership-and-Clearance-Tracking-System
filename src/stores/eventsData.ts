@@ -32,6 +32,7 @@ export type EventWithLCO = {
   title: string
   date: string
   is_lco: boolean
+  organization_id?: string | number | null
 }
 
 // Register all students for an LCO event
@@ -176,6 +177,78 @@ export const useEventsStore = defineStore('events', () => {
       return eventsWithLCO
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch events'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Fetch events scoped to a specific organization (by explicit column or junction table)
+  async function fetchEventsForOrganization(organizationId: string | number): Promise<EventWithLCO[]> {
+    loading.value = true
+    error.value = null
+
+    // Normalize org id for comparisons
+    const orgId = isNaN(Number(organizationId)) ? organizationId : Number(organizationId)
+
+    try {
+      // First, try junction table event_organizations to get event IDs
+      let eventIds: number[] = []
+      try {
+        const { data: eoRows, error: eoError } = await supabase
+          .from('event_organizations')
+          .select('event_id')
+          .eq('organization_id', orgId)
+
+        if (!eoError && eoRows) {
+          eventIds = Array.from(new Set((eoRows || []).map(row => Number(row.event_id)).filter(Boolean)))
+        }
+      } catch (_) {
+        // Table might not exist; fall back silently
+      }
+
+      // If we have event IDs from the junction table, fetch those events
+      if (eventIds.length > 0) {
+        const { data, error: eventsError } = await supabase
+          .from('events')
+          .select('*')
+          .in('id', eventIds)
+          .order('created_at', { ascending: false })
+
+        if (eventsError) {
+          console.error('Error fetching organization events by event IDs:', eventsError)
+          throw eventsError
+        }
+
+        const eventsWithLCO: EventWithLCO[] = (data || []).map(event => ({
+          ...event,
+          is_lco: event.is_lco ?? false
+        }))
+
+        events.value = eventsWithLCO
+        return eventsWithLCO
+      }
+
+      // Fallback: use explicit organization_id column if present
+      const { data, error: columnError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('organization_id', orgId)
+        .order('created_at', { ascending: false })
+
+      if (columnError) {
+        console.warn('Fallback fetch events by organization_id failed (column may not exist):', columnError.message)
+      }
+
+      const eventsWithLCO: EventWithLCO[] = (data || []).map(event => ({
+        ...event,
+        is_lco: event.is_lco ?? false
+      }))
+
+      events.value = eventsWithLCO
+      return eventsWithLCO
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch organization events'
       throw err
     } finally {
       loading.value = false
@@ -444,6 +517,7 @@ export const useEventsStore = defineStore('events', () => {
     // Actions
     loadBlockedEvents,
     fetchEvents,
+    fetchEventsForOrganization,
     fetchEventById,
     createEvent,
     updateEvent,

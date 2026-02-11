@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, watch, onMounted } from 'vue'
+import { computed, watch } from 'vue'
 import { useAddCalendarDialog } from '@/pages/admin/composables/calendarDialog'
 import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
+import { useAuthUserStore } from '@/stores/authUser'
 import LcoEventWarning from '@/components/admin/LcoEventWarning.vue'
 
 // Component name for ESLint multi-word rule
@@ -13,10 +14,12 @@ defineOptions({
 interface Props {
   modelValue: boolean
   selectedDate?: Date | null
+  lockedOrganizationId?: string | number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  selectedDate: null
+  selectedDate: null,
+  lockedOrganizationId: null
 })
 
 // Emits
@@ -45,6 +48,27 @@ const {
   fetchOrganizations
 } = useOrganizations()
 
+// Auth store for role checking
+const authStore = useAuthUserStore()
+
+const isOrganizationLocked = computed(() => props.lockedOrganizationId !== null && props.lockedOrganizationId !== undefined)
+
+// Check if user is admin (role === 1)
+const isAdmin = computed(() => authStore.userRole === 1)
+
+const organizationOptions = computed(() => {
+  if (isOrganizationLocked.value && props.lockedOrganizationId !== null && props.lockedOrganizationId !== undefined) {
+    return (organizations.value || []).filter(org => org.id === props.lockedOrganizationId)
+  }
+  return organizations.value
+})
+
+const lockedOrganizationName = computed(() => {
+  if (!isOrganizationLocked.value) return ''
+  const match = (organizations.value || []).find(org => org.id === props.lockedOrganizationId)
+  return match?.title || 'Selected organization'
+})
+
 // Dialog state
 const dialog = computed({
   get: () => props.modelValue,
@@ -66,6 +90,28 @@ watch(dialog, (isOpen) => {
   if (isOpen) {
     initializeForm(props.selectedDate)
     fetchOrganizations()
+
+    // Reset LCO flag for non-admin users
+    if (!isAdmin.value) {
+      formData.value.is_lco = false
+    }
+
+    if (isOrganizationLocked.value) {
+      selectedOrganizationId.value = props.lockedOrganizationId
+    }
+  }
+})
+
+watch(() => props.lockedOrganizationId, (newVal) => {
+  if (isOrganizationLocked.value) {
+    selectedOrganizationId.value = newVal
+  }
+})
+
+// Ensure non-admin users cannot set LCO events
+watch(isAdmin, (isAdminUser) => {
+  if (!isAdminUser && formData.value.is_lco) {
+    formData.value.is_lco = false
   }
 })
 
@@ -163,12 +209,12 @@ const handleCancel = () => {
                 ></v-text-field>
               </v-col>
 
-              <!-- LCO Event Toggle -->
-              <v-col cols="12">
+              <!-- LCO Event Toggle (only for admin users) -->
+              <v-col v-if="isAdmin" cols="12">
                 <v-switch
                   v-model="formData.is_lco"
                   color="primary"
-                  :disabled="loading"
+                  :disabled="loading || isOrganizationLocked"
                   hide-details="auto"
                   class="mb-2"
                 >
@@ -193,8 +239,26 @@ const handleCancel = () => {
                 </v-switch>
               </v-col>
 
-              <!-- LCO Event Warning -->
-              <v-col cols="12">
+              <!-- Non-admin user info (always regular event) -->
+              <v-col v-if="!isAdmin" cols="12">
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  density="comfortable"
+                  class="mb-2"
+                >
+                  <template #prepend>
+                    <v-icon>mdi-calendar</v-icon>
+                  </template>
+                  <div class="d-flex flex-column">
+                    <span class="text-body-2 font-weight-medium">Regular Event</span>
+                    <span class="text-caption text-medium-emphasis">You can only create regular organizational events</span>
+                  </div>
+                </v-alert>
+              </v-col>
+
+              <!-- LCO Event Warning (only for admin users) -->
+              <v-col v-if="isAdmin" cols="12">
                 <LcoEventWarning
                   :is-lco-event="!!formData.is_lco"
                   :organization-hidden="!!formData.is_lco"
@@ -202,10 +266,10 @@ const handleCancel = () => {
               </v-col>
 
               <!-- Attach Organization (optional) -->
-              <v-col v-if="!formData.is_lco" cols="12">
+              <v-col v-if="(!formData.is_lco || !isAdmin) && !isOrganizationLocked" cols="12">
                 <v-select
                   v-model="selectedOrganizationId"
-                  :items="organizations"
+                  :items="organizationOptions"
                   item-title="title"
                   item-value="id"
                   label="Attach Organization (optional)"
@@ -216,6 +280,23 @@ const handleCancel = () => {
                   persistent-hint
                   clearable
                 />
+              </v-col>
+
+              <v-col v-else-if="(!formData.is_lco || !isAdmin) && isOrganizationLocked" cols="12">
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  density="comfortable"
+                  class="mb-2"
+                >
+                  <template #prepend>
+                    <v-icon>mdi-domain</v-icon>
+                  </template>
+                  <div class="d-flex flex-column">
+                    <span class="text-body-2 font-weight-medium">Organization locked</span>
+                    <span class="text-caption text-medium-emphasis">Events will be attached to {{ lockedOrganizationName || 'your organization' }}</span>
+                  </div>
+                </v-alert>
               </v-col>
 
               <!-- Selected Date Info (if provided) -->
