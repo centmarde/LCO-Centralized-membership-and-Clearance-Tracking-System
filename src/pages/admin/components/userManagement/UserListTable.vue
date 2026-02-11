@@ -19,6 +19,10 @@ interface User {
   organization_id?: number
   role_id?: number
   student_id?: number
+  organizations?: Array<{
+    id: string
+    title: string
+  }>
 }
 
 interface Props {
@@ -63,6 +67,23 @@ const getBlockedEventsForUser = (user: User) => {
   const userEvents = props.studentEventStatusMap[user.id] || []
   return userEvents.filter(event => event.status?.toLowerCase() === 'blocked')
 }
+
+// Helper function to safely get organizations display
+const getOrganizationsDisplay = (organizations: User['organizations']): string => {
+  if (!organizations || organizations.length === 0) return 'No Organization'
+
+  // Handle case where organizations might be incorrectly typed
+  if (!Array.isArray(organizations)) {
+    console.warn('Organizations is not an array:', organizations)
+    return 'No Organization'
+  }
+
+  if (organizations.length === 1) {
+    return organizations[0]?.title || 'Unknown Organization'
+  }
+
+  return organizations.map(org => org?.title || 'Unknown Organization').join(', ')
+}
 </script>
 
 <template>
@@ -71,6 +92,7 @@ const getBlockedEventsForUser = (user: User) => {
       :headers="[
         { title: 'User', key: 'user', sortable: true },
         { title: 'Email', key: 'email', sortable: true },
+        { title: 'Organization', key: 'organization', sortable: false },
         { title: 'Role', key: 'role', sortable: false },
         { title: 'Status', key: 'status', sortable: false },
         { title: 'Created', key: 'created_at', sortable: true },
@@ -100,6 +122,41 @@ const getBlockedEventsForUser = (user: User) => {
       <!-- Email column -->
       <template v-slot:item.email="{ item }">
         <span class="text-body-2">{{ item.email || 'N/A' }}</span>
+      </template>
+
+      <!-- Organization column -->
+      <template v-slot:item.organization="{ item }">
+        <div v-if="item.role_id === 2" class="d-flex align-center">
+          <v-icon size="small" class="mr-2">mdi-account-group</v-icon>
+          <div v-if="Array.isArray(item.organizations) && item.organizations.length > 0" class="text-body-2">
+            <template v-if="item.organizations.length === 1">
+              {{ item.organizations[0]?.title || 'Unknown Organization' }}
+            </template>
+            <template v-else>
+              <div class="d-flex flex-wrap gap-1">
+                <v-chip
+                  v-for="org in item.organizations.slice(0, 2)"
+                  :key="org.id"
+                  size="x-small"
+                  variant="outlined"
+                  color="primary"
+                >
+                  {{ org?.title || 'Unknown Organization' }}
+                </v-chip>
+                <v-chip
+                  v-if="item.organizations.length > 2"
+                  size="x-small"
+                  variant="outlined"
+                  color="grey"
+                >
+                  +{{ item.organizations.length - 2 }}
+                </v-chip>
+              </div>
+            </template>
+          </div>
+          <span v-else class="text-body-2 text-grey">{{ getOrganizationsDisplay(item.organizations) }}</span>
+        </div>
+        <span v-else class="text-body-2 text-grey">-</span>
       </template>
 
       <!-- Role column -->

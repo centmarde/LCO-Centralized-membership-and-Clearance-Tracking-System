@@ -11,6 +11,10 @@ interface User {
   student_number?: string
   role_id?: number
   student_id?: number
+  organizations?: Array<{
+    id: string
+    title: string
+  }>
 }
 
 interface BlockedEvent {
@@ -34,6 +38,12 @@ const getEventTypeDisplay = (event: BlockedEvent): string => {
 const formatDate = (dateString?: string): string => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleDateString()
+}
+
+// Helper function to format organizations
+const formatOrganizations = (organizations?: Array<{ id: string; title: string }>): string => {
+  if (!organizations || organizations.length === 0) return 'No Organization'
+  return organizations.map(org => org?.title || 'Unknown Organization').join(', ')
 }
 
 // Export blocked students to PDF
@@ -87,6 +97,8 @@ export const exportBlockedStudentsToPDF = (
     pdf.text(`Student ID: ${student.student_number || 'N/A'}`, 25, yPosition)
     yPosition += 5
     pdf.text(`Email: ${student.email || 'N/A'}`, 25, yPosition)
+    yPosition += 5
+    pdf.text(`Organization: ${formatOrganizations(student.organizations)}`, 25, yPosition)
     yPosition += 5
     pdf.text(`Blocked Events: ${blockedEvents.length}`, 25, yPosition)
     yPosition += 8
@@ -186,11 +198,17 @@ export const exportBlockedStudentsToDocx = async (
                     children: [new Paragraph({
                       children: [new TextRun({ text: "Student Name", bold: true })],
                     })],
-                    width: { size: 25, type: WidthType.PERCENTAGE },
+                    width: { size: 20, type: WidthType.PERCENTAGE },
                   }),
                   new TableCell({
                     children: [new Paragraph({
                       children: [new TextRun({ text: "Student ID", bold: true })],
+                    })],
+                    width: { size: 15, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({
+                      children: [new TextRun({ text: "Organization", bold: true })],
                     })],
                     width: { size: 20, type: WidthType.PERCENTAGE },
                   }),
@@ -198,13 +216,13 @@ export const exportBlockedStudentsToDocx = async (
                     children: [new Paragraph({
                       children: [new TextRun({ text: "Email", bold: true })],
                     })],
-                    width: { size: 30, type: WidthType.PERCENTAGE },
+                    width: { size: 25, type: WidthType.PERCENTAGE },
                   }),
                   new TableCell({
                     children: [new Paragraph({
                       children: [new TextRun({ text: "Blocked Events", bold: true })],
                     })],
-                    width: { size: 25, type: WidthType.PERCENTAGE },
+                    width: { size: 20, type: WidthType.PERCENTAGE },
                   }),
                 ],
               }),
@@ -228,6 +246,11 @@ export const exportBlockedStudentsToDocx = async (
                     new TableCell({
                       children: [new Paragraph({
                         children: [new TextRun({ text: student.student_number || 'N/A' })],
+                      })],
+                    }),
+                    new TableCell({
+                      children: [new Paragraph({
+                        children: [new TextRun({ text: formatOrganizations(student.organizations) })],
                       })],
                     }),
                     new TableCell({
@@ -277,6 +300,12 @@ export const exportBlockedStudentsToDocx = async (
               new Paragraph({
                 children: [
                   new TextRun({ text: `Student ID: ${student.student_number || 'N/A'}` }),
+                ],
+                spacing: { after: 100 },
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: `Organization: ${formatOrganizations(student.organizations)}` }),
                 ],
                 spacing: { after: 100 },
               }),
@@ -341,7 +370,7 @@ export const exportBlockedStudentsToExcel = (
     // Prepare data for the main sheet
     const worksheetData = [
       // Header row
-      ['Student Name', 'Student ID', 'Email', 'Registration Date', 'Blocked Events Count', 'Blocked Events List'],
+      ['Student Name', 'Student ID', 'Organization', 'Email', 'Registration Date', 'Blocked Events Count', 'Blocked Events List'],
 
       // Data rows
       ...blockedStudents.map(student => {
@@ -355,6 +384,7 @@ export const exportBlockedStudentsToExcel = (
         return [
           student.full_name || 'N/A',
           student.student_number || 'N/A',
+          formatOrganizations(student.organizations),
           student.email || 'N/A',
           formatDate(student.created_at),
           blockedEvents.length,
@@ -370,6 +400,7 @@ export const exportBlockedStudentsToExcel = (
     worksheet['!cols'] = [
       { wch: 25 }, // Student Name
       { wch: 15 }, // Student ID
+      { wch: 20 }, // Organization
       { wch: 30 }, // Email
       { wch: 15 }, // Registration Date
       { wch: 15 }, // Blocked Events Count
