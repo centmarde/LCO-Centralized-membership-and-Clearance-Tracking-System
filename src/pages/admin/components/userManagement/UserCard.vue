@@ -20,6 +20,10 @@ interface User {
   organization_id?: number
   role_id?: number
   student_id?: number
+  organizations?: Array<{
+    id: string
+    title: string
+  }>
 }
 
 interface Props {
@@ -62,6 +66,29 @@ const getEventStatusColor = (status: string): string => {
 const getBlockedEventsForUser = (user: User) => {
   const userEvents = props.studentEventStatusMap[user.id] || []
   return userEvents.filter(event => event.status?.toLowerCase() === 'blocked')
+}
+
+// Debug function to check organizations data
+const debugUserOrganizations = (user: User) => {
+  console.log(`User: ${user.full_name}, Role: ${user.role_id}, Organizations:`, user.organizations)
+  console.log('Organization ID:', user.organization_id, 'Student ID:', user.student_id)
+}
+
+// Helper function to safely get organizations display
+const getOrganizationsDisplay = (organizations: User['organizations']): string => {
+  if (!organizations || organizations.length === 0) return 'No Organization'
+
+  // Handle case where organizations might be incorrectly typed
+  if (!Array.isArray(organizations)) {
+    console.warn('Organizations is not an array:', organizations)
+    return 'No Organization'
+  }
+
+  if (organizations.length === 1) {
+    return organizations[0]?.title || 'Unknown Organization'
+  }
+
+  return organizations.map(org => org?.title || 'Unknown Organization').join(', ')
 }
 </script>
 
@@ -121,6 +148,51 @@ const getBlockedEventsForUser = (user: User) => {
               <v-icon size="small" class="mr-2">mdi-calendar</v-icon>
               <span class="text-body-2">{{ formatDate(user.created_at) }}</span>
             </div>
+            <div v-if="user.role_id === 2" class="mb-2">
+              <!-- Debug call -->
+              {{ debugUserOrganizations(user) }}
+              <div class="d-flex align-center mb-1">
+                <v-icon size="small" class="mr-2">mdi-account-group</v-icon>
+                <div v-if="user.organizations && user.organizations.length > 0" class="d-flex flex-wrap gap-1">
+                  <v-chip
+                    v-for="org in user.organizations.slice(0, 2)"
+                    :key="org.id"
+                    size="x-small"
+                    variant="tonal"
+                    color="primary"
+										class="my-1 mx-1"
+                    label
+                  >
+                    {{ org.title }}
+                  </v-chip>
+                  <v-chip
+                    v-if="user.organizations.length > 2"
+                    size="x-small"
+                    variant="tonal"
+                    color="grey"
+                    label
+                  >
+                    +{{ user.organizations.length - 2 }} more
+                  </v-chip>
+                </div>
+                <span v-else class="text-body-2 text-grey">No Organization</span>
+              </div>
+              <!-- Additional organizations -->
+              <div v-if="user.organizations && user.organizations.length > 2" class="ml-6">
+                <div class="d-flex flex-wrap gap-1">
+                  <v-chip
+                    v-for="org in user.organizations.slice(2)"
+                    :key="org.id"
+                    size="x-small"
+                    variant="outlined"
+                    color="primary"
+                    label
+                  >
+                    {{ org.title }}
+                  </v-chip>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="d-flex flex-wrap gap-2 mb-3">
@@ -128,6 +200,7 @@ const getBlockedEventsForUser = (user: User) => {
               :color="getRoleColor(user.role_id)"
               variant="tonal"
               size="small"
+							class="my-1 mx-1"
               label
             >
               <v-icon start size="small">mdi-shield-account</v-icon>
@@ -137,6 +210,7 @@ const getBlockedEventsForUser = (user: User) => {
               :color="getUserStatusDisplayForUser(user).color"
               variant="tonal"
               size="small"
+							class="my-1 mx-1"
               label
             >
               <v-icon start size="small">mdi-circle</v-icon>

@@ -3,6 +3,8 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useUserRolesStore } from '@/stores/roles'
+import { useOrganizationDataStore } from '@/stores/organizationData'
+import { useOrganizationMembersStore } from '@/stores/organizationMembersData'
 import { fetchStudentEventDetailsByUserId } from '@/stores/studentsData'
 import { updateStudentEventStatus } from '@/stores/eventsData'
 import { supabase } from '@/lib/supabase'
@@ -27,7 +29,7 @@ import {
 } from '@/utils/helpers'
 
 // Export utilities
-import { exportBlockedStudentsToPDF, exportBlockedStudentsToDocx, exportBlockedStudentsToExcel } from '@/utils/exportUtils'
+import { exportBlockedStudentsToPDF, exportBlockedStudentsToDocx } from '@/utils/exportUtils'
 
 interface User {
   id: string
@@ -41,12 +43,18 @@ interface User {
   organization_id?: number
   role_id?: number
   student_id?: number
+  organizations?: Array<{
+    id: string
+    title: string
+  }>
 }
 
 // Composables
 const { xs, smAndDown, mdAndUp } = useDisplay()
 const authStore = useAuthUserStore()
 const rolesStore = useUserRolesStore()
+const organizationStore = useOrganizationDataStore()
+const membersStore = useOrganizationMembersStore()
 const toast = useToast()
 
 // Reactive data
@@ -133,9 +141,83 @@ const fetchUsers = async () => {
       return
     }
 
-    // Users are now stored in authStore.users reactively
+    // Fetch organizations
+    await organizationStore.fetchOrganizations()
+
+    // Map organization data to users
     if (result.users) {
-      // toast.success(`Loaded ${result.users.length} users`)
+      const usersWithOrganizations = await Promise.all(
+        result.users.map(async (user: any) => {
+          let organizations: Array<{ id: string; title: string }> = []
+
+          // For students (role_id === 2), try to find their organizations
+          if (user.role_id === 2) {
+            // First try direct organization_id if it exists
+            if (user.organization_id) {
+              console.log(`User ${user.full_name} has direct organization_id:`, user.organization_id)
+              const directOrg = organizationStore.organizations.find(
+                org => org.id === String(user.organization_id) ||
+                       parseInt(org.id) === user.organization_id ||
+                       org.id === user.organization_id
+              )
+              if (directOrg) {
+                organizations.push({
+                  id: directOrg.id,
+                  title: directOrg.title
+                })
+              }
+            }
+
+            // Always check organization_members table for additional memberships
+            if (user.student_id) {
+              try {
+                const { data: membershipData, error } = await supabase
+                  .from('organization_members')
+                  .select(`
+                    organization_id,
+                    organization:organizations!organization_members_organization_id_fkey (
+                      id,
+                      title
+                    )
+                  `)
+                  .eq('student_id', user.student_id)
+                  .eq('status', 'active')
+
+                if (!error && membershipData && membershipData.length > 0) {
+                  membershipData.forEach(membership => {
+                    if (membership.organization) {
+                      const orgId = String(membership.organization_id)
+                      // Handle both single object and array cases
+                      const orgData = Array.isArray(membership.organization)
+                        ? membership.organization[0]
+                        : membership.organization
+
+                      // Avoid duplicates and ensure orgData is valid
+                      if (orgData && orgData.title && !organizations.find(org => org.id === orgId)) {
+                        organizations.push({
+                          id: orgId,
+                          title: String(orgData.title) || 'Unknown Organization'
+                        })
+                      }
+                    }
+                  })
+                  console.log(`Found ${membershipData.length} organization(s) via membership for ${user.full_name}:`, organizations)
+                }
+              } catch (error) {
+                console.warn(`Failed to fetch organization membership for user ${user.full_name}:`, error)
+              }
+            }
+          }
+
+          return {
+            ...user,
+            organizations: organizations.length > 0 ? organizations : []
+          }
+        })
+      )
+
+      // Update the auth store users with organization data
+      authStore.users = usersWithOrganizations
     }
   } catch (error) {
     toast.error('An unexpected error occurred while fetching users')
@@ -223,16 +305,6 @@ const handleExportToDocx = async () => {
   }
 }
 
-const handleExportToExcel = () => {
-  try {
-    exportBlockedStudentsToExcel(blockedStudents.value, studentEventStatusMap.value)
-    toast.success('Excel export completed successfully!')
-  } catch (error) {
-    toast.error('Failed to export Excel: ' + getErrorMessage(error))
-    console.error('Excel export error:', error)
-  }
-}
-
 // Lifecycle
 onMounted(async () => {
   await refreshData()
@@ -257,7 +329,6 @@ onMounted(async () => {
       :blocked-students-count="blockedStudents.length"
       @export:pdf="handleExportToPDF"
       @export:docx="handleExportToDocx"
-      @export:excel="handleExportToExcel"
     />
 
     <!-- Status Summary -->

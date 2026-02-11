@@ -36,6 +36,7 @@ declare module 'vue-router/auto-routes' {
     '/admin/dialogs/AddCalendarDialog': RouteRecordInfo<'/admin/dialogs/AddCalendarDialog', '/admin/dialogs/AddCalendarDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/AdminUserRolesDialog': RouteRecordInfo<'/admin/dialogs/AdminUserRolesDialog', '/admin/dialogs/AdminUserRolesDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/BlockedEventDialog': RouteRecordInfo<'/admin/dialogs/BlockedEventDialog', '/admin/dialogs/BlockedEventDialog', Record<never, never>, Record<never, never>>,
+    '/admin/dialogs/DeletedOrg': RouteRecordInfo<'/admin/dialogs/DeletedOrg', '/admin/dialogs/DeletedOrg', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/DeleteUserDialog': RouteRecordInfo<'/admin/dialogs/DeleteUserDialog', '/admin/dialogs/DeleteUserDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/EditUserDialog': RouteRecordInfo<'/admin/dialogs/EditUserDialog', '/admin/dialogs/EditUserDialog', Record<never, never>, Record<never, never>>,
     '/admin/dialogs/EventDetailsDialog': RouteRecordInfo<'/admin/dialogs/EventDetailsDialog', '/admin/dialogs/EventDetailsDialog', Record<never, never>, Record<never, never>>,
@@ -56,7 +57,11 @@ declare module 'vue-router/auto-routes' {
     '/myAccounts/MyOrganizationWidget': RouteRecordInfo<'/myAccounts/MyOrganizationWidget', '/myAccounts/MyOrganizationWidget', Record<never, never>, Record<never, never>>,
     '/myOrganization/dialogs/EventStudentsDialog': RouteRecordInfo<'/myOrganization/dialogs/EventStudentsDialog', '/myOrganization/dialogs/EventStudentsDialog', Record<never, never>, Record<never, never>>,
     '/myOrganization/MembersView': RouteRecordInfo<'/myOrganization/MembersView', '/myOrganization/MembersView', Record<never, never>, Record<never, never>>,
+    '/myOrganization/PerOrgCalendar': RouteRecordInfo<'/myOrganization/PerOrgCalendar', '/myOrganization/PerOrgCalendar', Record<never, never>, Record<never, never>>,
     '/NotFound': RouteRecordInfo<'/NotFound', '/NotFound', Record<never, never>, Record<never, never>>,
+    '/profiles/components/ProfilesWidget': RouteRecordInfo<'/profiles/components/ProfilesWidget', '/profiles/components/ProfilesWidget', Record<never, never>, Record<never, never>>,
+    '/profiles/dialogs/ProfilesDialog': RouteRecordInfo<'/profiles/dialogs/ProfilesDialog', '/profiles/dialogs/ProfilesDialog', Record<never, never>, Record<never, never>>,
+    '/profiles/ProfilesView': RouteRecordInfo<'/profiles/ProfilesView', '/profiles/ProfilesView', Record<never, never>, Record<never, never>>,
     '/students/StudentCalendar': RouteRecordInfo<'/students/StudentCalendar', '/students/StudentCalendar', Record<never, never>, Record<never, never>>,
   }
 }

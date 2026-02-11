@@ -17,6 +17,7 @@ import PerOrgCalendar from '@/pages/myOrganization/PerOrgCalendar.vue';
 
 import MyClearanceView from '@/pages/myAccounts/MyClearanceView.vue';
 import MyEventsView from '@/pages/myAccounts/MyEventsView.vue';
+import ProfilesView from '@/pages/profiles/ProfilesView.vue';
 /**
  * Route definitions for the application
  */
@@ -28,6 +29,11 @@ const routes = setupLayouts([
   {
     path: '/auth',
     component: Auth,
+  },
+  {
+    path: '/account/user-profile',
+    component: ProfilesView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/account/profile',

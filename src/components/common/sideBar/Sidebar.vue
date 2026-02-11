@@ -55,6 +55,21 @@ watch(
 // Hide sidebar on small screens
 const showSidebar = computed(() => !smAndDown.value)
 
+// Compute sidebar title based on user role
+const sidebarTitle = computed(() => {
+  const userRoleId = authStore.userRole
+
+  switch (userRoleId) {
+    case 2: // Student
+      return 'Student Panel'
+    case 3: // Organization Leader
+      return 'Organization Admin Panel'
+    case 1: // LCO Admin
+    default:
+      return 'LCO Admin Panel'
+  }
+})
+
 // Filter navigation groups based on user's accessible pages
 const navigationGroups = computed(() => {
   if (!permissionsLoaded.value) {
@@ -164,7 +179,7 @@ const handleLogout = async () => {
     <v-list-item class="pa-4">
       <v-list-item-content>
         <v-list-item-title class="text-h6 font-weight-bold primary--text">
-          Admin Panel
+          {{ sidebarTitle }}
         </v-list-item-title>
         <v-list-item-subtitle class="text-caption grey--text">
           Management System
