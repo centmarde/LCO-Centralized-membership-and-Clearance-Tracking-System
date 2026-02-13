@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { CalendarView } from 'vue-simple-calendar'
 import { useEventsStore, type EventWithLCO } from '@/stores/eventsData'
 import { useCalendarView, calendarViews } from '@/pages/admin/composables/calendarView'
-import AddCalendarDialog from '@/pages/admin/dialogs/AddCalendarDialog.vue'
+import PerOrgEventDialog from '@/pages/admin/dialogs/PerOrgEventDialog.vue'
 import ViewCalendarDialog from '@/pages/admin/dialogs/ViewCalendarDialog.vue'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
@@ -84,7 +84,7 @@ const lcoEventsCounts = computed(() => {
 	}
 })
 
-// Load events scoped to the selected organization
+// Load events scoped to the selected organization plus global LCO + Org Leaders events
 const loadEventsForOrganization = async (organizationId: string | number | null) => {
 	if (!organizationId) {
 		events.value = []
@@ -93,9 +93,31 @@ const loadEventsForOrganization = async (organizationId: string | number | null)
 
 	try {
 		loading.value = true
-		events.value = await eventsStore.fetchEventsForOrganization(organizationId)
+
+		const [orgEvents, allEvents] = await Promise.all([
+			eventsStore.fetchEventsForOrganization(organizationId),
+			eventsStore.fetchEvents()
+		])
+
+		const lcoEvents = allEvents.filter(ev => ev.is_lco)
+		const orgLeaderEvents = allEvents.filter(ev => !ev.is_lco && (ev.organization_id === null || ev.organization_id === undefined))
+
+		const merged = new Map<number, EventWithLCO>()
+		;[...lcoEvents, ...orgLeaderEvents, ...orgEvents].forEach(ev => {
+			merged.set(ev.id, {
+				...ev,
+				is_lco: !!ev.is_lco
+			})
+		})
+
+		// Sort by date (desc), fallback to created_at
+		events.value = Array.from(merged.values()).sort((a, b) => {
+			const aDate = a.date ? new Date(a.date).getTime() : (a.created_at ? new Date(a.created_at).getTime() : 0)
+			const bDate = b.date ? new Date(b.date).getTime() : (b.created_at ? new Date(b.created_at).getTime() : 0)
+			return bDate - aDate
+		})
 	} catch (error) {
-		console.error('Error loading organization events:', error)
+		console.error('Error loading organization and LCO events:', error)
 	} finally {
 		loading.value = false
 	}
@@ -416,11 +438,11 @@ onMounted(async () => {
 						</v-row>
 					</v-card-text>
 
-					<!-- Add Event Dialog -->
-					<AddCalendarDialog
+					<!-- Add Event Dialog (Org-scoped) -->
+					<PerOrgEventDialog
 						v-model="showAddEventDialog"
 						:selected-date="selectedDateForEvent"
-						:locked-organization-id="selectedOrganizationId"
+						:organization-id="selectedOrganizationId"
 						@event-created="onEventCreated"
 					/>
 

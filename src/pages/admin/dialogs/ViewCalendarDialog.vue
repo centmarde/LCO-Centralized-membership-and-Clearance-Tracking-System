@@ -73,6 +73,33 @@ const eventStatusColor = computed(() => getEventStatusColor(props.event))
 const eventStatusText = computed(() => getEventStatusText(props.event))
 const isEventInPast = computed(() => getIsEventInPast(props.event))
 
+const eventTypeMeta = computed(() => {
+  if (props.event?.is_lco) {
+    return {
+      label: 'LCO Event',
+      description: 'Official LCO event',
+      icon: 'mdi-account-tie',
+      color: 'primary'
+    }
+  }
+
+  if (props.event?.organization_id) {
+    return {
+      label: 'Organization Event',
+      description: 'Visible to members of this organization',
+      icon: 'mdi-account-group',
+      color: 'secondary'
+    }
+  }
+
+  return {
+    label: 'Org Leaders Event',
+    description: 'Targets all organization leaders in the system',
+    icon: 'mdi-account-group',
+    color: 'secondary'
+  }
+})
+
 // Local dialog state
 const internalDialog = computed({
   get: () => props.isOpen,
@@ -213,22 +240,19 @@ const handleDeleteSubmit = async () => {
             </v-label>
             <div class="d-flex align-center">
               <v-chip
-                :color="event?.is_lco ? 'primary' : 'secondary'"
+                :color="eventTypeMeta.color"
                 variant="tonal"
                 size="small"
                 class="me-2"
               >
                 <v-icon
                   start
-                  :icon="event?.is_lco ? 'mdi-account-tie' : 'mdi-account-group'"
+                  :icon="eventTypeMeta.icon"
                 />
-                {{ event?.is_lco ? 'LCO Event' : 'Org Leaders Event' }}
+                {{ eventTypeMeta.label }}
               </v-chip>
               <span class="text-caption text-medium-emphasis">
-                {{ event?.is_lco
-                  ? 'Official LCO event'
-                  : 'Targets all organization leaders in the system'
-                }}
+                {{ eventTypeMeta.description }}
               </span>
             </div>
           </div>
