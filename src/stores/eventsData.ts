@@ -201,6 +201,118 @@ export async function dedupeStudentEventsForEvent(eventId: number): Promise<{ re
   return { removed: duplicates.length }
 }
 
+// Block all organization leaders for an Org Leaders event
+// Sources:
+// 1) students.role_id = 3
+// 2) organization_members where member_role != 'member'
+// 3) organizations.leader_id mapped to students.user_id
+export async function blockAllOrgLeadersForOrgLeaderEvent(eventId: number): Promise<{ success: boolean; affected: number }> {
+  try {
+    // 1) students.role_id = 3
+    const { data: roleLeaders, error: roleErr } = await supabaseAdmin
+      .from('students')
+      .select('id')
+      .eq('role_id', 3)
+
+    if (roleErr) {
+      console.error('Error fetching students with role_id=3:', roleErr)
+      throw roleErr
+    }
+
+    // 2) organization_members (non-member roles)
+    const { data: memberLeaders, error: memberErr } = await supabaseAdmin
+      .from('organization_members')
+      .select('student_id')
+      .neq('member_role', 'member')
+
+    if (memberErr) {
+      console.error('Error fetching organization leaders from members:', memberErr)
+      throw memberErr
+    }
+
+    // 3) organizations.leader_id -> map to students.user_id
+    const { data: orgLeaders, error: orgErr } = await supabaseAdmin
+      .from('organizations')
+      .select('leader_id')
+      .not('leader_id', 'is', null)
+
+    if (orgErr) {
+      console.error('Error fetching organization leader IDs:', orgErr)
+      throw orgErr
+    }
+
+    const leaderUserIdsFromOrgs = (orgLeaders || []).map(o => o.leader_id).filter(Boolean) as string[]
+    let leaderStudentsFromOrgLeaders: { id: string | number }[] = []
+    if (leaderUserIdsFromOrgs.length > 0) {
+      const { data: leaderStudentRows, error: studentErr } = await supabaseAdmin
+        .from('students')
+        .select('id, user_id')
+        .in('user_id', leaderUserIdsFromOrgs as any)
+
+      if (studentErr) {
+        console.error('Error mapping leader users to students:', studentErr)
+        throw studentErr
+      }
+      leaderStudentsFromOrgLeaders = leaderStudentRows || []
+    }
+
+    const leaderIds = Array.from(new Set([
+      ...(roleLeaders || []).map(l => l.id).filter(Boolean),
+      ...(memberLeaders || []).map(l => l.student_id).filter(Boolean),
+      ...leaderStudentsFromOrgLeaders.map(s => s.id)
+    ]))
+
+    if (leaderIds.length === 0) {
+      return { success: true, affected: 0 }
+    }
+
+    // Find existing rows for these leaders for this event
+    const { data: existing, error: existingErr } = await supabaseAdmin
+      .from('student_events')
+      .select('student_id')
+      .eq('event_id', eventId)
+      .in('student_id', leaderIds as any)
+
+    if (existingErr) {
+      console.error('Error fetching existing leader registrations:', existingErr)
+      throw existingErr
+    }
+
+    const existingIds = new Set((existing || []).map(r => r.student_id))
+    const toInsert = leaderIds
+      .filter(id => !existingIds.has(id))
+      .map(id => ({ student_id: id, event_id: eventId, status: 'blocked' }))
+
+    if (toInsert.length > 0) {
+      const { error: insErr } = await supabaseAdmin
+        .from('student_events')
+        .insert(toInsert)
+
+      if (insErr) {
+        console.error('Error inserting org leader blocks:', insErr)
+        throw insErr
+      }
+    }
+
+    // Ensure all leader rows are set to blocked
+    const { error: updErr } = await supabaseAdmin
+      .from('student_events')
+      .update({ status: 'blocked' })
+      .eq('event_id', eventId)
+      .in('student_id', leaderIds as any)
+
+    if (updErr) {
+      console.error('Error updating org leader blocks:', updErr)
+      throw updErr
+    }
+
+    return { success: true, affected: leaderIds.length }
+  } catch (error) {
+    console.error('Failed to block organization leaders for Org Leaders event:', error)
+    throw error
+  }
+}
+
 export const useEventsStore = defineStore('events', () => {
   // State
   const events = ref<EventWithLCO[]>([])
@@ -406,6 +518,18 @@ export const useEventsStore = defineStore('events', () => {
         }
       }
 
+      // If this is an Org Leaders event (non-LCO, no organization_id), block all organization leaders
+      if (!newEvent.is_lco && !newEvent.organization_id) {
+        try {
+          const { affected } = await blockAllOrgLeadersForOrgLeaderEvent(newEvent.id)
+          const { removed } = await dedupeStudentEventsForEvent(newEvent.id)
+          console.log(`Org Leaders Event created: Blocked ${affected} org leaders, removed ${removed} duplicate rows for event "${newEvent.title}"`)
+        } catch (err) {
+          console.error('Failed to block org leaders for Org Leaders event:', err)
+          // Do not throw; event creation already succeeded
+        }
+      }
+
       events.value.unshift(newEvent) // Add to beginning of array
       return newEvent
     } catch (err) {
@@ -467,6 +591,17 @@ export const useEventsStore = defineStore('events', () => {
         } catch (registrationError) {
           console.error('Failed to register students or block members when toggling LCO on:', registrationError)
           // Don't throw here - the event was updated successfully, just log the registration error
+        }
+      }
+
+      // If event remains non-LCO without organization_id (Org Leaders event), ensure leaders are blocked
+      if (!updatedEvent.is_lco && !updatedEvent.organization_id) {
+        try {
+          const { affected } = await blockAllOrgLeadersForOrgLeaderEvent(updatedEvent.id)
+          const { removed } = await dedupeStudentEventsForEvent(updatedEvent.id)
+          console.log(`Org Leaders Event updated: Blocked ${affected} org leaders, removed ${removed} duplicate rows for event "${updatedEvent.title}"`)
+        } catch (err) {
+          console.error('Failed to block org leaders for Org Leaders event update:', err)
         }
       }
 
