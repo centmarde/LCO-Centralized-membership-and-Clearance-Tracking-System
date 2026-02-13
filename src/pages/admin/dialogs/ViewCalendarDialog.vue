@@ -100,6 +100,9 @@ const eventTypeMeta = computed(() => {
   }
 })
 
+// Admins can edit global/LCO events; organization-scoped events are view/delete only
+const canEditEvent = computed(() => !props.event?.organization_id)
+
 // Local dialog state
 const internalDialog = computed({
   get: () => props.isOpen,
@@ -118,7 +121,11 @@ watch(() => props.isOpen, (newValue) => {
 // Watch for event changes
 watch(() => props.event, (newEvent) => {
   if (newEvent) {
-    // Event changed - form will be re-initialized when dialog opens
+    initializeForm(newEvent)
+    if (!canEditEvent.value) {
+      isEditMode.value = false
+      showDeleteConfirm.value = false
+    }
   }
 }, { deep: true })
 
@@ -129,11 +136,13 @@ const closeDialog = () => {
 
 // Handle edit mode toggle
 const handleEditToggle = () => {
+  if (!canEditEvent.value) return
   toggleEditMode(props.event)
 }
 
 // Handle update submission
 const handleUpdateSubmit = async () => {
+  if (!canEditEvent.value) return
   try {
     const updatedEvent = await handleUpdate()
     if (updatedEvent) {
@@ -378,6 +387,7 @@ const handleDeleteSubmit = async () => {
             color="primary"
             variant="flat"
             prepend-icon="mdi-pencil"
+            :disabled="!canEditEvent"
             @click="handleEditToggle"
           >
             Edit
