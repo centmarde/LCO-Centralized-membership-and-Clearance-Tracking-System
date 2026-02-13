@@ -70,6 +70,22 @@ const handleRemoveMember = (memberId: string) => emit('remove-member', memberId)
 const getStatusColor = getMemberStatusColor
 const getRoleTitle = getMemberRoleTitle
 
+const formatStudentLabel = (student: any) => {
+  const name = student?.full_name || student?.email || 'Unknown Student'
+  const id = student?.student_number || 'No ID'
+  return `${name} • ${id}`
+}
+
+const getStudentInitials = (student: any) => {
+  const name = student?.full_name?.trim()
+  if (name) {
+    const parts = name.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+    if (parts.length === 1) return (parts[0].slice(0, 2)).toUpperCase()
+  }
+  return getEmailInitials(student?.email || '')
+}
+
 const showDeadlineWarning = computed(() => !!props.organizationDeadline && !isDeadlinePassed.value && props.members.length < 5)
 const showDeadlineRestriction = computed(() => !!props.organizationDeadline && isDeadlinePassed.value)
 const formattedDeadline = computed(() => {
@@ -145,7 +161,7 @@ watch(() => props.organizationId, (newId) => {
                   @update:model-value="updateStudentId"
                   :items="availableStudents"
                   item-value="id"
-                  item-title="email"
+                  :item-title="formatStudentLabel"
                   label="Select Student"
                   variant="outlined"
                   density="compact"
@@ -155,14 +171,33 @@ watch(() => props.organizationId, (newId) => {
                   :disabled="isDeadlinePassed"
                 >
                   <template #selection="{ item }">
-                    <div class="d-flex align-center">
+                    <div v-if="item" class="d-flex align-center">
                       <v-avatar size="24" color="primary" class="me-2">
                         <span class="text-white text-caption">
-                          {{ getEmailInitials(item.raw.email || '') }}
+                          {{ getStudentInitials(item.raw) }}
                         </span>
                       </v-avatar>
-                      {{ item.raw.email }}
+                      <div class="d-flex flex-column">
+                        <span class="text-body-2 font-weight-medium">{{ item.raw.full_name || 'Unknown Student' }}</span>
+                        <span class="text-caption text-medium-emphasis">ID: {{ item.raw.student_number || 'N/A' }}</span>
+                      </div>
                     </div>
+                    <span v-else class="text-medium-emphasis">Select Student</span>
+                  </template>
+                  <template #item="{ item, props: itemProps }">
+                    <v-list-item v-bind="itemProps" title="" subtitle="">
+                      <template #prepend>
+                        <v-avatar size="28" color="primary" class="me-2">
+                          <span class="text-white text-caption">
+                            {{ getStudentInitials(item.raw) }}
+                          </span>
+                        </v-avatar>
+                      </template>
+                      <v-list-item-title>{{ formatStudentLabel(item.raw) }}</v-list-item-title>
+                      <v-list-item-subtitle class="d-flex flex-column">
+                        <span v-if="item.raw.email" class="text-caption">{{ item.raw.email }}</span>
+                      </v-list-item-subtitle>
+                    </v-list-item>
                   </template>
                 </v-select>
               </v-col>
