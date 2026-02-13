@@ -125,6 +125,82 @@ export async function registerAllStudentsForLcoEvent(eventId: number): Promise<{
   }
 }
 
+// Block all organization members (including leaders) for an LCO event
+export async function blockAllOrganizationMembersForLcoEvent(eventId: number): Promise<{ success: boolean; affected: number }> {
+  try {
+    // Get all organization members (leaders are included in this table)
+    const { data: members, error: membersError } = await supabaseAdmin
+      .from('organization_members')
+      .select('student_id')
+
+    if (membersError) {
+      console.error('Error fetching organization members:', membersError)
+      throw membersError
+    }
+
+    const memberIds = Array.from(new Set((members || []).map(m => m.student_id).filter(Boolean)))
+    if (memberIds.length === 0) {
+      return { success: true, affected: 0 }
+    }
+
+    // Update all member rows to blocked (idempotent; rows already created by student auto-registration)
+    const { error: updateError } = await supabaseAdmin
+      .from('student_events')
+      .update({ status: 'blocked' })
+      .eq('event_id', eventId)
+      .in('student_id', memberIds as any)
+
+    if (updateError) {
+      console.error('Error updating member registrations to blocked:', updateError)
+      throw updateError
+    }
+
+    return { success: true, affected: memberIds.length }
+  } catch (error) {
+    console.error('Failed to block all organization members for LCO event:', error)
+    throw error
+  }
+}
+
+// Remove duplicate student_events rows for a given event, keeping the earliest per student
+export async function dedupeStudentEventsForEvent(eventId: number): Promise<{ removed: number }> {
+  const { data, error } = await supabaseAdmin
+    .from('student_events')
+    .select('id, student_id, created_at')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching student_events for dedupe:', error)
+    throw error
+  }
+
+  const seen = new Set<string | number>()
+  const duplicates: number[] = []
+
+  for (const row of data || []) {
+    if (seen.has(row.student_id)) {
+      duplicates.push(row.id)
+    } else {
+      seen.add(row.student_id)
+    }
+  }
+
+  if (duplicates.length === 0) return { removed: 0 }
+
+  const { error: delErr } = await supabaseAdmin
+    .from('student_events')
+    .delete()
+    .in('id', duplicates)
+
+  if (delErr) {
+    console.error('Error deleting duplicate student_events rows:', delErr)
+    throw delErr
+  }
+
+  return { removed: duplicates.length }
+}
+
 export const useEventsStore = defineStore('events', () => {
   // State
   const events = ref<EventWithLCO[]>([])
@@ -317,13 +393,15 @@ export const useEventsStore = defineStore('events', () => {
         is_lco: data.is_lco ?? false
       }
 
-      // If this is an LCO event, register all students
+      // If this is an LCO event, register all students then block all org members (including leaders), then dedupe rows
       if (newEvent.is_lco) {
         try {
           const { registeredCount } = await registerAllStudentsForLcoEvent(newEvent.id)
-          console.log(`LCO Event created: Registered ${registeredCount} students for event "${newEvent.title}"`)
+          const { affected } = await blockAllOrganizationMembersForLcoEvent(newEvent.id)
+          const { removed } = await dedupeStudentEventsForEvent(newEvent.id)
+          console.log(`LCO Event created: Registered ${registeredCount} students, blocked ${affected} org members, removed ${removed} duplicate rows for event "${newEvent.title}"`)
         } catch (registrationError) {
-          console.error('Failed to register students for LCO event:', registrationError)
+          console.error('Failed to register students or block members for LCO event:', registrationError)
           // Don't throw here - the event was created successfully, just log the registration error
         }
       }
@@ -379,13 +457,15 @@ export const useEventsStore = defineStore('events', () => {
         is_lco: data.is_lco ?? false
       }
 
-      // If LCO was toggled on (wasn't LCO before, but is now), register all students
+      // If LCO was toggled on (wasn't LCO before, but is now), register all students then block org members, then dedupe rows
       if (!wasLcoEvent && updatedEvent.is_lco) {
         try {
           const { registeredCount } = await registerAllStudentsForLcoEvent(updatedEvent.id)
-          console.log(`LCO Event toggled on: Registered ${registeredCount} students for event "${updatedEvent.title}"`)
+          const { affected } = await blockAllOrganizationMembersForLcoEvent(updatedEvent.id)
+          const { removed } = await dedupeStudentEventsForEvent(updatedEvent.id)
+          console.log(`LCO Event toggled on: Registered ${registeredCount} students, blocked ${affected} org members, removed ${removed} duplicate rows for event "${updatedEvent.title}"`)
         } catch (registrationError) {
-          console.error('Failed to register students when toggling LCO on:', registrationError)
+          console.error('Failed to register students or block members when toggling LCO on:', registrationError)
           // Don't throw here - the event was updated successfully, just log the registration error
         }
       }
