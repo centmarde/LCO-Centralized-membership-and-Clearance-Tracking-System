@@ -1,6 +1,15 @@
 import { supabase } from '@/lib/supabase'
 // Fetch blocked events for a specific student (by user_id)
-export async function fetchBlockedEventsByUserId(userId: string): Promise<{ name: string; date: string; status: string }[]> {
+export async function fetchBlockedEventsByUserId(userId: string): Promise<{
+  name: string
+  date: string
+  status: string
+  organization_id?: string | number | null
+  organization_name?: string | null
+  organization_title?: string | null
+  organization?: string | null
+  is_lco?: boolean
+}[]> {
   const students = await fetchStudents();
   const student = students.find(s => s.user_id === userId);
   if (!student) throw new Error('No student record found for current user');
@@ -8,7 +17,16 @@ export async function fetchBlockedEventsByUserId(userId: string): Promise<{ name
 
   const { data, error: seError } = await supabase
     .from('student_events')
-    .select('status, events:events!student_events_event_id_fkey(title, date)')
+    .select(`
+      status,
+      events:events!student_events_event_id_fkey(
+        title,
+        date,
+        is_lco,
+        organization_id,
+        organizations(title)
+      )
+    `)
     .eq('student_id', studentId)
     .ilike('status', 'blocked');
 
@@ -18,10 +36,21 @@ export async function fetchBlockedEventsByUserId(userId: string): Promise<{ name
     .filter(ev => ev.status)
     .map(ev => {
       const eventObj = Array.isArray(ev.events) ? ev.events[0] : ev.events;
+      const orgTitle = eventObj?.organizations
+        ? (Array.isArray(eventObj.organizations)
+            ? eventObj.organizations[0]?.title
+            : (eventObj.organizations as any)?.title)
+        : null;
+
       return {
         name: eventObj?.title || 'Event not found',
         date: eventObj?.date || '-',
-        status: ev.status
+        status: ev.status,
+        organization_id: eventObj?.organization_id ?? null,
+        organization_name: orgTitle || null,
+        organization_title: orgTitle || null,
+        organization: orgTitle || null,
+        is_lco: eventObj?.is_lco ?? false
       };
     });
 }
