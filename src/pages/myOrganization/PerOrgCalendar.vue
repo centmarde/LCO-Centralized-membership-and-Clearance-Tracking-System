@@ -4,7 +4,7 @@ import { CalendarView } from 'vue-simple-calendar'
 import { useEventsStore, type EventWithLCO } from '@/stores/eventsData'
 import { useCalendarView, calendarViews } from '@/pages/admin/composables/calendarView'
 import PerOrgEventDialog from '@/pages/admin/dialogs/PerOrgEventDialog.vue'
-import ViewCalendarDialog from '@/pages/admin/dialogs/ViewCalendarDialog.vue'
+import PerOrgViewEventDialog from '@/pages/admin/dialogs/PerOrgViewEventDialog.vue'
 import { useAuthUserStore } from '@/stores/authUser'
 import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
 import { filterOrganizationsByLeader } from '@/utils/helpers'
@@ -446,10 +446,11 @@ onMounted(async () => {
 						@event-created="onEventCreated"
 					/>
 
-					<!-- View Event Dialog -->
-					<ViewCalendarDialog
+					<!-- View Event Dialog (Org leader scoped) -->
+					<PerOrgViewEventDialog
 						v-model:is-open="showViewEventDialog"
 						:event="selectedEvent"
+						:organization-id="selectedOrganizationId"
 						@event-updated="onEventUpdated"
 						@event-deleted="onEventDeleted"
 					/>

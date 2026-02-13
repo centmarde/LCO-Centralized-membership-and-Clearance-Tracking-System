@@ -168,7 +168,7 @@ const handleCancel = () => {
 										<v-icon>mdi-account-group</v-icon>
 									</template>
 									<div class="d-flex flex-column">
-										<span class="text-body-2 font-weight-medium">Org Leaders Event</span>
+										<span class="text-body-2 font-weight-medium">Organizational Event</span>
 										<span class="text-caption text-medium-emphasis">
 											This event is locked to your organization and will also block its members for the selected date.
 										</span>
