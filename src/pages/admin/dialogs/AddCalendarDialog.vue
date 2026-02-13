@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { useAddCalendarDialog } from '@/pages/admin/composables/calendarDialog'
-import { useOrganizations } from '@/pages/admin/composables/useOrganizations'
 import { useAuthUserStore } from '@/stores/authUser'
 import LcoEventWarning from '@/components/admin/LcoEventWarning.vue'
 
-// Component name for ESLint multi-word rule
 defineOptions({
   name: 'AddCalendarDialog'
 })
 
-// Props
 interface Props {
   modelValue: boolean
   selectedDate?: Date | null
@@ -22,13 +19,11 @@ const props = withDefaults(defineProps<Props>(), {
   lockedOrganizationId: null
 })
 
-// Emits
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'event-created': [event: any]
 }>()
 
-// Use composable
 const {
   formData,
   formRef,
@@ -38,84 +33,40 @@ const {
   initializeForm,
   handleSubmit,
   validationRules,
-  formatters,
-  selectedOrganizationId
+  formatters
 } = useAddCalendarDialog()
 
-// Organizations for attachment
-const {
-  organizations,
-  fetchOrganizations
-} = useOrganizations()
-
-// Auth store for role checking
 const authStore = useAuthUserStore()
-
-const isOrganizationLocked = computed(() => props.lockedOrganizationId !== null && props.lockedOrganizationId !== undefined)
-
-// Check if user is admin (role === 1)
 const isAdmin = computed(() => authStore.userRole === 1)
 
-const organizationOptions = computed(() => {
-  if (isOrganizationLocked.value && props.lockedOrganizationId !== null && props.lockedOrganizationId !== undefined) {
-    return (organizations.value || []).filter(org => org.id === props.lockedOrganizationId)
-  }
-  return organizations.value
-})
-
-const lockedOrganizationName = computed(() => {
-  if (!isOrganizationLocked.value) return ''
-  const match = (organizations.value || []).find(org => org.id === props.lockedOrganizationId)
-  return match?.title || 'Selected organization'
-})
-
-// Dialog state
 const dialog = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value)
 })
 
-// Computed properties
 const formattedSelectedDate = computed(() => formatters.selectedDate(props.selectedDate))
 
-// Watch for selectedDate changes
 watch(() => props.selectedDate, (newDate) => {
   if (newDate && !formData.value.date) {
     formData.value.date = formattedSelectedDate.value
   }
 }, { immediate: true })
 
-// Watch for dialog open/close
 watch(dialog, (isOpen) => {
   if (isOpen) {
     initializeForm(props.selectedDate)
-    fetchOrganizations()
-
-    // Reset LCO flag for non-admin users
     if (!isAdmin.value) {
       formData.value.is_lco = false
     }
-
-    if (isOrganizationLocked.value) {
-      selectedOrganizationId.value = props.lockedOrganizationId
-    }
   }
 })
 
-watch(() => props.lockedOrganizationId, (newVal) => {
-  if (isOrganizationLocked.value) {
-    selectedOrganizationId.value = newVal
-  }
-})
-
-// Ensure non-admin users cannot set LCO events
 watch(isAdmin, (isAdminUser) => {
   if (!isAdminUser && formData.value.is_lco) {
     formData.value.is_lco = false
   }
 })
 
-// Methods
 const closeDialog = () => {
   dialog.value = false
 }
@@ -128,8 +79,7 @@ const handleFormSubmit = async () => {
       closeDialog()
     }
   } catch (error) {
-    // Error is already logged in the composable
-    // You might want to show an error message to the user here
+    // Error already handled in composable
   }
 }
 
@@ -146,7 +96,6 @@ const handleCancel = () => {
     scrollable
   >
     <v-card class="add-event-dialog" elevation="8" rounded="lg">
-      <!-- Dialog Header -->
       <v-card-title class="d-flex align-center justify-space-between pa-6 bg-primary text-white">
         <div class="d-flex align-center">
           <v-icon size="28" class="me-3">mdi-calendar-plus</v-icon>
@@ -162,12 +111,11 @@ const handleCancel = () => {
           size="small"
           @click="handleCancel"
           :disabled="loading"
-        ></v-btn>
+        />
       </v-card-title>
 
-      <v-divider></v-divider>
+      <v-divider />
 
-      <!-- Dialog Content -->
       <v-card-text class="pa-6">
         <v-form
           ref="formRef"
@@ -176,7 +124,6 @@ const handleCancel = () => {
         >
           <v-container fluid class="pa-0">
             <v-row>
-              <!-- Event Title -->
               <v-col cols="12">
                 <v-text-field
                   v-model="formData.title"
@@ -189,10 +136,9 @@ const handleCancel = () => {
                   class="mb-2"
                   hint="Enter a descriptive title for your event"
                   persistent-hint
-                ></v-text-field>
+                />
               </v-col>
 
-              <!-- Event Date -->
               <v-col cols="12">
                 <v-text-field
                   v-model="formData.date"
@@ -206,32 +152,31 @@ const handleCancel = () => {
                   class="mb-2"
                   hint="Select the date when the event will take place"
                   persistent-hint
-                ></v-text-field>
+                />
               </v-col>
 
-              <!-- LCO Event Toggle (only for admin users) -->
               <v-col v-if="isAdmin" cols="12">
                 <v-switch
                   v-model="formData.is_lco"
                   color="primary"
-                  :disabled="loading || isOrganizationLocked"
+                  :disabled="loading"
                   hide-details="auto"
                   class="mb-2"
                 >
                   <template #prepend>
                     <v-icon class="me-3" :color="formData.is_lco ? 'primary' : 'grey'">
-                      {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-calendar' }}
+                      {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-account-group' }}
                     </v-icon>
                   </template>
                   <template #label>
                     <div class="d-flex flex-column">
                       <span class="text-body-2 font-weight-medium">
-                        {{ formData.is_lco ? 'LCO Event' : 'Regular Event' }}
+                        {{ formData.is_lco ? 'LCO Event' : 'Org Leaders Event' }}
                       </span>
                       <span class="text-caption text-medium-emphasis">
                         {{ formData.is_lco
-                          ? 'This is an official LCO (Local Chapter Officer) event'
-                          : 'This is a regular organizational event'
+                          ? 'Official LCO (Local Chapter Officer) event'
+                          : 'Targets all organization leaders in the system'
                         }}
                       </span>
                     </div>
@@ -239,8 +184,7 @@ const handleCancel = () => {
                 </v-switch>
               </v-col>
 
-              <!-- Non-admin user info (always regular event) -->
-              <v-col v-if="!isAdmin" cols="12">
+              <v-col v-if="!formData.is_lco" cols="12">
                 <v-alert
                   type="info"
                   variant="tonal"
@@ -248,16 +192,17 @@ const handleCancel = () => {
                   class="mb-2"
                 >
                   <template #prepend>
-                    <v-icon>mdi-calendar</v-icon>
+                    <v-icon>mdi-account-group</v-icon>
                   </template>
                   <div class="d-flex flex-column">
-                    <span class="text-body-2 font-weight-medium">Regular Event</span>
-                    <span class="text-caption text-medium-emphasis">You can only create regular organizational events</span>
+                    <span class="text-body-2 font-weight-medium">Org Leaders Event</span>
+                    <span class="text-caption text-medium-emphasis">
+                      Sent to all Organization Leaders. No organization attachment or member blocking is needed.
+                    </span>
                   </div>
                 </v-alert>
               </v-col>
 
-              <!-- LCO Event Warning (only for admin users) -->
               <v-col v-if="isAdmin" cols="12">
                 <LcoEventWarning
                   :is-lco-event="!!formData.is_lco"
@@ -265,41 +210,6 @@ const handleCancel = () => {
                 />
               </v-col>
 
-              <!-- Attach Organization (optional) -->
-              <v-col v-if="(!formData.is_lco || !isAdmin) && !isOrganizationLocked" cols="12">
-                <v-select
-                  v-model="selectedOrganizationId"
-                  :items="organizationOptions"
-                  item-title="title"
-                  item-value="id"
-                  label="Attach Organization (optional)"
-                  variant="outlined"
-                  :disabled="loading"
-                  prepend-inner-icon="mdi-domain"
-                  hint="If selected, all current members will be blocked for this event upon creation"
-                  persistent-hint
-                  clearable
-                />
-              </v-col>
-
-              <v-col v-else-if="(!formData.is_lco || !isAdmin) && isOrganizationLocked" cols="12">
-                <v-alert
-                  type="info"
-                  variant="tonal"
-                  density="comfortable"
-                  class="mb-2"
-                >
-                  <template #prepend>
-                    <v-icon>mdi-domain</v-icon>
-                  </template>
-                  <div class="d-flex flex-column">
-                    <span class="text-body-2 font-weight-medium">Organization locked</span>
-                    <span class="text-caption text-medium-emphasis">Events will be attached to {{ lockedOrganizationName || 'your organization' }}</span>
-                  </div>
-                </v-alert>
-              </v-col>
-
-              <!-- Selected Date Info (if provided) -->
               <v-col v-if="selectedDate" cols="12">
                 <v-alert
                   type="info"
@@ -320,11 +230,10 @@ const handleCancel = () => {
         </v-form>
       </v-card-text>
 
-      <v-divider></v-divider>
+      <v-divider />
 
-      <!-- Dialog Actions -->
       <v-card-actions class="pa-6 pt-4">
-        <v-spacer></v-spacer>
+        <v-spacer />
 
         <v-btn
           variant="outlined"
@@ -360,12 +269,10 @@ const handleCancel = () => {
   width: 100%;
 }
 
-/* Ensure form fields have proper spacing */
 .add-event-dialog :deep(.v-text-field) {
   margin-bottom: 8px;
 }
 
-/* Loading state styling */
 .add-event-dialog :deep(.v-btn--loading) {
   pointer-events: none;
 }

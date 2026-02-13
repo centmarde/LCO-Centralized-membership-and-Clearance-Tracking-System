@@ -220,14 +220,14 @@ const handleDeleteSubmit = async () => {
               >
                 <v-icon
                   start
-                  :icon="event?.is_lco ? 'mdi-account-tie' : 'mdi-calendar'"
+                  :icon="event?.is_lco ? 'mdi-account-tie' : 'mdi-account-group'"
                 />
-                {{ event?.is_lco ? 'LCO Event' : 'Regular Event' }}
+                {{ event?.is_lco ? 'LCO Event' : 'Org Leaders Event' }}
               </v-chip>
               <span class="text-caption text-medium-emphasis">
                 {{ event?.is_lco
                   ? 'Official LCO event'
-                  : 'Regular organizational event'
+                  : 'Targets all organization leaders in the system'
                 }}
               </span>
             </div>
@@ -284,18 +284,18 @@ const handleDeleteSubmit = async () => {
           >
             <template #prepend>
               <v-icon class="me-3" :color="formData.is_lco ? 'primary' : 'grey'">
-                {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-calendar' }}
+                {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-account-group' }}
               </v-icon>
             </template>
             <template #label>
               <div class="d-flex flex-column">
                 <span class="text-body-2 font-weight-medium">
-                  {{ formData.is_lco ? 'LCO Event' : 'Regular Event' }}
+                  {{ formData.is_lco ? 'LCO Event' : 'Org Leaders Event' }}
                 </span>
                 <span class="text-caption text-medium-emphasis">
                   {{ formData.is_lco
                     ? 'This is an official LCO (Local Chapter Officer) event'
-                    : 'This is a regular organizational event'
+                    : 'Targets all organization leaders in the system'
                   }}
                 </span>
               </div>
