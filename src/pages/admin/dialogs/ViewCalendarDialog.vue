@@ -73,6 +73,36 @@ const eventStatusColor = computed(() => getEventStatusColor(props.event))
 const eventStatusText = computed(() => getEventStatusText(props.event))
 const isEventInPast = computed(() => getIsEventInPast(props.event))
 
+const eventTypeMeta = computed(() => {
+  if (props.event?.is_lco) {
+    return {
+      label: 'LCO Event',
+      description: 'Official LCO event',
+      icon: 'mdi-account-tie',
+      color: 'primary'
+    }
+  }
+
+  if (props.event?.organization_id) {
+    return {
+      label: 'Organization Event',
+      description: 'Visible to members of this organization',
+      icon: 'mdi-account-group',
+      color: 'secondary'
+    }
+  }
+
+  return {
+    label: 'Org Leaders Event',
+    description: 'Targets all organization leaders in the system',
+    icon: 'mdi-account-group',
+    color: 'secondary'
+  }
+})
+
+// Admins can edit global/LCO events; organization-scoped events are view/delete only
+const canEditEvent = computed(() => !props.event?.organization_id)
+
 // Local dialog state
 const internalDialog = computed({
   get: () => props.isOpen,
@@ -91,7 +121,11 @@ watch(() => props.isOpen, (newValue) => {
 // Watch for event changes
 watch(() => props.event, (newEvent) => {
   if (newEvent) {
-    // Event changed - form will be re-initialized when dialog opens
+    initializeForm(newEvent)
+    if (!canEditEvent.value) {
+      isEditMode.value = false
+      showDeleteConfirm.value = false
+    }
   }
 }, { deep: true })
 
@@ -102,11 +136,13 @@ const closeDialog = () => {
 
 // Handle edit mode toggle
 const handleEditToggle = () => {
+  if (!canEditEvent.value) return
   toggleEditMode(props.event)
 }
 
 // Handle update submission
 const handleUpdateSubmit = async () => {
+  if (!canEditEvent.value) return
   try {
     const updatedEvent = await handleUpdate()
     if (updatedEvent) {
@@ -213,22 +249,19 @@ const handleDeleteSubmit = async () => {
             </v-label>
             <div class="d-flex align-center">
               <v-chip
-                :color="event?.is_lco ? 'primary' : 'secondary'"
+                :color="eventTypeMeta.color"
                 variant="tonal"
                 size="small"
                 class="me-2"
               >
                 <v-icon
                   start
-                  :icon="event?.is_lco ? 'mdi-account-tie' : 'mdi-calendar'"
+                  :icon="eventTypeMeta.icon"
                 />
-                {{ event?.is_lco ? 'LCO Event' : 'Regular Event' }}
+                {{ eventTypeMeta.label }}
               </v-chip>
               <span class="text-caption text-medium-emphasis">
-                {{ event?.is_lco
-                  ? 'Official LCO event'
-                  : 'Regular organizational event'
-                }}
+                {{ eventTypeMeta.description }}
               </span>
             </div>
           </div>
@@ -284,18 +317,18 @@ const handleDeleteSubmit = async () => {
           >
             <template #prepend>
               <v-icon class="me-3" :color="formData.is_lco ? 'primary' : 'grey'">
-                {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-calendar' }}
+                {{ formData.is_lco ? 'mdi-account-tie' : 'mdi-account-group' }}
               </v-icon>
             </template>
             <template #label>
               <div class="d-flex flex-column">
                 <span class="text-body-2 font-weight-medium">
-                  {{ formData.is_lco ? 'LCO Event' : 'Regular Event' }}
+                  {{ formData.is_lco ? 'LCO Event' : 'Org Leaders Event' }}
                 </span>
                 <span class="text-caption text-medium-emphasis">
                   {{ formData.is_lco
                     ? 'This is an official LCO (Local Chapter Officer) event'
-                    : 'This is a regular organizational event'
+                    : 'Targets all organization leaders in the system'
                   }}
                 </span>
               </div>
@@ -354,6 +387,7 @@ const handleDeleteSubmit = async () => {
             color="primary"
             variant="flat"
             prepend-icon="mdi-pencil"
+            :disabled="!canEditEvent"
             @click="handleEditToggle"
           >
             Edit

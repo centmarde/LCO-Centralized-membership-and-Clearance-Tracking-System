@@ -183,11 +183,12 @@
                 icon="mdi-pencil"
                 variant="text"
                 size="small"
+                :disabled="event.organization_id !== null && event.organization_id !== undefined"
                 @click="editEvent(event)"
                 color="primary"
               >
                 <v-icon>mdi-pencil</v-icon>
-                <v-tooltip activator="parent" location="top">Edit Event</v-tooltip>
+                <v-tooltip activator="parent" location="top">{{ event.organization_id ? 'Editing disabled for organization events' : 'Edit Event' }}</v-tooltip>
               </v-btn>
               <v-btn
                 icon="mdi-delete"
@@ -463,6 +464,10 @@ const openCreateDialog = () => {
 }
 
 const editEvent = (event: EventWithLCO) => {
+  if (event.organization_id !== null && event.organization_id !== undefined) {
+    showSnackbar('Editing organization events is disabled for admins', 'warning')
+    return
+  }
   editedEvent.value = {
     id: event.id,
     title: event.title || '',
