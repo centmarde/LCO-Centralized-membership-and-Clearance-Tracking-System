@@ -9,6 +9,7 @@ type CalendarEvent = (Event & {
 	organization_id?: string | number | null;
 	description?: string | null;
 	location?: string | null;
+	is_lco?: boolean;
 }) | null;
 
 const props = defineProps<{
@@ -54,6 +55,41 @@ const organizationName = computed(() => {
 	const orgId = String(props.event.organization_id);
 	const found = orgStore.organizations.find(o => String(o.id) === orgId);
 	return found?.title || 'Loading...';
+});
+
+const eventTypeMeta = computed(() => {
+	const ev = props.event;
+	if (ev?.is_lco) {
+		return {
+			label: 'LCO Event',
+			description: 'Official LCO event (all students)',
+			color: 'primary',
+			icon: 'mdi-account-tie'
+		};
+	}
+
+	if (ev?.organization_id !== null && ev?.organization_id !== undefined) {
+		return {
+			label: 'Organization Event',
+			description: 'Scoped to a specific organization',
+			color: 'secondary',
+			icon: 'mdi-account-group'
+		};
+	}
+
+	return {
+		label: 'Org Leaders Event',
+		description: 'For organization leaders only',
+		color: 'secondary',
+		icon: 'mdi-account-group'
+	};
+});
+
+const organizationLabel = computed(() => {
+	const ev = props.event;
+	if (!ev) return 'N/A';
+	if (ev.organization_id !== null && ev.organization_id !== undefined) return organizationName.value;
+	return ev.is_lco ? 'All Students (LCO Event)' : 'All Organization Leaders';
 });
 
 watch(
@@ -108,15 +144,34 @@ const closeDialog = () => {
 					</div>
 				</v-sheet>
 
+				<v-sheet color="surface" variant="outlined" rounded="lg" class="pa-3 mb-4">
+					<div class="d-flex flex-wrap ga-3 align-center justify-space-between">
+						<div class="d-flex align-center ga-2">
+							<v-avatar size="32" color="primary" variant="tonal">
+								<v-icon size="18">{{ eventTypeMeta.icon }}</v-icon>
+							</v-avatar>
+							<div>
+								<div class="text-body-2 font-weight-medium">{{ eventTypeMeta.label }}</div>
+								<div class="text-caption text-medium-emphasis">{{ eventTypeMeta.description }}</div>
+							</div>
+						</div>
+						<v-chip :color="eventTypeMeta.color" variant="elevated" size="small" prepend-icon="mdi-domain">
+							{{ organizationLabel }}
+						</v-chip>
+					</div>
+				</v-sheet>
+
 				<div class="mb-4">
 					<div class="text-caption text-medium-emphasis text-center">Event</div>
 					<div class="text-body-1 text-sm-h6 font-weight-bold text-center">{{ props.event.title }}</div>
 				</div>
-                <div class="text-caption text-medium-emphasis text-center">Organization</div>
+				<div class="text-caption text-medium-emphasis text-center">Organization</div>
 				<div class="mb-3 d-flex flex-wrap ga-2 text-center justify-center">
-                    
 					<v-chip v-if="props.event.organization_id" color="primary" variant="tonal" size="small" prepend-icon="mdi-office-building">
 						{{ organizationName }}
+					</v-chip>
+					<v-chip v-else :color="eventTypeMeta.color" variant="elevated" size="small" :prepend-icon="eventTypeMeta.icon">
+						{{ organizationLabel }}
 					</v-chip>
 					<v-chip v-if="props.event.location" color="secondary" variant="tonal" size="small" prepend-icon="mdi-map-marker">
 						{{ props.event.location }}

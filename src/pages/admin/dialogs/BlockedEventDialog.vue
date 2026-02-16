@@ -2,7 +2,16 @@
 import { computed } from 'vue';
 import { formatDateShort } from '@/utils/helpers';
 
-type BlockedEvent = { name: string; date: string; status: string } | null;
+type BlockedEvent = {
+	name: string;
+	date: string;
+	status: string;
+	organization_id?: string | number | null;
+	organization_name?: string | null;
+	organization_title?: string | null;
+	organization?: string | null;
+	is_lco?: boolean;
+} | null;
 
 const props = defineProps<{
 	modelValue: boolean;
@@ -26,6 +35,49 @@ const getEventStatusColor = (status: string) => {
 	if (normalized.includes('clear') || normalized.includes('approved')) return 'success';
 	return 'primary';
 };
+
+const eventTypeMeta = computed(() => {
+	const ev = props.event;
+	if (ev?.is_lco) {
+		return {
+			label: 'LCO Event',
+			description: 'Official LCO event (all students)',
+			color: 'primary',
+			icon: 'mdi-account-tie'
+		};
+	}
+
+	const isOrgEvent = (ev?.organization_id !== null && ev?.organization_id !== undefined)
+		|| (!!ev?.organization_name && ev.organization_name.trim() !== '')
+		|| (!!ev?.organization_title && ev.organization_title.trim() !== '')
+		|| (!!ev?.organization && ev.organization.trim() !== '');
+
+	if (isOrgEvent) {
+		return {
+			label: 'Organization Event',
+			description: 'Scoped to a specific organization',
+			color: 'secondary',
+			icon: 'mdi-account-group'
+		};
+	}
+
+	return {
+		label: 'Org Leaders Event',
+		description: 'For organization leaders only',
+		color: 'secondary',
+		icon: 'mdi-account-group'
+	};
+});
+
+const organizationLabel = computed(() => {
+	const ev = props.event;
+	if (!ev) return 'N/A';
+	if (ev.organization_title) return ev.organization_title;
+	if (ev.organization_name) return ev.organization_name;
+	if (ev.organization) return ev.organization;
+	if (ev.organization_id !== null && ev.organization_id !== undefined) return `Organization #${ev.organization_id}`;
+	return ev.is_lco ? 'All Students (LCO Event)' : 'All Organization Leaders';
+});
 
 const closeDialog = () => {
 	emit('update:modelValue', false);
@@ -62,6 +114,23 @@ const closeDialog = () => {
 						</div>
 						<v-chip :color="getEventStatusColor(props.event.status)" variant="elevated" size="small" class="text-uppercase font-weight-bold">
 							{{ props.event.status }}
+						</v-chip>
+					</div>
+				</v-sheet>
+
+				<v-sheet color="surface" variant="outlined" rounded="lg" class="pa-3 mb-4">
+					<div class="d-flex flex-wrap ga-3 align-center justify-space-between">
+						<div class="d-flex align-center ga-2">
+							<v-avatar size="32" color="primary" variant="tonal">
+								<v-icon size="18">{{ eventTypeMeta.icon }}</v-icon>
+							</v-avatar>
+							<div>
+								<div class="text-body-2 font-weight-medium">{{ eventTypeMeta.label }}</div>
+								<div class="text-caption text-medium-emphasis">{{ eventTypeMeta.description }}</div>
+							</div>
+						</div>
+						<v-chip :color="eventTypeMeta.color" variant="elevated" size="small" prepend-icon="mdi-domain">
+							{{ organizationLabel }}
 						</v-chip>
 					</div>
 				</v-sheet>

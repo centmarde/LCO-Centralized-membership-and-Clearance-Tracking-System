@@ -3,6 +3,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { CalendarView } from 'vue-simple-calendar';
 import { fetchStudentEvents, fetchStudents } from '@/stores/studentsData';
+import { supabase } from '@/lib/supabase';
 import { useEventsStore } from '@/stores/eventsData';
 import { useAuthUserStore } from '@/stores/authUser';
 import EventDetailsDialog from '@/pages/admin/dialogs/EventDetailsDialog.vue';
@@ -89,12 +90,33 @@ const loadEvents = async () => {
     }
     const studentId = student.id;
 
+    // Fetch student's organization memberships
+    const { data: memberships, error: membershipsError } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('student_id', studentId)
+
+    if (membershipsError) {
+      throw membershipsError
+    }
+
+    const studentOrgIds = new Set((memberships || []).map(m => m.organization_id))
+
     // Fetch all events
     const allEvents = await eventsStore.fetchEvents();
     // Fetch only events the student is registered for
     const registeredEvents = await fetchStudentEvents(Number(studentId));
     const registeredEventIds = new Set(registeredEvents.map(e => e.id));
-    events.value = allEvents.map((event: any) => ({
+
+    // Show LCO events and events from the student's organizations; hide Org Leaders events and unrelated orgs
+    const visibleEvents = allEvents.filter((event: any) => {
+      const isLco = !!event.is_lco
+      const orgId = event.organization_id
+      const isStudentOrgEvent = orgId ? studentOrgIds.has(orgId) : false
+      return isLco || isStudentOrgEvent
+    })
+
+    events.value = visibleEvents.map((event: any) => ({
       ...event,
       isRegistered: registeredEventIds.has(event.id),
     }));

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, computed } from 'vue'
+import { watch, computed, ref } from 'vue'
 import { getEmailInitials, memberStatusOptions, memberRoleOptions, getMemberStatusColor, getMemberRoleTitle } from '@/utils/helpers'
 import type { OrganizationMember } from '@/stores/organizationMembersData'
 
@@ -29,6 +29,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const studentSearch = ref('')
 
 const statusOptions = memberStatusOptions
 const roleOptions = memberRoleOptions
@@ -69,6 +70,31 @@ const handleRemoveMember = (memberId: string) => emit('remove-member', memberId)
 
 const getStatusColor = getMemberStatusColor
 const getRoleTitle = getMemberRoleTitle
+
+const formatStudentLabel = (student: any) => {
+  const name = student?.full_name || student?.email || 'Unknown Student'
+  const id = student?.student_number || 'No ID'
+  return `${name} • ${id}`
+}
+
+const getStudentInitials = (student: any) => {
+  const name = student?.full_name?.trim()
+  if (name) {
+    const parts = name.split(/\s+/).filter(Boolean)
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+    if (parts.length === 1) return (parts[0].slice(0, 2)).toUpperCase()
+  }
+  return getEmailInitials(student?.email || '')
+}
+
+const studentFilter = (item: any, queryText: string, itemText: string) => {
+  const text = (itemText || '').toLowerCase()
+  const query = (queryText || '').toLowerCase()
+  const email = (item?.raw?.email || '').toLowerCase()
+  const name = (item?.raw?.full_name || '').toLowerCase()
+  const id = (item?.raw?.student_number || '').toLowerCase()
+  return text.includes(query) || email.includes(query) || name.includes(query) || id.includes(query)
+}
 
 const showDeadlineWarning = computed(() => !!props.organizationDeadline && !isDeadlinePassed.value && props.members.length < 5)
 const showDeadlineRestriction = computed(() => !!props.organizationDeadline && isDeadlinePassed.value)
@@ -140,12 +166,15 @@ watch(() => props.organizationId, (newId) => {
           <v-card-text>
             <v-row>
               <v-col cols="12" md="6">
-                <v-select
+                <v-autocomplete
                   :model-value="memberForm.student_id"
                   @update:model-value="updateStudentId"
                   :items="availableStudents"
                   item-value="id"
-                  item-title="email"
+                  :item-title="formatStudentLabel"
+                  v-model:search="studentSearch"
+                  :filter="studentFilter"
+                  :menu-props="{ maxHeight: 320 }"
                   label="Select Student"
                   variant="outlined"
                   density="compact"
@@ -155,16 +184,35 @@ watch(() => props.organizationId, (newId) => {
                   :disabled="isDeadlinePassed"
                 >
                   <template #selection="{ item }">
-                    <div class="d-flex align-center">
+                    <div v-if="item?.raw?.id" class="d-flex align-center">
                       <v-avatar size="24" color="primary" class="me-2">
                         <span class="text-white text-caption">
-                          {{ getEmailInitials(item.raw.email || '') }}
+                          {{ getStudentInitials(item.raw) }}
                         </span>
                       </v-avatar>
-                      {{ item.raw.email }}
+                      <div class="d-flex flex-column">
+                        <span class="text-body-2 font-weight-medium">{{ item.raw.full_name || 'Unknown Student' }}</span>
+                        <span class="text-caption text-medium-emphasis">ID: {{ item.raw.student_number || 'N/A' }}</span>
+                      </div>
                     </div>
+                    <span v-else></span>
                   </template>
-                </v-select>
+                  <template #item="{ item, props: itemProps }">
+                    <v-list-item v-bind="itemProps" title="" subtitle="">
+                      <template #prepend>
+                        <v-avatar size="28" color="primary" class="me-2">
+                          <span class="text-white text-caption">
+                            {{ getStudentInitials(item.raw) }}
+                          </span>
+                        </v-avatar>
+                      </template>
+                      <v-list-item-title>{{ formatStudentLabel(item.raw) }}</v-list-item-title>
+                      <v-list-item-subtitle class="d-flex flex-column">
+                        <span v-if="item.raw.email" class="text-caption">{{ item.raw.email }}</span>
+                      </v-list-item-subtitle>
+                    </v-list-item>
+                  </template>
+                </v-autocomplete>
               </v-col>
               <v-col cols="12" md="3">
                 <v-select
