@@ -96,7 +96,7 @@ const studentFilter = (item: any, queryText: string, itemText: string) => {
   return text.includes(query) || email.includes(query) || name.includes(query) || id.includes(query)
 }
 
-const showDeadlineWarning = computed(() => !!props.organizationDeadline && !isDeadlinePassed.value && props.members.length < 5)
+const showDeadlineWarning = computed(() => !!props.organizationDeadline && !isDeadlinePassed.value)
 const showDeadlineRestriction = computed(() => !!props.organizationDeadline && isDeadlinePassed.value)
 const formattedDeadline = computed(() => {
   if (!props.organizationDeadline) return ''
@@ -143,7 +143,7 @@ watch(() => props.organizationId, (newId) => {
           border="start"
           color="warning"
         >
-          Membership deadline: {{ formattedDeadline }}. Add at least 5 members to clear this requirement.
+          Membership deadline: {{ formattedDeadline }}. Ensure membership is finalized before the deadline.
         </v-alert>
 
         <v-alert
