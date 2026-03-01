@@ -29,7 +29,7 @@ import {
 } from '@/utils/helpers'
 
 // Export utilities
-import { exportBlockedStudentsToPDF, exportBlockedStudentsToDocx } from '@/utils/exportUtils'
+import { exportBlockedStudentsToPDF, exportBlockedStudentsToDocx, exportBlockedStudentsToExcel } from '@/utils/exportUtils'
 
 interface User {
   id: string
@@ -47,6 +47,12 @@ interface User {
     id: string
     title: string
   }>
+  membershipData?: Array<{
+    joined_at: string
+    member_role: string
+    organization_title: string
+    status: string
+  }>
 }
 
 // Composables
@@ -60,6 +66,7 @@ const toast = useToast()
 // Reactive data
 const loading = ref(false)
 const search = ref('')
+const searchType = ref<'name' | 'role' | 'organization' | 'membership_date' | 'membership_affiliation'>('name')
 const userDialog = ref(false)
 const editDialog = ref(false)
 const selectedUser = ref<User | null>(null)
@@ -80,6 +87,12 @@ watch(viewMode, () => {
 
 // Watch selectedOrganization to reset pagination
 watch(selectedOrganization, () => {
+  page.value = 1
+})
+
+// Watch searchType to reset search and pagination
+watch(searchType, () => {
+  search.value = ''
   page.value = 1
 })
 
@@ -133,18 +146,65 @@ const allOrganizations = computed(() => {
   return organizations.sort((a, b) => a.title.localeCompare(b.title))
 })
 
+// Helper function to get role name by ID
+const getRoleName = (roleId?: number): string => {
+  if (!roleId) return 'Unknown'
+  const role = rolesStore.roles.find(r => r.id === roleId)
+  return role?.title || 'Unknown'
+}
+
+// Helper function to get user's organization names as string
+const getUserOrganizationNames = (user: User): string => {
+  if (!user.organizations || user.organizations.length === 0) return ''
+  return user.organizations.map(org => org.title).join(', ')
+}
+
+// Helper function to get user's membership dates as searchable string
+const getUserMembershipDates = (user: User): string => {
+  if (!user.membershipData || user.membershipData.length === 0) return ''
+  return user.membershipData.map(membership => {
+    const date = new Date(membership.joined_at)
+    return date.toLocaleDateString()
+  }).join(', ')
+}
+
+// Helper function to get user's membership affiliations as searchable string
+const getUserMembershipAffiliations = (user: User): string => {
+  if (!user.membershipData || user.membershipData.length === 0) return ''
+  return user.membershipData.map(membership =>
+    `${membership.organization_title} ${membership.member_role} ${membership.status}`
+  ).join(', ')
+}
+
 // Computed filtered and paginated users
 const filteredUsers = computed(() => {
   let users = usersToShow.value
 
-  // Filter by search term
+  // Filter by search term based on search type
   if (search.value) {
     const searchLower = search.value.toLowerCase()
-    users = users.filter(user =>
-      user.full_name?.toLowerCase().includes(searchLower) ||
-      user.email?.toLowerCase().includes(searchLower) ||
-      user.student_number?.toLowerCase().includes(searchLower)
-    )
+    users = users.filter(user => {
+      switch (searchType.value) {
+        case 'name':
+          return user.full_name?.toLowerCase().includes(searchLower) ||
+                 user.email?.toLowerCase().includes(searchLower) ||
+                 user.student_number?.toLowerCase().includes(searchLower)
+        case 'role':
+          const roleName = getRoleName(user.role_id)
+          return roleName.toLowerCase().includes(searchLower)
+        case 'organization':
+          const orgNames = getUserOrganizationNames(user)
+          return orgNames.toLowerCase().includes(searchLower)
+        case 'membership_date':
+          const membershipDates = getUserMembershipDates(user)
+          return membershipDates.toLowerCase().includes(searchLower)
+        case 'membership_affiliation':
+          const membershipAffiliations = getUserMembershipAffiliations(user)
+          return membershipAffiliations.toLowerCase().includes(searchLower)
+        default:
+          return true
+      }
+    })
   }
 
   // Filter by organization
@@ -212,6 +272,9 @@ const fetchUsers = async () => {
                   .from('organization_members')
                   .select(`
                     organization_id,
+                    joined_at,
+                    member_role,
+                    status,
                     organization:organizations!organization_members_organization_id_fkey (
                       id,
                       title
@@ -221,6 +284,7 @@ const fetchUsers = async () => {
                   .eq('status', 'active')
 
                 if (!error && membershipData && membershipData.length > 0) {
+                  const membershipInfo: User['membershipData'] = []
                   membershipData.forEach(membership => {
                     if (membership.organization) {
                       const orgId = String(membership.organization_id)
@@ -236,8 +300,17 @@ const fetchUsers = async () => {
                           title: String(orgData.title) || 'Unknown Organization'
                         })
                       }
+
+                      // Add membership details for search
+                      membershipInfo.push({
+                        joined_at: membership.joined_at,
+                        member_role: membership.member_role,
+                        organization_title: String(orgData?.title) || 'Unknown Organization',
+                        status: membership.status
+                      })
                     }
                   })
+                  user.membershipData = membershipInfo
                   console.log(`Found ${membershipData.length} organization(s) via membership for ${user.full_name}:`, organizations)
                 }
               } catch (error) {
@@ -342,6 +415,16 @@ const handleExportToDocx = async () => {
   }
 }
 
+const handleExportToExcel = () => {
+  try {
+    exportBlockedStudentsToExcel(blockedStudents.value, studentEventStatusMap.value)
+    toast.success('Excel export completed successfully!')
+  } catch (error) {
+    toast.error('Failed to export Excel: ' + getErrorMessage(error))
+    console.error('Excel export error:', error)
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   await refreshData()
@@ -360,6 +443,7 @@ onMounted(async () => {
     <!-- Search and Controls -->
     <UserSearchControls
       v-model:search="search"
+      v-model:search-type="searchType"
       v-model:view-mode="viewMode"
       v-model:layout-mode="layoutMode"
       v-model:selected-organization="selectedOrganization"
@@ -368,6 +452,7 @@ onMounted(async () => {
       :organizations="allOrganizations"
       @export:pdf="handleExportToPDF"
       @export:docx="handleExportToDocx"
+      @export:excel="handleExportToExcel"
     />
 
     <!-- Status Summary -->

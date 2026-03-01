@@ -5,6 +5,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useTheme } from "vuetify";
 import LoginForm from "@/components/auth/LoginForm.vue";
 import RegisterForm from "@/components/auth/RegisterForm.vue";
+import VersionLogsDialog from "@/pages/admin/dialogs/VersionLogsDialog.vue";
 import { useAuthUserStore } from "@/stores/authUser";
 import { createDynamicThemeConfigFromExternal } from "@/themes/index";
 import { useAuthPageController } from "@/controller/authPageController";
@@ -22,6 +23,7 @@ const { data: authPageData, loading: authPageLoading, error: authPageError, fetc
 const isLoginMode = ref(true);
 const themeLoading = ref(true);
 const themeError = ref<string | null>(null);
+const showVersionLogs = ref(false);
 
 // Computed properties for layout
 const isQuoteOnLeft = computed(() => {
@@ -61,6 +63,10 @@ const navigateHome = () => {
   router.push("/");
 };
 
+const openVersionLogs = () => {
+  showVersionLogs.value = true;
+};
+
 // Load dynamic theme configuration
 const loadDynamicTheme = async () => {
   try {
@@ -97,6 +103,9 @@ onMounted(async () => {
   } else {
     isLoginMode.value = true;
   }
+
+  // Auto-show version logs on mount
+  showVersionLogs.value = true;
 });
 
 // This page uses the default layout and doesn't require authentication
@@ -143,16 +152,27 @@ onMounted(async () => {
 
       <div class="w-100" style="max-width: 500px">
          <!-- Back to Home Button (static) -->
-            <v-btn
-              variant="text"
-              color="light"
-              size="small"
-              class="ma-2"
-              @click="navigateHome"
-            >
-              <v-icon start size="small">mdi-arrow-left</v-icon>
-              Back to Home
-            </v-btn>
+        <div class="d-flex justify-space-between align-center ma-2">
+          <v-btn
+            variant="text"
+            color="light"
+            size="small"
+            @click="navigateHome"
+          >
+            <v-icon start size="small">mdi-arrow-left</v-icon>
+            Back to Home
+          </v-btn>
+
+          <v-btn
+            variant="text"
+            color="light"
+            size="small"
+            @click="openVersionLogs"
+          >
+            <v-icon start size="small">mdi-history</v-icon>
+            Version Logs
+          </v-btn>
+        </div>
         <!-- Auth Form Container -->
         <v-fade-transition mode="out-in">
           <div v-if="isLoginMode" key="login">
@@ -261,6 +281,9 @@ onMounted(async () => {
 
     </v-col>
   </v-row>
+
+  <!-- Version Logs Dialog -->
+  <VersionLogsDialog v-model="showVersionLogs" />
 </template>
 
 <style scoped>
