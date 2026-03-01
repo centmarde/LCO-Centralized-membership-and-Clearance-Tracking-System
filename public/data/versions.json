@@ -1,0 +1,37 @@
+{
+  "versions": [
+   
+    {
+      "version": "v0.0.1",
+      "date": "2026-27-02",
+      "title": "bug fix and UI improvements",
+      "changes": [
+        "Fixed layout issues on the admin dashboard",
+        "Improved responsiveness of item cards",
+        "Enhanced user feedback for form submissions"
+      ]
+    },
+    {
+      "version": "v0.0.2",
+      "date": "2026-28-02",
+      "title": "New features and enhancements",
+      "changes": [
+        "Added user profile management",
+        "Improved security features",
+        "Updated UI for better accessibility"
+      ]
+    },
+    {
+      "version": "v0.0.3",
+      "date": "2026-03-01",
+      "title": "UI and export enhancements",
+      "changes": [
+        "Fixed excel export issues",
+        "Feature Added Version Logs",
+        "Feature added note for membership deadline",
+        "Feature added tabular form for org members and added edit roles.",
+        "Feature added more filter for the search input on the User Management."
+      ]
+    }
+  ]
+}
